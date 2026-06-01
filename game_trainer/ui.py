@@ -66,8 +66,9 @@ class UI:
         for icon, feat in [
             ("⚔", "7大博弈场景  —  从囚徒困境到危机谈判"),
             ("🧠", "6种AI对手  —  各具独特心理特征"),
+            ("🎓", "6位谈判大师  —  道森/费雪/沃斯/科恩等"),
             ("🔍", "实时心理分析  —  识别自身行为模式"),
-            ("📚", "10大策略卡  —  实战谈判技术"),
+            ("📚", "10大策略卡 + 大师战术  —  实战技术全集"),
             ("📊", "战绩追踪  —  可视化成长进度"),
         ]:
             features.add_row(icon, feat)
@@ -422,6 +423,8 @@ class UI:
             ("1", "博弈与谈判策略卡"),
             ("2", "沟通技术手册"),
             ("3", "心理防御手册"),
+            ("4", "🎓 谈判大师理论库（道森/费雪/沃斯等）"),
+            ("5", "💡 大师实战演练（情景应用）"),
             ("0", "返回主菜单"),
         ]
         table = Table(box=box.SIMPLE, show_header=False)
@@ -430,7 +433,7 @@ class UI:
         for k, v in menu:
             table.add_row(k, v)
         self.c.print(table)
-        choice = Prompt.ask("  选择", choices=["0", "1", "2", "3"])
+        choice = Prompt.ask("  选择", choices=["0", "1", "2", "3", "4", "5"])
 
         if choice == "1":
             self._show_strategy_cards(cards)
@@ -438,6 +441,216 @@ class UI:
             self._show_techniques(techniques)
         elif choice == "3":
             self._show_defenses(defenses)
+        elif choice == "4":
+            self._show_master_library()
+        elif choice == "5":
+            self._show_master_drills()
+
+    def _show_master_library(self):
+        from experts import ALL_MASTERS
+        self.c.print(Rule("[bold cyan]🎓 谈判大师理论库[/bold cyan]", style="blue"))
+        table = Table(box=box.ROUNDED, border_style="blue", padding=(0, 1))
+        table.add_column("编号", style="bold cyan", width=6)
+        table.add_column("大师", style="white", width=14)
+        table.add_column("代表作", style="yellow", width=30)
+        table.add_column("核心思想", style="dim")
+        for k, m in ALL_MASTERS.items():
+            table.add_row(k, m["name"], m["title"], m["core_principle"])
+        table.add_row("0", "返回上级", "", "")
+        self.c.print(table)
+        choice = Prompt.ask("  [bold cyan]选择大师[/bold cyan]",
+                            choices=["0"] + list(ALL_MASTERS.keys()))
+        if choice == "0":
+            return
+        self._show_single_master(ALL_MASTERS[choice])
+
+    def _show_single_master(self, master: dict):
+        self.c.clear()
+        self.c.print(Panel(
+            f"[bold cyan]{master['name']}[/bold cyan]\n"
+            f"[yellow]{master['title']}[/yellow]\n\n"
+            f"[dim]{master['credentials']}[/dim]\n\n"
+            f"[italic white]\"{master['philosophy']}\"[/italic white]\n\n"
+            f"[bold cyan]核心原则：[/bold cyan][white]{master['core_principle']}[/white]",
+            border_style="blue", padding=(1, 2),
+            title="[bold]大师档案[/bold]",
+        ))
+
+        # Roger Dawson - gambits structure
+        if "gambits" in master:
+            for stage_name, gambits in master["gambits"].items():
+                self.c.print()
+                self.c.print(Rule(f"[bold yellow]{stage_name}[/bold yellow]", style="dim"))
+                for g in gambits:
+                    body = (
+                        f"[bold yellow]法则：[/bold yellow][white]{g['rule']}[/white]\n"
+                        f"[green]为什么有效：[/green][dim]{g['why']}[/dim]\n"
+                        f"[red]注意：[/red][dim]{g['warning']}[/dim]\n"
+                        f"[magenta]实例：[/magenta][italic]{g['example']}[/italic]"
+                    )
+                    if "counter" in g:
+                        body += f"\n[cyan]破解：[/cyan][dim]{g['counter']}[/dim]"
+                    self.c.print(Panel(
+                        body,
+                        title=f"[bold]⚔ {g['name']}[/bold]",
+                        border_style="yellow", padding=(0, 1),
+                    ))
+
+        # Fisher & Ury - four principles
+        if "four_principles" in master:
+            for p in master["four_principles"]:
+                self.c.print()
+                techs = "\n".join(f"  • {t}" for t in p.get("techniques", []))
+                body = (
+                    f"[white]{p['core']}[/white]\n\n"
+                    f"[cyan]技巧：[/cyan]\n{techs}\n\n"
+                    f"[magenta]实例：[/magenta][italic dim]{p.get('example', '')}[/italic dim]"
+                )
+                if "barriers" in p:
+                    body += f"\n[red]障碍：[/red][dim]{' · '.join(p['barriers'])}[/dim]"
+                self.c.print(Panel(
+                    body, title=f"[bold green]原则：{p['name']}[/bold green]",
+                    border_style="green", padding=(0, 1),
+                ))
+            if "key_concepts" in master:
+                self.c.print()
+                for name, desc in master["key_concepts"].items():
+                    self.c.print(Panel(
+                        f"[white]{desc}[/white]",
+                        title=f"[bold]{name}[/bold]",
+                        border_style="cyan", padding=(0, 1),
+                    ))
+
+        # Chris Voss - techniques
+        if "techniques" in master:
+            for t in master["techniques"]:
+                self.c.print()
+                body = (
+                    f"[bold yellow]法则：[/bold yellow][white]{t['rule']}[/white]\n"
+                    f"[green]为什么有效：[/green][dim]{t.get('why', '')}[/dim]\n"
+                )
+                if "example" in t:
+                    body += f"[magenta]实例：[/magenta][italic]{t['example']}[/italic]\n"
+                if "examples" in t:
+                    ex = "\n".join(f"  • {e}" for e in t["examples"])
+                    body += f"[magenta]实例：[/magenta]\n{ex}\n"
+                if "tips" in t:
+                    tps = "\n".join(f"  • {tp}" for tp in t["tips"])
+                    body += f"[cyan]要点：[/cyan]\n{tps}\n"
+                if "techniques" in t:
+                    sub = "\n".join(f"  • {s}" for s in t["techniques"])
+                    body += f"[cyan]步骤：[/cyan]\n{sub}\n"
+                if "warning" in t:
+                    body += f"[red]注意：[/red][dim]{t['warning']}[/dim]"
+                self.c.print(Panel(
+                    body.rstrip(),
+                    title=f"[bold cyan]🧠 {t['name']}[/bold cyan]",
+                    border_style="cyan", padding=(0, 1),
+                ))
+
+        # Herb Cohen - three elements + two styles
+        if "three_elements" in master:
+            for elem in master["three_elements"]:
+                self.c.print()
+                lines = []
+                if "sources" in elem:
+                    lines = elem["sources"]
+                elif "principles" in elem:
+                    lines = elem["principles"]
+                elif "rules" in elem:
+                    lines = elem["rules"]
+                body_lines = "\n".join(f"  • {l}" for l in lines)
+                body = (
+                    f"[white]{elem['core']}[/white]\n\n"
+                    f"[cyan]要点：[/cyan]\n{body_lines}"
+                )
+                if "rule" in elem:
+                    body += f"\n\n[yellow]法则：[/yellow][white]{elem['rule']}[/white]"
+                if "tip" in elem:
+                    body += f"\n[magenta]提示：[/magenta][dim]{elem['tip']}[/dim]"
+                if "example" in elem:
+                    body += f"\n[magenta]实例：[/magenta][italic dim]{elem['example']}[/italic dim]"
+                self.c.print(Panel(
+                    body, title=f"[bold]🔑 {elem['name']}[/bold]",
+                    border_style="magenta", padding=(0, 1),
+                ))
+            if "two_styles" in master:
+                self.c.print()
+                for sname, sdata in master["two_styles"].items():
+                    chars = " · ".join(sdata["characteristics"])
+                    extra = sdata.get("应对", sdata.get("适用", ""))
+                    extra_label = "应对" if "应对" in sdata else "适用"
+                    self.c.print(Panel(
+                        f"[dim]{chars}[/dim]\n\n[cyan]{extra_label}：[/cyan]{extra}",
+                        title=f"[bold]{sname}[/bold]",
+                        border_style="yellow", padding=(0, 1),
+                    ))
+
+        # Stuart Diamond - 12 strategies
+        if "twelve_strategies" in master:
+            self.c.print()
+            t = Table(title="12条核心策略", box=box.ROUNDED, border_style="blue")
+            t.add_column("#", style="cyan", width=4)
+            t.add_column("策略", style="bold yellow", width=18)
+            t.add_column("说明", style="white")
+            for i, s in enumerate(master["twelve_strategies"], 1):
+                t.add_row(str(i), s["name"], s["desc"])
+            self.c.print(t)
+
+        # Shell - five styles + six steps
+        if "styles" in master:
+            self.c.print()
+            t = Table(title="五种谈判风格", box=box.ROUNDED, border_style="blue")
+            t.add_column("风格", style="bold cyan", width=18)
+            t.add_column("象征", style="yellow", width=8)
+            t.add_column("特征", style="dim", width=22)
+            t.add_column("适合场景", style="green")
+            for s in master["styles"]:
+                t.add_row(s["name"], s["metaphor"], s["trait"], s["适合场景"])
+            self.c.print(t)
+            for s in master["styles"]:
+                self.c.print(Panel(
+                    f"[green]优势：[/green]{s['好处']}\n"
+                    f"[red]风险：[/red]{s['风险']}",
+                    title=f"[bold]{s['metaphor']} {s['name']}[/bold]",
+                    border_style="cyan", padding=(0, 1),
+                ))
+            if "shell_six_step" in master:
+                self.c.print()
+                steps = "\n".join(f"  {step}" for step in master["shell_six_step"])
+                self.c.print(Panel(
+                    steps, title="[bold]Shell 六步谈判流程[/bold]",
+                    border_style="green", padding=(0, 1),
+                ))
+
+    def _show_master_drills(self):
+        from experts import MASTER_DRILLS
+        self.c.print(Rule("[bold cyan]💡 大师实战演练[/bold cyan]", style="blue"))
+        self.c.print("  [dim]每个情景对应一位大师的招牌战术。先思考你会怎么回应，再看专家答案。[/dim]\n")
+
+        for i, drill in enumerate(MASTER_DRILLS, 1):
+            self.c.print(Panel(
+                f"[bold red]情景 {i}：[/bold red][white]{drill['scenario']}[/white]",
+                border_style="red", padding=(0, 1),
+            ))
+            self.c.print(f"  [dim]💭 请先在心中构思你会怎么回应...[/dim]")
+            self.wait_enter("按 [Enter] 查看大师答案...")
+
+            self.c.print(Panel(
+                f"[bold yellow]推荐大师：[/bold yellow][cyan]{drill['master']}[/cyan]\n"
+                f"[bold yellow]核心战术：[/bold yellow][green]{drill['best_tactic']}[/green]\n\n"
+                f"[bold]✓ 最佳回应：[/bold]\n[white]{drill['best_response']}[/white]",
+                title="[bold green]✓ 大师方案[/bold green]",
+                border_style="green", padding=(1, 2),
+            ))
+            if "wrong_responses" in drill:
+                for resp, why in drill["wrong_responses"]:
+                    self.c.print(Panel(
+                        f"[dim italic]\"{resp}\"[/dim italic]\n[red]{why}[/red]",
+                        title="[red]✗ 常见错误[/red]",
+                        border_style="red", padding=(0, 1),
+                    ))
+            self.c.print()
 
     def _show_strategy_cards(self, cards: list):
         self.c.print(Rule("[cyan]策略卡列表[/cyan]", style="dim"))

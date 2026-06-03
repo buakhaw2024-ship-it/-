@@ -12,11 +12,28 @@ export function renderResult() {
     return `${C.hint('暂无结果数据', 'yellow')}
       <div style="text-align:center;margin-top:16px"><button class="btn" data-nav="${SCREENS.MAIN}">← 返回主菜单</button></div>`;
   }
-  const { result, opp, scenarioName, tips, tells } = data;
+  const { result, opp, scenarioName, tips, tells, replay } = data;
 
   const tipsPanel = opp ? C.panel(`应对 ${opp.type} 的专项技巧`,
     tips.map((t) => C.hint(`• ${t}`)).join('') +
     `<div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>`) : '';
+
+  // Phase 4：逐回合复盘 + 转折点 + 对手情绪曲线 + 改进建议
+  let replayPanel = '';
+  if (replay && replay.perRound && replay.perRound.length) {
+    const rows = replay.perRound.map((pr) => {
+      const color = pr.score >= 70 ? 'bar-green' : pr.score >= 50 ? 'bar-yellow' : 'bar-red';
+      return `<div class="bar-wrap">
+        <div class="bar-label"><span>${pr.label} · <span style="color:var(--dim)">${pr.comment}</span></span><span>${pr.score}</span></div>
+        <div class="bar-bg"><div class="bar-fill ${color}" style="width:${pr.score}%"></div></div>
+      </div>`;
+    }).join('');
+    const turning = replay.turning ? C.hint((replay.turning.type === 'bad' ? '⚠ ' : '★ ') + replay.turning.text, replay.turning.type === 'bad' ? 'red' : 'green') : '';
+    const spark = replay.moodSeries ? C.moodSparkline(replay.moodSeries) : '';
+    replayPanel =
+      C.panel(`逐回合复盘　平均 ${replay.avgScore} 分`, turning + rows + spark) +
+      C.panel('改进建议', replay.advice.map((a) => C.hint(`• ${a}`)).join(''));
+  }
 
   return `
     <div class="header"><h1>${scenarioName} — 训练结束</h1></div>
@@ -26,6 +43,7 @@ export function renderResult() {
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
     ${C.panel('复盘分析', result.summary || '')}
+    ${replayPanel}
     ${tipsPanel}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>

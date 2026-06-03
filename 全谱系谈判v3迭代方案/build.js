@@ -53,6 +53,7 @@ const MANIFEST = [
   // 分析与持久化
   'analytics/player-data.js',
   'analytics/psych-analyzer.js',
+  'analytics/replay.js',
   // 路由
   'ui/router.js',
   // 场景（base 在前，registry 在后）

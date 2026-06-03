@@ -977,6 +977,23 @@ const C = {
     if (!entriesHtml) return '';
     return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
   },
+
+  // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
+  moodSparkline(series) {
+    if (!series || !series.length) return '';
+    const W = 280, H = 48, n = series.length;
+    const x = (i) => (n > 1 ? (i / (n - 1)) * (W - 8) + 4 : W / 2);
+    const y = (v) => (H - 4) - v * (H - 8);
+    const line = (key, color) => {
+      const pts = series.map((m, i) => `${x(i).toFixed(0)},${y(m[key] || 0).toFixed(0)}`).join(' ');
+      const dots = series.map((m, i) => `<circle cx="${x(i).toFixed(0)}" cy="${y(m[key] || 0).toFixed(0)}" r="2" fill="${color}"/>`).join('');
+      return `<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts}"/>${dots}`;
+    };
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="background:var(--bg);border:1px solid var(--border);border-radius:3px">
+      ${line('trust', 'var(--cyan)')}${line('anger', 'var(--red)')}
+    </svg>
+    <div style="font-size:10px;color:var(--dim);margin-top:2px">— 信任(青) ／ — 愤怒(红)　对手情绪随回合演化</div>`;
+  },
 };
 
 
@@ -986,6 +1003,20 @@ const C = {
 
 const KEY_PREFIX = 'gts_player_';
 
+// 行为统计累加器（Phase 4：心理画像基于真实决策序列计算）
+function freshBehaviorStats() {
+  return {
+    games: 0,
+    coopMoves: 0, totalMoves: 0,
+    riskyMoves: 0, assertiveMoves: 0,
+    fairActs: 0, fairOpps: 0,
+    trustInvested: 0, trustMax: 0,
+    impulseAvoid: 0, impulseTotal: 0,
+    wins: 0, hardGames: 0, hardWins: 0,
+    opponentsSeen: [],
+  };
+}
+
 function loadPlayer(name) {
   try {
     const saved = localStorage.getItem(KEY_PREFIX + name);
@@ -993,12 +1024,13 @@ function loadPlayer(name) {
       const p = JSON.parse(saved);
       // 向后兼容：补齐 v3 可能新增的字段
       p.sessions = p.sessions || [];
+      p.behaviorStats = { ...freshBehaviorStats(), ...(p.behaviorStats || {}) };
       return p;
     }
   } catch (e) {
     console.warn('[player-data] 读取存档失败，新建档案', e);
   }
-  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0 };
+  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats() };
 }
 
 function savePlayer(player) {
@@ -1023,62 +1055,229 @@ function addSession(player, rec) {
 
 
 /* ===== analytics/psych-analyzer.js ===== */
-// analytics/psych-analyzer.js — 8 维心理画像引擎
-// Phase 2：沿用 v2.0 算法（基于胜负 outcome 的线性累加）先跑通。
-// Phase 4：将重构为基于真实决策序列的计算（见 03-实施路线图.md F-06）。
+// analytics/psych-analyzer.js — 8 维心理画像引擎（Phase 4 重构）
+// 不再用固定 +0.08 线性累加，而是从真实决策序列累计行为统计，按比例计算 8 维向量。
+// 统计累加在 player.behaviorStats（随存档持久化）。
 
-const _profile = {
-  cooperation_rate: 0, risk: 0, fairness: 0, depth: 0,
-  emotion: 0, assert: 0, adapt: 0, trust: 0,
+const HARD_OPPONENTS = ['aggressive', 'manipulative'];
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const safe = (a, b, d = 0.5) => (b > 0 ? clamp01(a / b) : d);
+
+// 从一局的回合日志提取行为信号，累加进 player.behaviorStats
+function accumulate(player, kind, rounds, result, opp) {
+  const s = player.behaviorStats;
+  s.games += 1;
+  if (opp && !s.opponentsSeen.includes(opp.id)) s.opponentsSeen.push(opp.id);
+  if (result.outcome === 'win') s.wins += 1;
+  if (opp && HARD_OPPONENTS.includes(opp.id)) {
+    s.hardGames += 1;
+    if (result.outcome === 'win') s.hardWins += 1;
+  }
+  if (!rounds || !rounds.length) return player;
+
+  if (kind === 'prisoners') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      if (r.player === 'coop') { s.coopMoves += 1; s.impulseAvoid += 1; }
+      else { s.riskyMoves += 1; s.assertiveMoves += 1; }
+    });
+  } else if (kind === 'trust') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      s.trustInvested += r.invested; s.trustMax += 10;
+      if (r.invested >= 5) s.coopMoves += 1;
+      if (r.invested >= 10) s.riskyMoves += 1;
+      if (r.invested === 0) s.assertiveMoves += 1;
+      if (r.myNet >= 0) s.impulseAvoid += 1;
+    });
+  } else if (kind === 'publicgoods') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      s.trustInvested += r.my; s.trustMax += 10;
+      if (r.my >= 5) { s.coopMoves += 1; s.impulseAvoid += 1; }
+      if (r.my <= 1) s.assertiveMoves += 1;
+      if (r.my === 0) s.riskyMoves += 1;
+    });
+  } else if (kind === 'bargaining') {
+    rounds.forEach((r, i) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      const prev = i > 0 ? rounds[i - 1].my : r.my;
+      if (r.my - prev <= 3) s.impulseAvoid += 1;
+      if (r.my < 42) s.assertiveMoves += 1;
+    });
+  } else if (kind === 'ultimatum') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.fairOpps += 1;
+      if (r.accepted && r.myOffer >= 40 && r.myOffer <= 62) s.fairActs += 1;
+      else if (r.accepted) s.fairActs += 0.5;
+      if (r.myOffer > 62) s.assertiveMoves += 1;
+    });
+  } else if (kind === 'crisis' || kind === 'coalition') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      if (r.ps > 0) s.impulseAvoid += 1;
+    });
+  }
+  return player;
+}
+
+// 由行为统计计算 8 维心理向量
+function computeProfile(player) {
+  const s = (player && player.behaviorStats) || {};
+  const winRate = safe(s.wins, s.games);
+  const hardWinRate = safe(s.hardWins, s.hardGames, 0.4);
+  return {
+    cooperation_rate: safe(s.coopMoves, s.totalMoves),
+    risk: safe(s.riskyMoves, s.totalMoves),
+    fairness: safe(s.fairActs, s.fairOpps),
+    depth: clamp01(0.3 + 0.3 * winRate + 0.4 * hardWinRate),
+    emotion: safe(s.impulseAvoid, s.impulseTotal),
+    assert: safe(s.assertiveMoves, s.totalMoves),
+    adapt: clamp01(0.6 * Math.min(1, (s.opponentsSeen ? s.opponentsSeen.length : 0) / 6) + 0.4 * Math.min(1, (s.games || 0) / 8)),
+    trust: safe(s.trustInvested, s.trustMax),
+  };
+}
+
+function getProfileType(p) {
+  const profiles = [
+    { name:'战略家', cond:() => p.depth > 0.6 && p.assert > 0.5, desc:'冷静理智，善于全局规划和长远布局',
+      advice:['适当增加情感投入以建立更强的谈判关系','尝试更多合作性策略','注意不要过于机械化'] },
+    { name:'调解者', cond:() => p.cooperation_rate > 0.7 && p.fairness > 0.6, desc:'天生的关系维护者，擅长化解冲突',
+      advice:['学会在合适时机坚守底线','避免为维持和谐而过度妥协','增强BATNA意识'] },
+    { name:'竞争者', cond:() => p.assert > 0.6 && p.risk > 0.5, desc:'目标明确，勇于争取最大利益',
+      advice:['关注对方利益，寻找双赢机会','长期关系比单次收益更有价值','练习主动倾听'] },
+    { name:'外交家', cond:() => p.adapt > 0.6 && p.emotion > 0.6, desc:'灵活适应，善于在不同情境切换策略',
+      advice:['在核心利益上保持一致性','增强策略深度分析能力','建立清晰的底线意识'] },
+    { name:'分析师', cond:() => p.depth > 0.5 && p.risk < 0.4, desc:'谨慎周密，偏好有据可查的决策路径',
+      advice:['适当增加行动果断性','在信息不完整时学会做出判断','尝试更多创新性解决方案'] },
+    { name:'实用主义者', cond:() => true, desc:'务实灵活，根据情境选择最优策略',
+      advice:['深化某一领域的专项谈判技能','建立系统性的谈判框架','记录每次谈判的经验教训'] },
+  ];
+  return profiles.find((pp) => pp.cond()) || profiles[profiles.length - 1];
+}
+
+function hasEnoughData(totalSessions) {
+  return totalSessions >= 2;
+}
+
+// 兼容旧入口名（recorder 调用）
+const PsychAnalyzer = { accumulate, computeProfile, getProfileType, hasEnoughData };
+
+
+/* ===== analytics/replay.js ===== */
+// analytics/replay.js — 逐回合复盘评分（Phase 4）
+// 输入：场景 kind + 回合日志 + 结果 + 对手；输出：逐回合 0-100 评分 + 转折点 + 改进建议 + 对手情绪序列。
+
+
+const clampScore = (x, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, x));
+
+function scorePrisoners(rounds) {
+  return rounds.map((r) => {
+    let score, comment;
+    if (r.player === 'coop' && r.opp === 'coop') { score = 85; comment = '互利合作，稳健可持续'; }
+    else if (r.player === 'defect' && r.opp === 'coop') { score = 66; comment = '占得便宜，但易招致后续报复'; }
+    else if (r.player === 'coop' && r.opp === 'defect') { score = 40; comment = '被对方利用，吃亏'; }
+    else { score = 32; comment = '双输僵局，零和内耗'; }
+    return { label: `第${r.round}轮`, score, comment, mood: r.mood };
+  });
+}
+
+function scoreTrust(rounds) {
+  return rounds.map((r) => {
+    const score = clampScore(50 + r.myNet * 4);
+    const comment = r.myNet > 3 ? '信任获得正回报' : r.myNet >= 0 ? '基本持平' : '信任被辜负，受损';
+    return { label: `第${r.round}轮(投${r.invested})`, score, comment, mood: r.mood };
+  });
+}
+
+function scorePublicGoods(rounds) {
+  return rounds.map((r) => {
+    const gain = r.share - r.my;
+    const score = clampScore(50 + gain * 6);
+    const comment = r.my >= 5 && r.opp >= 5 ? '集体共赢' : r.my === 0 ? '搭便车，短期获利但侵蚀信任' : '谨慎参与';
+    return { label: `第${r.round}轮(贡${r.my})`, score, comment, mood: r.mood };
+  });
+}
+
+function scoreBargaining(rounds, result) {
+  const per = rounds.map((r, i) => {
+    const prev = i > 0 ? rounds[i - 1].my : r.my;
+    const conc = r.my - prev;
+    const score = clampScore(88 - conc * 3);
+    const comment = conc <= 3 ? '小步施压，纪律良好' : conc >= 12 ? '让步过快，丢失筹码' : '让步适中';
+    return { label: `第${r.round}轮(出${r.my})`, score, comment, mood: r.mood };
+  });
+  // 追加成交评分
+  const price = 100 - result.playerScore;
+  per.push({
+    label: `成交(${price}元)`,
+    score: clampScore(price <= 55 ? 92 : price <= 65 ? 70 : 45),
+    comment: price <= 55 ? '远低于真实价值，出色' : price <= 65 ? '接近真实价值' : '偏高，议价不足',
+  });
+  return per;
+}
+
+function scoreUltimatum(rounds) {
+  return rounds.map((r) => {
+    let score, comment;
+    if (!r.accepted) { score = 30; comment = '提案被否，双方归零'; }
+    else if (r.myOffer >= 40 && r.myOffer <= 62) { score = 85; comment = '分配合理，顺利达成'; }
+    else if (r.myOffer > 62) { score = 60; comment = '自留偏多，侥幸通过'; }
+    else { score = 70; comment = '偏让利，关系友好'; }
+    return { label: `第${r.round}轮`, score, comment };
+  });
+}
+
+function scoreStaged(rounds) {
+  return rounds.map((r, i) => {
+    const max = r.maxPs || 20;
+    const score = clampScore(Math.round((r.ps / max) * 100));
+    const comment = r.ps >= max * 0.8 ? '上佳选择' : r.ps > 0 ? '有效推进' : '适得其反，激化局面';
+    return { label: r.stage || `第${i + 1}阶段`, score, comment };
+  });
+}
+
+const SCORERS = {
+  prisoners: scorePrisoners,
+  trust: scoreTrust,
+  publicgoods: scorePublicGoods,
+  bargaining: scoreBargaining,
+  ultimatum: scoreUltimatum,
+  crisis: scoreStaged,
+  coalition: scoreStaged,
 };
 
-const PsychAnalyzer = {
-  getProfile() {
-    return { ..._profile };
-  },
+function buildReplay(kind, rounds, opp, result) {
+  const scorer = SCORERS[kind];
+  if (!scorer || !rounds || !rounds.length) {
+    return { perRound: [], avgScore: null, turning: null, advice: opp ? getOpponentTips(opp.id).slice(0, 2) : [], moodSeries: null };
+  }
+  const perRound = scorer(rounds, result);
+  const avgScore = Math.round(perRound.reduce((s, r) => s + r.score, 0) / perRound.length);
 
-  // 每局结束根据结果与对手类型演化画像（v2.0 updateAnalyzer 逻辑）
-  update(outcome, opp) {
-    const p = _profile;
-    const delta = 0.08;
-    if (outcome === 'coop' || outcome === 'win') {
-      p.cooperation_rate = Math.min(1, (p.cooperation_rate || 0.5) + delta);
-      p.depth = Math.min(1, (p.depth || 0.5) + delta * 0.5);
-    } else if (outcome === 'lose') {
-      p.risk = Math.max(0, (p.risk || 0.5) - delta);
-    }
-    p.adapt = Math.min(1, (p.adapt || 0.5) + delta * 0.3);
-    if (opp) {
-      if (opp.id === 'aggressive') p.assert = Math.min(1, (p.assert || 0.5) + delta * 0.5);
-      if (opp.id === 'emotional') p.emotion = Math.min(1, (p.emotion || 0.5) + delta * 0.5);
-    }
-  },
+  // 转折点：最低分回合（若整体优秀则取最佳一手）
+  let turning = null;
+  if (perRound.length) {
+    const worst = perRound.reduce((a, b) => (b.score < a.score ? b : a));
+    const best = perRound.reduce((a, b) => (b.score > a.score ? b : a));
+    turning = worst.score < 55
+      ? { type: 'bad', text: `${worst.label}是本局关键失误（${worst.score}分）：${worst.comment}` }
+      : { type: 'good', text: `${best.label}是本局最佳一手（${best.score}分）：${best.comment}` };
+  }
 
-  // 根据画像推断心理类型（v2.0 getProfileType 逻辑）
-  getProfileType() {
-    const p = _profile;
-    const profiles = [
-      { name:'战略家', cond:() => p.depth > 0.6 && p.assert > 0.5, desc:'冷静理智，善于全局规划和长远布局',
-        advice:['适当增加情感投入以建立更强的谈判关系','尝试更多合作性策略','注意不要过于机械化'] },
-      { name:'调解者', cond:() => p.cooperation_rate > 0.7 && p.fairness > 0.6, desc:'天生的关系维护者，擅长化解冲突',
-        advice:['学会在合适时机坚守底线','避免为维持和谐而过度妥协','增强BATNA意识'] },
-      { name:'竞争者', cond:() => p.assert > 0.7 && p.risk > 0.5, desc:'目标明确，勇于争取最大利益',
-        advice:['关注对方利益，寻找双赢机会','长期关系比单次收益更有价值','练习主动倾听'] },
-      { name:'外交家', cond:() => p.adapt > 0.6 && p.emotion > 0.6, desc:'灵活适应，善于在不同情境切换策略',
-        advice:['在核心利益上保持一致性','增强策略深度分析能力','建立清晰的底线意识'] },
-      { name:'分析师', cond:() => p.depth > 0.5 && p.risk < 0.4, desc:'谨慎周密，偏好有据可查的决策路径',
-        advice:['适当增加行动果断性','在信息不完整时学会做出判断','尝试更多创新性解决方案'] },
-      { name:'实用主义者', cond:() => true, desc:'务实灵活，根据情境选择最优策略',
-        advice:['深化某一领域的专项谈判技能','建立系统性的谈判框架','记录每次谈判的经验教训'] },
-    ];
-    return profiles.find((pp) => pp.cond()) || profiles[profiles.length - 1];
-  },
+  // 对手情绪序列（仅决策类场景携带 mood）
+  const moods = perRound.filter((r) => r.mood).map((r) => r.mood);
+  const moodSeries = moods.length ? moods : null;
 
-  // 是否已有足够数据出报告（至少 2 局）—— 由调用方传入局数
-  hasEnoughData(totalSessions) {
-    return totalSessions >= 2;
-  },
-};
+  // 改进建议：表现 + 对手专项
+  const advice = [];
+  if (avgScore >= 75) advice.push('整体决策质量高，可尝试更高难度对手或更激进的目标。');
+  else if (avgScore >= 55) advice.push('决策稳健但有提升空间，关注转折点回合的更优解。');
+  else advice.push('多个回合失分明显，建议复盘转折点，调整对该类对手的策略。');
+  if (opp) advice.push(...getOpponentTips(opp.id).slice(0, 2));
+
+  return { perRound, avgScore, turning, advice, moodSeries };
+}
 
 
 /* ===== ui/router.js ===== */
@@ -1131,19 +1330,41 @@ class BaseScenario {
   constructor(opp) {
     this.opp = opp;
     this.log = [];
+    this.peeksLeft = 2;   // Phase 4：消耗式"识破对手"次数
+    this._peekSnap = null;
   }
 
-  // 发起一次渲染：把 HTML 交给 game-view 落地
   emitRender(html) {
     EventBus.emit(EVENTS.GAME_RENDER, { html });
   }
 
-  // 结束对局：result = { playerScore, oppScore, outcome, summary(html) }
   finish(result) {
     EventBus.emit(EVENTS.GAME_END, { result });
   }
 
-  // 子类必须实现
+  // 破绽提示控件：按钮 + （已识破时）对手情绪/行为快照
+  peekControls() {
+    const label = this.peeksLeft > 0 ? `🔍 识破对手（剩 ${this.peeksLeft} 次）` : '🔍 识破次数已用完';
+    let html = C.actionBtn('peek', '', label, 'btn-purple');
+    if (this._peekSnap) {
+      const m = this._peekSnap.mood;
+      const pct = (x) => Math.round(x * 100);
+      const tells = (PERSONALITY_TELLS[this.opp.id] || []).join(' / ');
+      html += C.hint(
+        `<b>读心快照：</b>信任 ${pct(m.trust)}% · 愤怒 ${pct(m.anger)}% · 耐心 ${pct(m.patience)}% · 自信 ${pct(m.confidence)}%<br><span style="color:var(--dim)">行为信号：${tells}</span>`,
+        'purple');
+    }
+    return html;
+  }
+
+  handlePeek() {
+    if (this.peeksLeft > 0 && !this._peekSnap) {
+      this.peeksLeft -= 1;
+      this._peekSnap = OpponentAI.snapshot(this.opp.id);
+    }
+    this._render();
+  }
+
   start() { throw new Error('start() not implemented'); }
   handleAction(_action) { throw new Error('handleAction() not implemented'); }
 }
@@ -1187,22 +1408,25 @@ class PrisonersDilemma extends BaseScenario {
       ${C.hint(`<b>场景：</b>你和 ${opp.name} 同时被捕。双方都沉默（合作）各判3年；你背叛对方沉默则你自由对方5年；双方都背叛各1年。<br><b>对手档案：</b>${opp.type} — ${opp.desc}`)}
       ${C.panel('选择你的策略',
         C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
-        C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）'))}
+        C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
+        this.peekControls())}
       ${C.logBox('对局记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type !== 'choice') return;
+    this._peekSnap = null;
     const prev = this.log.length ? this.log[this.log.length - 1].player : null;
     // 对手基于"此前回合"的记忆/情绪做决策（同时出招，看不到本轮）
-    const { move: oppChoice, reason } = OpponentAI.decide(this.opp.id, {
+    const { move: oppChoice, reason, mood } = OpponentAI.decide(this.opp.id, {
       kind: 'pd', round: this.round, playerLastMove: prev,
     });
     const [ps, os] = this._scores(value, oppChoice);
     this.playerScore += ps;
     this.oppScore += os;
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason });
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood });
     // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
     OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
@@ -1215,6 +1439,7 @@ class PrisonersDilemma extends BaseScenario {
     const coop = this.log.filter((l) => l.player === 'coop').length;
     const lastReason = this.log.length ? this.log[this.log.length - 1].reason : '';
     this.finish({
+      kind: 'prisoners', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('总轮数', `${this.rounds} 轮`) +
@@ -1333,6 +1558,7 @@ class UltimatumGame extends BaseScenario {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const acc = Math.round(this.log.filter((l) => l.accepted).length / this.log.length * 100);
     this.finish({
+      kind: 'ultimatum', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('接受率', `${acc}%`) +
@@ -1375,23 +1601,26 @@ class TrustGame extends BaseScenario {
         C.actionBtn('invest', '10', '<b>[全力信任]</b> 投入 10枚 → 对方收到 30枚') +
         C.actionBtn('invest', '7', '<b>[高度信任]</b> 投入 7枚 → 对方收到 21枚') +
         C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
-        C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码'))}
+        C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码') +
+        this.peekControls())}
       ${C.logBox('信任记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type !== 'invest') return;
+    this._peekSnap = null;
     const amount = parseInt(value, 10);
     const tripled = amount * 3;
     // 先观察玩家的信任姿态（影响情绪/记忆，低投入会触发操纵者"被识破"计分）
     OpponentAI.observe(this.opp.id, { coop: amount >= 5, investFraction: amount / 10, firm: amount <= 2, exposes: amount <= 2 });
-    const { move: returned, reason } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
+    const { move: returned, reason, mood } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
     const kept = 10 - amount;
     const myNet = kept + returned - 10;
     this.playerScore += kept + returned;
     this.oppScore += tripled - returned;
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason });
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -1402,6 +1631,7 @@ class TrustGame extends BaseScenario {
     const avgInvest = Math.round(this.log.reduce((s, l) => s + l.invested, 0) / this.log.length);
     const avgReturn = Math.round(this.log.reduce((s, l) => s + (l.returned / (l.invested * 3 || 1)), 0) / this.log.length * 100);
     this.finish({
+      kind: 'trust', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('平均投入', `${avgInvest} 枚`) +
@@ -1453,14 +1683,17 @@ class BargainingGame extends BaseScenario {
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
         C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
-        C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green'))}
+        C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green') +
+        this.peekControls())}
       ${C.logBox('谈判记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type === 'accept') { this._deal(this.oppOffer); return; }
     if (type !== 'offer') return;
+    this._peekSnap = null;
     const offer = parseInt(value, 10);
     this.myOffer = offer;
 
@@ -1469,16 +1702,17 @@ class BargainingGame extends BaseScenario {
     const firm = offer < this.trueVal * 0.7;
     OpponentAI.observe(this.opp.id, { aggression: firm ? 0.7 : 0.3, firm, concession: offer - (this.log.length ? this.log[this.log.length - 1].my : this.myAnchor) });
 
-    const { move: newOpp, reason } = OpponentAI.decide(this.opp.id, {
+    const { move: newOpp, reason, mood } = OpponentAI.decide(this.opp.id, {
       kind: 'bargain-counter', currentOppOffer: this.oppOffer, playerOffer: offer, trueVal: this.trueVal,
     });
     this.lastReason = reason;
 
     if (newOpp <= offer || newOpp <= this.trueVal) {
+      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
       this._deal(Math.round((offer + this.oppOffer) / 2));
       return;
     }
-    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason });
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
     this.oppOffer = newOpp;
     this.round += 1;
 
@@ -1495,6 +1729,7 @@ class BargainingGame extends BaseScenario {
     this.oppScore = Math.max(0, price - 40);
     const outcome = price <= 55 ? 'win' : price <= 65 ? 'draw' : 'lose';
     this.finish({
+      kind: 'bargaining', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('成交价格', `${price} 元`) +
@@ -1581,7 +1816,8 @@ class CrisisNegotiation extends BaseScenario {
     const opt = s.options[parseInt(value, 10)];
     this.playerScore += opt.ps;
     this.oppScore += opt.os;
-    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps });
+    const maxPs = Math.max(...s.options.map((o) => o.ps));
+    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
@@ -1597,6 +1833,7 @@ class CrisisNegotiation extends BaseScenario {
   _finish() {
     const outcome = this.playerScore >= 50 ? 'win' : this.playerScore >= 20 ? 'draw' : 'lose';
     this.finish({
+      kind: 'crisis', rounds: this.log,
       playerScore: this.playerScore,
       oppScore: Math.max(0, 100 - this.playerScore),
       outcome,
@@ -1643,22 +1880,25 @@ class PublicGoodsGame extends BaseScenario {
         C.actionBtn('contribute', '10', '<b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益') +
         C.actionBtn('contribute', '7', '<b>[高度合作]</b> 贡献 7枚 — 偏向集体') +
         C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
-        C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益'))}
+        C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益') +
+        this.peekControls())}
       ${C.logBox('贡献记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type !== 'contribute') return;
+    this._peekSnap = null;
     const amount = parseInt(value, 10);
     const prev = this.log.length ? this.log[this.log.length - 1].my : null;
     OpponentAI.observe(this.opp.id, { coop: amount >= 5, aggression: amount <= 1 ? 0.7 : 0.2, firm: amount <= 1 });
-    const { move: oppContrib, reason } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
+    const { move: oppContrib, reason, mood } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
     const pool = (amount + oppContrib) * this.multiplier;
     const share = Math.round(pool / 2);
     this.playerScore = this.playerScore - amount + share;
     this.oppScore = this.oppScore - oppContrib + share;
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason });
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -1668,6 +1908,7 @@ class PublicGoodsGame extends BaseScenario {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore === this.oppScore ? 'coop' : 'lose';
     const avg = Math.round(this.log.reduce((s, l) => s + l.my, 0) / this.log.length);
     this.finish({
+      kind: 'publicgoods', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('平均贡献量', `${avg} 枚`) +
@@ -1752,7 +1993,8 @@ class CoalitionGame extends BaseScenario {
     this.playerScore += opt.ps;
     this.allies += opt.allies || 0;
     this.oppScore += (5 - Math.floor(opt.ps / 5));
-    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback });
+    const maxPs = Math.max(...s.options.map((o) => o.ps));
+    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
@@ -1769,6 +2011,7 @@ class CoalitionGame extends BaseScenario {
   _finish() {
     const outcome = this.playerScore > 45 && this.allies >= 2 ? 'win' : this.playerScore > 25 ? 'draw' : 'lose';
     this.finish({
+      kind: 'coalition', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('总积分', String(this.playerScore)) +
@@ -1839,8 +2082,8 @@ function initRunner() {
 
 
 /* ===== analytics/recorder.js ===== */
-// analytics/recorder.js — 对局记录器
-// 监听 game:end，写入玩家档案 + 更新心理画像 + 组装结果供结果屏读取。
+// analytics/recorder.js — 对局记录器（Phase 4 增强）
+// 监听 game:end：累计行为统计 + 写档案 + 构建逐回合复盘 + 组装结果供结果屏读取。
 // bootstrap 中须在 runner 之前 init，确保"先记录、后导航"。
 
 
@@ -1851,8 +2094,12 @@ function initRecorder() {
     const scenarioKey = Store.get('scenarioKey');
     const meta = SCENARIO_META[scenarioKey];
     const scenarioName = meta ? meta.name : scenarioKey;
+    const kind = result.kind || scenarioKey;
+    const rounds = result.rounds || [];
 
     if (player) {
+      // 先累计行为统计（供心理画像），再写入对局记录（addSession 会持久化整份档案）
+      accumulate(player, kind, rounds, result, opp);
       addSession(player, {
         time: new Date().toLocaleString('zh-CN'),
         scenario: scenarioName,
@@ -1864,15 +2111,15 @@ function initRecorder() {
       Store.set('player', player); // 广播，刷新主菜单等
     }
 
-    PsychAnalyzer.update(result.outcome, opp);
+    const replay = buildReplay(kind, rounds, opp, result);
 
-    // 组装结果屏所需数据
     Store.set('lastResult', {
       result,
       opp,
       scenarioName,
       tips: opp ? getOpponentTips(opp.id) : [],
       tells: opp ? (PERSONALITY_TELLS[opp.id] || []) : [],
+      replay,
     });
   });
 }
@@ -2090,11 +2337,28 @@ function renderResult() {
     return `${C.hint('暂无结果数据', 'yellow')}
       <div style="text-align:center;margin-top:16px"><button class="btn" data-nav="${SCREENS.MAIN}">← 返回主菜单</button></div>`;
   }
-  const { result, opp, scenarioName, tips, tells } = data;
+  const { result, opp, scenarioName, tips, tells, replay } = data;
 
   const tipsPanel = opp ? C.panel(`应对 ${opp.type} 的专项技巧`,
     tips.map((t) => C.hint(`• ${t}`)).join('') +
     `<div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>`) : '';
+
+  // Phase 4：逐回合复盘 + 转折点 + 对手情绪曲线 + 改进建议
+  let replayPanel = '';
+  if (replay && replay.perRound && replay.perRound.length) {
+    const rows = replay.perRound.map((pr) => {
+      const color = pr.score >= 70 ? 'bar-green' : pr.score >= 50 ? 'bar-yellow' : 'bar-red';
+      return `<div class="bar-wrap">
+        <div class="bar-label"><span>${pr.label} · <span style="color:var(--dim)">${pr.comment}</span></span><span>${pr.score}</span></div>
+        <div class="bar-bg"><div class="bar-fill ${color}" style="width:${pr.score}%"></div></div>
+      </div>`;
+    }).join('');
+    const turning = replay.turning ? C.hint((replay.turning.type === 'bad' ? '⚠ ' : '★ ') + replay.turning.text, replay.turning.type === 'bad' ? 'red' : 'green') : '';
+    const spark = replay.moodSeries ? C.moodSparkline(replay.moodSeries) : '';
+    replayPanel =
+      C.panel(`逐回合复盘　平均 ${replay.avgScore} 分`, turning + rows + spark) +
+      C.panel('改进建议', replay.advice.map((a) => C.hint(`• ${a}`)).join(''));
+  }
 
   return `
     <div class="header"><h1>${scenarioName} — 训练结束</h1></div>
@@ -2104,6 +2368,7 @@ function renderResult() {
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
     ${C.panel('复盘分析', result.summary || '')}
+    ${replayPanel}
     ${tipsPanel}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
@@ -2230,7 +2495,7 @@ renderStrategyLib.afterRender = function () {
 
 
 /* ===== ui/screens/psychology.js ===== */
-// ui/screens/psychology.js — 心理档案分析屏（8 维向量 + 类型 + 建议）
+// ui/screens/psychology.js — 心理档案分析屏（Phase 4：基于真实决策序列）
 
 
 function renderPsychology() {
@@ -2243,14 +2508,13 @@ function renderPsychology() {
       <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
     </div>`;
 
-  if (!PsychAnalyzer.hasEnoughData(total)) {
+  if (!hasEnoughData(total)) {
     return `${head}${C.hint('您还没有足够的训练数据。请先完成至少 2 场博弈训练，心理档案将更加准确。', 'yellow')}`;
   }
 
-  const profile = PsychAnalyzer.getProfile();
-  const bars = PSYCH_DIMENSIONS.map((d) =>
-    C.bar(d.label, profile[d.key] || 0.5, d.color)).join('');
-  const pt = PsychAnalyzer.getProfileType();
+  const profile = computeProfile(player);
+  const bars = PSYCH_DIMENSIONS.map((d) => C.bar(d.label, profile[d.key] || 0, d.color)).join('');
+  const pt = getProfileType(profile);
 
   return `${head}
     ${C.panel('博弈心理类型', `
@@ -2258,8 +2522,9 @@ function renderPsychology() {
         <div style="font-size:24px;color:var(--cyan);font-weight:bold">${pt.name}</div>
         <div style="color:var(--dim);font-size:12px;margin-top:6px">${pt.desc}</div>
       </div>`)}
-    ${C.panel('8维心理向量分析', bars)}
+    ${C.panel('8维心理向量分析（基于真实决策序列）', bars)}
     ${C.panel('成长建议', pt.advice.map((a) => C.hint(`• ${a}`)).join(''))}
+    ${C.hint(`样本：${player.behaviorStats.games} 局 / ${player.behaviorStats.totalMoves} 次决策`, 'cyan')}
   `;
 }
 

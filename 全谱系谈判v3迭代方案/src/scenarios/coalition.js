@@ -73,7 +73,8 @@ export class CoalitionGame extends BaseScenario {
     this.playerScore += opt.ps;
     this.allies += opt.allies || 0;
     this.oppScore += (5 - Math.floor(opt.ps / 5));
-    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback });
+    const maxPs = Math.max(...s.options.map((o) => o.ps));
+    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
@@ -90,6 +91,7 @@ export class CoalitionGame extends BaseScenario {
   _finish() {
     const outcome = this.playerScore > 45 && this.allies >= 2 ? 'win' : this.playerScore > 25 ? 'draw' : 'lose';
     this.finish({
+      kind: 'coalition', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('总积分', String(this.playerScore)) +

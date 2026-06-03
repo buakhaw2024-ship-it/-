@@ -74,7 +74,8 @@ export class CrisisNegotiation extends BaseScenario {
     const opt = s.options[parseInt(value, 10)];
     this.playerScore += opt.ps;
     this.oppScore += opt.os;
-    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps });
+    const maxPs = Math.max(...s.options.map((o) => o.ps));
+    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
@@ -90,6 +91,7 @@ export class CrisisNegotiation extends BaseScenario {
   _finish() {
     const outcome = this.playerScore >= 50 ? 'win' : this.playerScore >= 20 ? 'draw' : 'lose';
     this.finish({
+      kind: 'crisis', rounds: this.log,
       playerScore: this.playerScore,
       oppScore: Math.max(0, 100 - this.playerScore),
       outcome,

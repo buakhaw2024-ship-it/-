@@ -34,22 +34,25 @@ export class PublicGoodsGame extends BaseScenario {
         C.actionBtn('contribute', '10', '<b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益') +
         C.actionBtn('contribute', '7', '<b>[高度合作]</b> 贡献 7枚 — 偏向集体') +
         C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
-        C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益'))}
+        C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益') +
+        this.peekControls())}
       ${C.logBox('贡献记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type !== 'contribute') return;
+    this._peekSnap = null;
     const amount = parseInt(value, 10);
     const prev = this.log.length ? this.log[this.log.length - 1].my : null;
     OpponentAI.observe(this.opp.id, { coop: amount >= 5, aggression: amount <= 1 ? 0.7 : 0.2, firm: amount <= 1 });
-    const { move: oppContrib, reason } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
+    const { move: oppContrib, reason, mood } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
     const pool = (amount + oppContrib) * this.multiplier;
     const share = Math.round(pool / 2);
     this.playerScore = this.playerScore - amount + share;
     this.oppScore = this.oppScore - oppContrib + share;
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason });
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -59,6 +62,7 @@ export class PublicGoodsGame extends BaseScenario {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore === this.oppScore ? 'coop' : 'lose';
     const avg = Math.round(this.log.reduce((s, l) => s + l.my, 0) / this.log.length);
     this.finish({
+      kind: 'publicgoods', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('平均贡献量', `${avg} 枚`) +

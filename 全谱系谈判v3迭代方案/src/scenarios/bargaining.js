@@ -42,14 +42,17 @@ export class BargainingGame extends BaseScenario {
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
         C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
-        C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green'))}
+        C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green') +
+        this.peekControls())}
       ${C.logBox('谈判记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type === 'accept') { this._deal(this.oppOffer); return; }
     if (type !== 'offer') return;
+    this._peekSnap = null;
     const offer = parseInt(value, 10);
     this.myOffer = offer;
 
@@ -58,16 +61,17 @@ export class BargainingGame extends BaseScenario {
     const firm = offer < this.trueVal * 0.7;
     OpponentAI.observe(this.opp.id, { aggression: firm ? 0.7 : 0.3, firm, concession: offer - (this.log.length ? this.log[this.log.length - 1].my : this.myAnchor) });
 
-    const { move: newOpp, reason } = OpponentAI.decide(this.opp.id, {
+    const { move: newOpp, reason, mood } = OpponentAI.decide(this.opp.id, {
       kind: 'bargain-counter', currentOppOffer: this.oppOffer, playerOffer: offer, trueVal: this.trueVal,
     });
     this.lastReason = reason;
 
     if (newOpp <= offer || newOpp <= this.trueVal) {
+      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
       this._deal(Math.round((offer + this.oppOffer) / 2));
       return;
     }
-    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason });
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
     this.oppOffer = newOpp;
     this.round += 1;
 
@@ -84,6 +88,7 @@ export class BargainingGame extends BaseScenario {
     this.oppScore = Math.max(0, price - 40);
     const outcome = price <= 55 ? 'win' : price <= 65 ? 'draw' : 'lose';
     this.finish({
+      kind: 'bargaining', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('成交价格', `${price} 元`) +

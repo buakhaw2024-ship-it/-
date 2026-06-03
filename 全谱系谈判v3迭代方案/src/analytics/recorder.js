@@ -1,12 +1,13 @@
-// analytics/recorder.js — 对局记录器
-// 监听 game:end，写入玩家档案 + 更新心理画像 + 组装结果供结果屏读取。
+// analytics/recorder.js — 对局记录器（Phase 4 增强）
+// 监听 game:end：累计行为统计 + 写档案 + 构建逐回合复盘 + 组装结果供结果屏读取。
 // bootstrap 中须在 runner 之前 init，确保"先记录、后导航"。
 
 import { EventBus } from '../core/event-bus.js';
 import { EVENTS } from '../core/events.js';
 import { Store } from '../core/store.js';
 import { addSession } from './player-data.js';
-import { PsychAnalyzer } from './psych-analyzer.js';
+import { accumulate } from './psych-analyzer.js';
+import { buildReplay } from './replay.js';
 import { getOpponentTips, PERSONALITY_TELLS } from '../data/opponents.js';
 import { SCENARIO_META } from '../data/scenarios.meta.js';
 
@@ -17,8 +18,12 @@ export function initRecorder() {
     const scenarioKey = Store.get('scenarioKey');
     const meta = SCENARIO_META[scenarioKey];
     const scenarioName = meta ? meta.name : scenarioKey;
+    const kind = result.kind || scenarioKey;
+    const rounds = result.rounds || [];
 
     if (player) {
+      // 先累计行为统计（供心理画像），再写入对局记录（addSession 会持久化整份档案）
+      accumulate(player, kind, rounds, result, opp);
       addSession(player, {
         time: new Date().toLocaleString('zh-CN'),
         scenario: scenarioName,
@@ -30,15 +35,15 @@ export function initRecorder() {
       Store.set('player', player); // 广播，刷新主菜单等
     }
 
-    PsychAnalyzer.update(result.outcome, opp);
+    const replay = buildReplay(kind, rounds, opp, result);
 
-    // 组装结果屏所需数据
     Store.set('lastResult', {
       result,
       opp,
       scenarioName,
       tips: opp ? getOpponentTips(opp.id) : [],
       tells: opp ? (PERSONALITY_TELLS[opp.id] || []) : [],
+      replay,
     });
   });
 }

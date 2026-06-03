@@ -33,23 +33,26 @@ export class TrustGame extends BaseScenario {
         C.actionBtn('invest', '10', '<b>[全力信任]</b> 投入 10枚 → 对方收到 30枚') +
         C.actionBtn('invest', '7', '<b>[高度信任]</b> 投入 7枚 → 对方收到 21枚') +
         C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
-        C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码'))}
+        C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码') +
+        this.peekControls())}
       ${C.logBox('信任记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type !== 'invest') return;
+    this._peekSnap = null;
     const amount = parseInt(value, 10);
     const tripled = amount * 3;
     // 先观察玩家的信任姿态（影响情绪/记忆，低投入会触发操纵者"被识破"计分）
     OpponentAI.observe(this.opp.id, { coop: amount >= 5, investFraction: amount / 10, firm: amount <= 2, exposes: amount <= 2 });
-    const { move: returned, reason } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
+    const { move: returned, reason, mood } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
     const kept = 10 - amount;
     const myNet = kept + returned - 10;
     this.playerScore += kept + returned;
     this.oppScore += tripled - returned;
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason });
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -60,6 +63,7 @@ export class TrustGame extends BaseScenario {
     const avgInvest = Math.round(this.log.reduce((s, l) => s + l.invested, 0) / this.log.length);
     const avgReturn = Math.round(this.log.reduce((s, l) => s + (l.returned / (l.invested * 3 || 1)), 0) / this.log.length * 100);
     this.finish({
+      kind: 'trust', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('平均投入', `${avgInvest} 枚`) +

@@ -3,6 +3,20 @@
 
 const KEY_PREFIX = 'gts_player_';
 
+// 行为统计累加器（Phase 4：心理画像基于真实决策序列计算）
+export function freshBehaviorStats() {
+  return {
+    games: 0,
+    coopMoves: 0, totalMoves: 0,
+    riskyMoves: 0, assertiveMoves: 0,
+    fairActs: 0, fairOpps: 0,
+    trustInvested: 0, trustMax: 0,
+    impulseAvoid: 0, impulseTotal: 0,
+    wins: 0, hardGames: 0, hardWins: 0,
+    opponentsSeen: [],
+  };
+}
+
 export function loadPlayer(name) {
   try {
     const saved = localStorage.getItem(KEY_PREFIX + name);
@@ -10,12 +24,13 @@ export function loadPlayer(name) {
       const p = JSON.parse(saved);
       // 向后兼容：补齐 v3 可能新增的字段
       p.sessions = p.sessions || [];
+      p.behaviorStats = { ...freshBehaviorStats(), ...(p.behaviorStats || {}) };
       return p;
     }
   } catch (e) {
     console.warn('[player-data] 读取存档失败，新建档案', e);
   }
-  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0 };
+  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats() };
 }
 
 export function savePlayer(player) {

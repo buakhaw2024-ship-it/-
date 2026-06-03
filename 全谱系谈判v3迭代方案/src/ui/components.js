@@ -61,4 +61,21 @@ export const C = {
     if (!entriesHtml) return '';
     return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
   },
+
+  // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
+  moodSparkline(series) {
+    if (!series || !series.length) return '';
+    const W = 280, H = 48, n = series.length;
+    const x = (i) => (n > 1 ? (i / (n - 1)) * (W - 8) + 4 : W / 2);
+    const y = (v) => (H - 4) - v * (H - 8);
+    const line = (key, color) => {
+      const pts = series.map((m, i) => `${x(i).toFixed(0)},${y(m[key] || 0).toFixed(0)}`).join(' ');
+      const dots = series.map((m, i) => `<circle cx="${x(i).toFixed(0)}" cy="${y(m[key] || 0).toFixed(0)}" r="2" fill="${color}"/>`).join('');
+      return `<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts}"/>${dots}`;
+    };
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="background:var(--bg);border:1px solid var(--border);border-radius:3px">
+      ${line('trust', 'var(--cyan)')}${line('anger', 'var(--red)')}
+    </svg>
+    <div style="font-size:10px;color:var(--dim);margin-top:2px">— 信任(青) ／ — 愤怒(红)　对手情绪随回合演化</div>`;
+  },
 };

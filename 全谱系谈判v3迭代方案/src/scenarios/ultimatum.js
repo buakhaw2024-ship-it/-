@@ -107,6 +107,7 @@ export class UltimatumGame extends BaseScenario {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const acc = Math.round(this.log.filter((l) => l.accepted).length / this.log.length * 100);
     this.finish({
+      kind: 'ultimatum', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('接受率', `${acc}%`) +

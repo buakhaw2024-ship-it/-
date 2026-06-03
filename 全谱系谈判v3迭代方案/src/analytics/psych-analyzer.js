@@ -1,56 +1,107 @@
-// analytics/psych-analyzer.js — 8 维心理画像引擎
-// Phase 2：沿用 v2.0 算法（基于胜负 outcome 的线性累加）先跑通。
-// Phase 4：将重构为基于真实决策序列的计算（见 03-实施路线图.md F-06）。
+// analytics/psych-analyzer.js — 8 维心理画像引擎（Phase 4 重构）
+// 不再用固定 +0.08 线性累加，而是从真实决策序列累计行为统计，按比例计算 8 维向量。
+// 统计累加在 player.behaviorStats（随存档持久化）。
 
-const _profile = {
-  cooperation_rate: 0, risk: 0, fairness: 0, depth: 0,
-  emotion: 0, assert: 0, adapt: 0, trust: 0,
-};
+const HARD_OPPONENTS = ['aggressive', 'manipulative'];
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const safe = (a, b, d = 0.5) => (b > 0 ? clamp01(a / b) : d);
 
-export const PsychAnalyzer = {
-  getProfile() {
-    return { ..._profile };
-  },
+// 从一局的回合日志提取行为信号，累加进 player.behaviorStats
+export function accumulate(player, kind, rounds, result, opp) {
+  const s = player.behaviorStats;
+  s.games += 1;
+  if (opp && !s.opponentsSeen.includes(opp.id)) s.opponentsSeen.push(opp.id);
+  if (result.outcome === 'win') s.wins += 1;
+  if (opp && HARD_OPPONENTS.includes(opp.id)) {
+    s.hardGames += 1;
+    if (result.outcome === 'win') s.hardWins += 1;
+  }
+  if (!rounds || !rounds.length) return player;
 
-  // 每局结束根据结果与对手类型演化画像（v2.0 updateAnalyzer 逻辑）
-  update(outcome, opp) {
-    const p = _profile;
-    const delta = 0.08;
-    if (outcome === 'coop' || outcome === 'win') {
-      p.cooperation_rate = Math.min(1, (p.cooperation_rate || 0.5) + delta);
-      p.depth = Math.min(1, (p.depth || 0.5) + delta * 0.5);
-    } else if (outcome === 'lose') {
-      p.risk = Math.max(0, (p.risk || 0.5) - delta);
-    }
-    p.adapt = Math.min(1, (p.adapt || 0.5) + delta * 0.3);
-    if (opp) {
-      if (opp.id === 'aggressive') p.assert = Math.min(1, (p.assert || 0.5) + delta * 0.5);
-      if (opp.id === 'emotional') p.emotion = Math.min(1, (p.emotion || 0.5) + delta * 0.5);
-    }
-  },
+  if (kind === 'prisoners') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      if (r.player === 'coop') { s.coopMoves += 1; s.impulseAvoid += 1; }
+      else { s.riskyMoves += 1; s.assertiveMoves += 1; }
+    });
+  } else if (kind === 'trust') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      s.trustInvested += r.invested; s.trustMax += 10;
+      if (r.invested >= 5) s.coopMoves += 1;
+      if (r.invested >= 10) s.riskyMoves += 1;
+      if (r.invested === 0) s.assertiveMoves += 1;
+      if (r.myNet >= 0) s.impulseAvoid += 1;
+    });
+  } else if (kind === 'publicgoods') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      s.trustInvested += r.my; s.trustMax += 10;
+      if (r.my >= 5) { s.coopMoves += 1; s.impulseAvoid += 1; }
+      if (r.my <= 1) s.assertiveMoves += 1;
+      if (r.my === 0) s.riskyMoves += 1;
+    });
+  } else if (kind === 'bargaining') {
+    rounds.forEach((r, i) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      const prev = i > 0 ? rounds[i - 1].my : r.my;
+      if (r.my - prev <= 3) s.impulseAvoid += 1;
+      if (r.my < 42) s.assertiveMoves += 1;
+    });
+  } else if (kind === 'ultimatum') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.fairOpps += 1;
+      if (r.accepted && r.myOffer >= 40 && r.myOffer <= 62) s.fairActs += 1;
+      else if (r.accepted) s.fairActs += 0.5;
+      if (r.myOffer > 62) s.assertiveMoves += 1;
+    });
+  } else if (kind === 'crisis' || kind === 'coalition') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      if (r.ps > 0) s.impulseAvoid += 1;
+    });
+  }
+  return player;
+}
 
-  // 根据画像推断心理类型（v2.0 getProfileType 逻辑）
-  getProfileType() {
-    const p = _profile;
-    const profiles = [
-      { name:'战略家', cond:() => p.depth > 0.6 && p.assert > 0.5, desc:'冷静理智，善于全局规划和长远布局',
-        advice:['适当增加情感投入以建立更强的谈判关系','尝试更多合作性策略','注意不要过于机械化'] },
-      { name:'调解者', cond:() => p.cooperation_rate > 0.7 && p.fairness > 0.6, desc:'天生的关系维护者，擅长化解冲突',
-        advice:['学会在合适时机坚守底线','避免为维持和谐而过度妥协','增强BATNA意识'] },
-      { name:'竞争者', cond:() => p.assert > 0.7 && p.risk > 0.5, desc:'目标明确，勇于争取最大利益',
-        advice:['关注对方利益，寻找双赢机会','长期关系比单次收益更有价值','练习主动倾听'] },
-      { name:'外交家', cond:() => p.adapt > 0.6 && p.emotion > 0.6, desc:'灵活适应，善于在不同情境切换策略',
-        advice:['在核心利益上保持一致性','增强策略深度分析能力','建立清晰的底线意识'] },
-      { name:'分析师', cond:() => p.depth > 0.5 && p.risk < 0.4, desc:'谨慎周密，偏好有据可查的决策路径',
-        advice:['适当增加行动果断性','在信息不完整时学会做出判断','尝试更多创新性解决方案'] },
-      { name:'实用主义者', cond:() => true, desc:'务实灵活，根据情境选择最优策略',
-        advice:['深化某一领域的专项谈判技能','建立系统性的谈判框架','记录每次谈判的经验教训'] },
-    ];
-    return profiles.find((pp) => pp.cond()) || profiles[profiles.length - 1];
-  },
+// 由行为统计计算 8 维心理向量
+export function computeProfile(player) {
+  const s = (player && player.behaviorStats) || {};
+  const winRate = safe(s.wins, s.games);
+  const hardWinRate = safe(s.hardWins, s.hardGames, 0.4);
+  return {
+    cooperation_rate: safe(s.coopMoves, s.totalMoves),
+    risk: safe(s.riskyMoves, s.totalMoves),
+    fairness: safe(s.fairActs, s.fairOpps),
+    depth: clamp01(0.3 + 0.3 * winRate + 0.4 * hardWinRate),
+    emotion: safe(s.impulseAvoid, s.impulseTotal),
+    assert: safe(s.assertiveMoves, s.totalMoves),
+    adapt: clamp01(0.6 * Math.min(1, (s.opponentsSeen ? s.opponentsSeen.length : 0) / 6) + 0.4 * Math.min(1, (s.games || 0) / 8)),
+    trust: safe(s.trustInvested, s.trustMax),
+  };
+}
 
-  // 是否已有足够数据出报告（至少 2 局）—— 由调用方传入局数
-  hasEnoughData(totalSessions) {
-    return totalSessions >= 2;
-  },
-};
+export function getProfileType(p) {
+  const profiles = [
+    { name:'战略家', cond:() => p.depth > 0.6 && p.assert > 0.5, desc:'冷静理智，善于全局规划和长远布局',
+      advice:['适当增加情感投入以建立更强的谈判关系','尝试更多合作性策略','注意不要过于机械化'] },
+    { name:'调解者', cond:() => p.cooperation_rate > 0.7 && p.fairness > 0.6, desc:'天生的关系维护者，擅长化解冲突',
+      advice:['学会在合适时机坚守底线','避免为维持和谐而过度妥协','增强BATNA意识'] },
+    { name:'竞争者', cond:() => p.assert > 0.6 && p.risk > 0.5, desc:'目标明确，勇于争取最大利益',
+      advice:['关注对方利益，寻找双赢机会','长期关系比单次收益更有价值','练习主动倾听'] },
+    { name:'外交家', cond:() => p.adapt > 0.6 && p.emotion > 0.6, desc:'灵活适应，善于在不同情境切换策略',
+      advice:['在核心利益上保持一致性','增强策略深度分析能力','建立清晰的底线意识'] },
+    { name:'分析师', cond:() => p.depth > 0.5 && p.risk < 0.4, desc:'谨慎周密，偏好有据可查的决策路径',
+      advice:['适当增加行动果断性','在信息不完整时学会做出判断','尝试更多创新性解决方案'] },
+    { name:'实用主义者', cond:() => true, desc:'务实灵活，根据情境选择最优策略',
+      advice:['深化某一领域的专项谈判技能','建立系统性的谈判框架','记录每次谈判的经验教训'] },
+  ];
+  return profiles.find((pp) => pp.cond()) || profiles[profiles.length - 1];
+}
+
+export function hasEnoughData(totalSessions) {
+  return totalSessions >= 2;
+}
+
+// 兼容旧入口名（recorder 调用）
+export const PsychAnalyzer = { accumulate, computeProfile, getProfileType, hasEnoughData };

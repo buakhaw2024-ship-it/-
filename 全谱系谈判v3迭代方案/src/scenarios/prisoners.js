@@ -38,22 +38,25 @@ export class PrisonersDilemma extends BaseScenario {
       ${C.hint(`<b>场景：</b>你和 ${opp.name} 同时被捕。双方都沉默（合作）各判3年；你背叛对方沉默则你自由对方5年；双方都背叛各1年。<br><b>对手档案：</b>${opp.type} — ${opp.desc}`)}
       ${C.panel('选择你的策略',
         C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
-        C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）'))}
+        C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
+        this.peekControls())}
       ${C.logBox('对局记录', logHtml)}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
     if (type !== 'choice') return;
+    this._peekSnap = null;
     const prev = this.log.length ? this.log[this.log.length - 1].player : null;
     // 对手基于"此前回合"的记忆/情绪做决策（同时出招，看不到本轮）
-    const { move: oppChoice, reason } = OpponentAI.decide(this.opp.id, {
+    const { move: oppChoice, reason, mood } = OpponentAI.decide(this.opp.id, {
       kind: 'pd', round: this.round, playerLastMove: prev,
     });
     const [ps, os] = this._scores(value, oppChoice);
     this.playerScore += ps;
     this.oppScore += os;
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason });
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood });
     // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
     OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
@@ -66,6 +69,7 @@ export class PrisonersDilemma extends BaseScenario {
     const coop = this.log.filter((l) => l.player === 'coop').length;
     const lastReason = this.log.length ? this.log[this.log.length - 1].reason : '';
     this.finish({
+      kind: 'prisoners', rounds: this.log,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('总轮数', `${this.rounds} 轮`) +

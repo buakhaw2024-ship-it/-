@@ -1,30 +1,31 @@
 (function () {
   'use strict';
 
-  // ── Config ──────────────────────────────────────────────────────────────────
-
   const TYPE_COLORS = {
-    '领域': '#e05c5c',
-    '技术': '#5b9af0',
-    '模型': '#9b6af0',
-    '方法': '#5bc4a0',
-    '步骤': '#f0a05b',
-    '问题': '#f05bac',
-    '解决方案': '#5bf0d4',
-    '框架': '#f0d45b',
-    '应用': '#80e05b',
-    '_default': '#7a85a0',
+    'Master':        '#f0c040',
+    'Tactic':        '#5b9af0',
+    'Strategy':      '#9b6af0',
+    'Communication': '#5bc4a0',
+    'Defense':       '#f0a05b',
+    'Concept':       '#80e05b',
+    'Scenario':      '#f05b9b',
+    'Opponent':      '#e05c5c',
+    'PsychProfile':  '#aab0c0',
+    '_default':      '#7a85a0',
   };
 
   const NODE_RADIUS = {
-    '领域': 22,
-    '技术': 16,
-    '模型': 14,
-    '方法': 14,
-    '_default': 12,
+    'Master':        24,
+    'Strategy':      15,
+    'Concept':       14,
+    'Scenario':      15,
+    'Tactic':        12,
+    'Communication': 12,
+    'Defense':       12,
+    'Opponent':      13,
+    'PsychProfile':  11,
+    '_default':      12,
   };
-
-  // ── State ────────────────────────────────────────────────────────────────────
 
   let allNodes = [], allEdges = [];
   let hiddenTypes = new Set();
@@ -32,8 +33,6 @@
   let simulation = null;
   let svg, g, linkGroup, nodeGroup, labelGroup;
   let zoom;
-
-  // ── Parse CSV ────────────────────────────────────────────────────────────────
 
   function parseCSV(text) {
     const lines = text.trim().split('\n');
@@ -52,8 +51,6 @@
       return obj;
     });
   }
-
-  // ── Load CSV files ───────────────────────────────────────────────────────────
 
   async function loadCSV(path) {
     const res = await fetch(path);
@@ -82,8 +79,6 @@
     if (el) el.remove();
   }
 
-  // ── Build / rebuild graph ────────────────────────────────────────────────────
-
   function buildGraph() {
     updateStats();
     buildTypeLegend();
@@ -105,16 +100,15 @@
     return allEdges.filter(e => ids.has(e.source) && ids.has(e.target));
   }
 
-  // ── Type legend ──────────────────────────────────────────────────────────────
-
   function buildTypeLegend() {
     const types = {};
     allNodes.forEach(n => { types[n.type] = (types[n.type] || 0) + 1; });
-
     const container = document.getElementById('type-filter');
     container.innerHTML = '<label>节点类型（点击筛选）</label>';
-
-    Object.entries(types).sort().forEach(([type, count]) => {
+    const order = ['Master','Strategy','Tactic','Communication','Defense','Concept','Scenario','Opponent','PsychProfile'];
+    const sorted = [...order.filter(t => types[t]), ...Object.keys(types).filter(t => !order.includes(t))];
+    sorted.forEach(type => {
+      const count = types[type];
       const color = TYPE_COLORS[type] || TYPE_COLORS['_default'];
       const item = document.createElement('div');
       item.className = 'type-item' + (hiddenTypes.has(type) ? ' hidden' : '');
@@ -140,34 +134,24 @@
     updateStats();
   }
 
-  // ── D3 Render ────────────────────────────────────────────────────────────────
-
   function renderGraph() {
     const width = document.getElementById('graph-area').clientWidth;
     const height = document.getElementById('graph-area').clientHeight;
 
-    // First render: create SVG
     if (!svg) {
       svg = d3.select('#graph-svg');
-      zoom = d3.zoom().scaleExtent([0.1, 4]).on('zoom', e => {
+      zoom = d3.zoom().scaleExtent([0.05, 4]).on('zoom', e => {
         g.attr('transform', e.transform);
       });
       svg.call(zoom);
-
       g = svg.append('g');
-
       svg.append('defs').append('marker')
         .attr('id', 'arrow')
         .attr('viewBox', '0 -4 8 8')
-        .attr('refX', 8)
-        .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
+        .attr('refX', 8).attr('refY', 0)
+        .attr('markerWidth', 5).attr('markerHeight', 5)
         .attr('orient', 'auto')
-        .append('path')
-        .attr('class', 'arrowhead')
-        .attr('d', 'M0,-4L8,0L0,4');
-
+        .append('path').attr('class', 'arrowhead').attr('d', 'M0,-4L8,0L0,4');
       linkGroup = g.append('g').attr('class', 'links');
       nodeGroup = g.append('g').attr('class', 'nodes');
       labelGroup = g.append('g').attr('class', 'link-labels');
@@ -176,186 +160,113 @@
     const nodes = visibleNodes().map(n => ({ ...n }));
     const edges = visibleEdges(nodes).map(e => ({ ...e }));
 
-    // Stop old simulation
     if (simulation) simulation.stop();
 
-    // Build D3 force simulation
     simulation = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(edges)
-        .id(d => d.id)
-        .distance(d => {
-          const src = TYPE_COLORS[d.source.type] ? 100 : 80;
-          return src;
-        })
-        .strength(0.5))
-      .force('charge', d3.forceManyBody().strength(-350))
+      .force('link', d3.forceLink(edges).id(d => d.id).distance(90).strength(0.4))
+      .force('charge', d3.forceManyBody().strength(-500))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(d => nodeR(d) + 18));
+      .force('collision', d3.forceCollide().radius(d => nodeR(d) + 20));
 
-    // Links
-    const link = linkGroup.selectAll('line').data(edges, e => `${e.source.id || e.source}-${e.target.id || e.target}`);
+    const link = linkGroup.selectAll('line').data(edges, e => `${e.source.id||e.source}-${e.target.id||e.target}`);
     link.exit().remove();
-    const linkEnter = link.enter().append('line')
+    const linkAll = link.enter().append('line')
       .attr('class', 'link')
       .attr('stroke', '#3d4165')
-      .attr('stroke-width', 1.2)
-      .attr('marker-end', 'url(#arrow)');
-    const linkAll = linkEnter.merge(link);
+      .attr('stroke-width', d => Math.max(0.6, (parseFloat(d.weight) || 0.5) * 1.4))
+      .attr('marker-end', 'url(#arrow)')
+      .merge(link);
 
-    // Edge labels
-    const lbl = labelGroup.selectAll('text').data(edges, e => `${e.source.id || e.source}-${e.target.id || e.target}`);
+    const lbl = labelGroup.selectAll('text').data(edges, e => `${e.source.id||e.source}-${e.target.id||e.target}`);
     lbl.exit().remove();
-    const lblEnter = lbl.enter().append('text').attr('class', 'link-label');
-    const lblAll = lblEnter.merge(lbl).text(d => d.relation);
+    const lblAll = lbl.enter().append('text').attr('class', 'link-label')
+      .merge(lbl).text(d => d.relation);
 
-    // Nodes
     const node = nodeGroup.selectAll('g.node').data(nodes, d => d.id);
     node.exit().remove();
     const nodeEnter = node.enter().append('g').attr('class', 'node')
-      .call(d3.drag()
-        .on('start', dragStart)
-        .on('drag', dragged)
-        .on('end', dragEnd))
-      .on('click', (event, d) => {
-        event.stopPropagation();
-        selectNode(d, linkAll, lblAll, nodeAll);
-      })
-      .on('mouseenter', showTooltip)
-      .on('mousemove', moveTooltip)
-      .on('mouseleave', hideTooltip);
+      .call(d3.drag().on('start', dragStart).on('drag', dragged).on('end', dragEnd))
+      .on('click', (event, d) => { event.stopPropagation(); selectNode(d, linkAll, lblAll, nodeAll); })
+      .on('mouseenter', showTooltip).on('mousemove', moveTooltip).on('mouseleave', hideTooltip);
 
     nodeEnter.append('circle')
       .attr('r', d => nodeR(d))
       .attr('fill', d => nodeColor(d))
       .attr('stroke', d => d3.color(nodeColor(d)).brighter(0.5));
-
     nodeEnter.append('text')
-      .attr('dy', d => nodeR(d) + 12)
-      .text(d => d.label);
+      .attr('dy', d => nodeR(d) + 11)
+      .text(d => d.label.length > 6 ? d.label.slice(0, 5) + '…' : d.label);
 
     const nodeAll = nodeEnter.merge(node);
-    nodeAll.select('circle')
-      .attr('r', d => nodeR(d))
-      .attr('fill', d => nodeColor(d))
+    nodeAll.select('circle').attr('r', d => nodeR(d)).attr('fill', d => nodeColor(d))
       .attr('stroke', d => d3.color(nodeColor(d)).brighter(0.5));
-    nodeAll.select('text').text(d => d.label);
+    nodeAll.select('text').text(d => d.label.length > 6 ? d.label.slice(0, 5) + '…' : d.label);
 
-    // Click on background: deselect
-    svg.on('click', () => {
-      selectedNode = null;
-      clearHighlight(linkAll, lblAll, nodeAll);
-      clearNodeInfo();
-    });
+    svg.on('click', () => { selectedNode = null; clearHighlight(linkAll, lblAll, nodeAll); clearNodeInfo(); });
 
-    // Tick
     simulation.on('tick', () => {
-      linkAll
-        .attr('x1', d => d.source.x)
-        .attr('y1', d => d.source.y)
-        .attr('x2', d => targetX(d))
-        .attr('y2', d => targetY(d));
-
+      linkAll.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+             .attr('x2', d => targetX(d)).attr('y2', d => targetY(d));
       lblAll.attr('x', d => (d.source.x + d.target.x) / 2)
             .attr('y', d => (d.source.y + d.target.y) / 2);
-
       nodeAll.attr('transform', d => `translate(${d.x},${d.y})`);
     });
   }
 
-  function nodeR(d) {
-    return NODE_RADIUS[d.type] || NODE_RADIUS['_default'];
-  }
+  function nodeR(d) { return NODE_RADIUS[d.type] || NODE_RADIUS['_default']; }
+  function nodeColor(d) { return TYPE_COLORS[d.type] || TYPE_COLORS['_default']; }
 
-  function nodeColor(d) {
-    return TYPE_COLORS[d.type] || TYPE_COLORS['_default'];
-  }
-
-  // Adjust line endpoint to node boundary
   function targetX(d) {
     const dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    return d.target.x - (dx / dist) * (nodeR(d.target) + 4);
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    return d.target.x - (dx/dist) * (nodeR(d.target) + 4);
   }
   function targetY(d) {
     const dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    return d.target.y - (dy / dist) * (nodeR(d.target) + 4);
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    return d.target.y - (dy/dist) * (nodeR(d.target) + 4);
   }
 
-  // ── Drag ─────────────────────────────────────────────────────────────────────
-
-  function dragStart(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x; d.fy = d.y;
-  }
-  function dragged(event, d) {
-    d.fx = event.x; d.fy = event.y;
-  }
-  function dragEnd(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    d.fx = null; d.fy = null;
-  }
-
-  // ── Highlight on click ───────────────────────────────────────────────────────
+  function dragStart(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; }
+  function dragged(event, d) { d.fx=event.x; d.fy=event.y; }
+  function dragEnd(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; }
 
   function selectNode(d, linkSel, lblSel, nodeSel) {
     selectedNode = d;
-
     const connectedIds = new Set([d.id]);
     linkSel.each(e => {
-      const sid = e.source.id || e.source;
-      const tid = e.target.id || e.target;
-      if (sid === d.id) connectedIds.add(tid);
-      if (tid === d.id) connectedIds.add(sid);
+      const sid = e.source.id||e.source, tid = e.target.id||e.target;
+      if (sid===d.id) connectedIds.add(tid);
+      if (tid===d.id) connectedIds.add(sid);
     });
-
-    nodeSel.classed('highlighted', n => n.id === d.id)
-           .classed('dimmed', n => !connectedIds.has(n.id));
-
-    linkSel.classed('highlighted', e => {
-      const sid = e.source.id || e.source;
-      const tid = e.target.id || e.target;
-      return sid === d.id || tid === d.id;
-    }).classed('dimmed', e => {
-      const sid = e.source.id || e.source;
-      const tid = e.target.id || e.target;
-      return sid !== d.id && tid !== d.id;
-    }).attr('stroke', e => {
-      const sid = e.source.id || e.source;
-      const tid = e.target.id || e.target;
-      return (sid === d.id || tid === d.id) ? '#5b6af0' : '#3d4165';
-    });
-
-    lblSel.classed('dimmed', e => {
-      const sid = e.source.id || e.source;
-      const tid = e.target.id || e.target;
-      return sid !== d.id && tid !== d.id;
-    });
-
+    nodeSel.classed('highlighted', n => n.id===d.id).classed('dimmed', n => !connectedIds.has(n.id));
+    linkSel
+      .classed('highlighted', e => { const s=e.source.id||e.source,t=e.target.id||e.target; return s===d.id||t===d.id; })
+      .classed('dimmed', e => { const s=e.source.id||e.source,t=e.target.id||e.target; return s!==d.id&&t!==d.id; })
+      .attr('stroke', e => { const s=e.source.id||e.source,t=e.target.id||e.target; return (s===d.id||t===d.id)?'#5b6af0':'#3d4165'; });
+    lblSel.classed('dimmed', e => { const s=e.source.id||e.source,t=e.target.id||e.target; return s!==d.id&&t!==d.id; });
     showNodeInfo(d, connectedIds);
   }
 
   function clearHighlight(linkSel, lblSel, nodeSel) {
     nodeSel.classed('highlighted dimmed', false);
-    linkSel.classed('highlighted dimmed', false)
-            .attr('stroke', '#3d4165');
+    linkSel.classed('highlighted dimmed', false).attr('stroke', '#3d4165');
     lblSel.classed('dimmed', false);
   }
 
-  // ── Node info panel ──────────────────────────────────────────────────────────
-
   function showNodeInfo(d, connectedIds) {
-    const panel = document.getElementById('node-info');
     const color = nodeColor(d);
-
     const neighbors = allNodes.filter(n => connectedIds.has(n.id) && n.id !== d.id);
-    const chips = neighbors.map(n =>
-      `<span style="border-color:${nodeColor(n)}33">${n.label}</span>`).join('');
-
-    panel.innerHTML = `
+    const chips = neighbors.map(n => `<span style="border-color:${nodeColor(n)}55">${n.label}</span>`).join('');
+    const eng = d.english_name ? `<div class="nd-eng">${d.english_name}</div>` : '';
+    const book = d.source_book ? `<div class="nd-meta">📖 ${d.source_book}</div>` : '';
+    const tags = d.tags ? `<div class="nd-meta">🏷 ${d.tags.replace(/\//g, ' · ')}</div>` : '';
+    const diff = d.difficulty ? `<div class="nd-meta">难度：${d.difficulty}</div>` : '';
+    document.getElementById('node-info').innerHTML = `
       <h3>节点详情</h3>
       <div id="node-detail-name" style="color:${color}">${d.label}</div>
       <div id="node-detail-type">${d.type}</div>
+      ${eng}${book}${tags}${diff}
       <div id="node-detail-desc">${d.description || '暂无描述'}</div>
       <div class="conn-list">${chips || '<span style="color:#555">无连接</span>'}</div>`;
   }
@@ -365,30 +276,20 @@
       '<h3>节点详情</h3><p style="font-size:12px;color:#555;margin-top:8px">点击节点查看详情</p>';
   }
 
-  // ── Tooltip ──────────────────────────────────────────────────────────────────
-
   function showTooltip(event, d) {
     const tt = document.getElementById('tooltip');
     tt.style.display = 'block';
-    tt.innerHTML = `<strong>${d.label}</strong><span class="tt-type">${d.type}</span>`;
+    tt.innerHTML = `<strong>${d.label}</strong><span class="tt-type">${d.type}${d.difficulty ? ' · ' + d.difficulty : ''}</span>`;
     moveTooltip(event);
   }
-
   function moveTooltip(event) {
     const tt = document.getElementById('tooltip');
     const area = document.getElementById('graph-area').getBoundingClientRect();
-    let x = event.clientX - area.left + 14;
-    let y = event.clientY - area.top - 28;
-    if (x + 180 > area.width) x = event.clientX - area.left - 180;
-    tt.style.left = x + 'px';
-    tt.style.top = y + 'px';
+    let x = event.clientX - area.left + 14, y = event.clientY - area.top - 28;
+    if (x + 200 > area.width) x = event.clientX - area.left - 200;
+    tt.style.left = x + 'px'; tt.style.top = y + 'px';
   }
-
-  function hideTooltip() {
-    document.getElementById('tooltip').style.display = 'none';
-  }
-
-  // ── Search ───────────────────────────────────────────────────────────────────
+  function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
 
   function setupSearch() {
     const input = document.getElementById('search-input');
@@ -398,52 +299,36 @@
         nodeGroup.selectAll('g.node').classed('highlighted dimmed', false);
         linkGroup.selectAll('line').classed('dimmed', false).attr('stroke', '#3d4165');
         labelGroup.selectAll('text').classed('dimmed', false);
-        clearNodeInfo();
-        return;
+        clearNodeInfo(); return;
       }
-      const match = allNodes.find(n => n.label.toLowerCase().includes(q));
+      const match = allNodes.find(n =>
+        n.label.toLowerCase().includes(q) ||
+        (n.english_name && n.english_name.toLowerCase().includes(q)) ||
+        (n.tags && n.tags.toLowerCase().includes(q))
+      );
       if (match) {
         const nodeEl = nodeGroup.selectAll('g.node').filter(d => d.id === match.id);
         if (!nodeEl.empty()) {
           const datum = nodeEl.datum();
-          // center view on node
-          const width = document.getElementById('graph-area').clientWidth;
-          const height = document.getElementById('graph-area').clientHeight;
+          const w = document.getElementById('graph-area').clientWidth;
+          const h = document.getElementById('graph-area').clientHeight;
           svg.transition().duration(600).call(
-            zoom.transform,
-            d3.zoomIdentity.translate(width / 2 - datum.x, height / 2 - datum.y).scale(1)
+            zoom.transform, d3.zoomIdentity.translate(w/2 - datum.x, h/2 - datum.y).scale(1.2)
           );
-          selectNode(datum,
-            linkGroup.selectAll('line'),
-            labelGroup.selectAll('text'),
-            nodeGroup.selectAll('g.node')
-          );
+          selectNode(datum, linkGroup.selectAll('line'), labelGroup.selectAll('text'), nodeGroup.selectAll('g.node'));
         }
       }
     });
   }
 
-  // ── CSV Upload ───────────────────────────────────────────────────────────────
-
   function setupUpload() {
-    document.getElementById('upload-nodes').addEventListener('click', () => {
-      document.getElementById('file-input-nodes').click();
-    });
-    document.getElementById('upload-edges').addEventListener('click', () => {
-      document.getElementById('file-input-edges').click();
-    });
-
+    document.getElementById('upload-nodes').addEventListener('click', () => document.getElementById('file-input-nodes').click());
+    document.getElementById('upload-edges').addEventListener('click', () => document.getElementById('file-input-edges').click());
     document.getElementById('file-input-nodes').addEventListener('change', e => {
-      readFile(e.target.files[0], text => {
-        allNodes = parseCSV(text);
-        buildGraph();
-      });
+      readFile(e.target.files[0], text => { allNodes = parseCSV(text); buildGraph(); });
     });
     document.getElementById('file-input-edges').addEventListener('change', e => {
-      readFile(e.target.files[0], text => {
-        allEdges = parseCSV(text);
-        buildGraph();
-      });
+      readFile(e.target.files[0], text => { allEdges = parseCSV(text); buildGraph(); });
     });
   }
 
@@ -453,41 +338,27 @@
     reader.readAsText(file, 'utf-8');
   }
 
-  // ── Zoom controls ─────────────────────────────────────────────────────────────
-
   function setupZoomControls() {
-    document.getElementById('zoom-in').addEventListener('click', () => {
-      svg.transition().duration(300).call(zoom.scaleBy, 1.4);
-    });
-    document.getElementById('zoom-out').addEventListener('click', () => {
-      svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-    });
+    document.getElementById('zoom-in').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 1.4));
+    document.getElementById('zoom-out').addEventListener('click', () => svg.transition().duration(300).call(zoom.scaleBy, 0.7));
     document.getElementById('zoom-fit').addEventListener('click', fitView);
   }
 
   function fitView() {
-    const width = document.getElementById('graph-area').clientWidth;
-    const height = document.getElementById('graph-area').clientHeight;
+    const w = document.getElementById('graph-area').clientWidth;
+    const h = document.getElementById('graph-area').clientHeight;
     const bounds = g.node().getBBox();
     if (!bounds.width) return;
-    const scale = 0.85 * Math.min(width / bounds.width, height / bounds.height);
-    const tx = (width - scale * (bounds.x * 2 + bounds.width)) / 2;
-    const ty = (height - scale * (bounds.y * 2 + bounds.height)) / 2;
-    svg.transition().duration(600).call(
-      zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale)
-    );
+    const scale = 0.85 * Math.min(w / bounds.width, h / bounds.height);
+    const tx = (w - scale * (bounds.x * 2 + bounds.width)) / 2;
+    const ty = (h - scale * (bounds.y * 2 + bounds.height)) / 2;
+    svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
   }
-
-  // ── Layout controls ───────────────────────────────────────────────────────────
 
   function setupLayoutControls() {
-    document.getElementById('btn-restart').addEventListener('click', () => {
-      if (simulation) { simulation.alpha(0.8).restart(); }
-    });
+    document.getElementById('btn-restart').addEventListener('click', () => { if (simulation) simulation.alpha(0.8).restart(); });
     document.getElementById('btn-fit').addEventListener('click', fitView);
   }
-
-  // ── Init ──────────────────────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', () => {
     setupSearch();

@@ -1,31 +1,115 @@
-id,label,type,description
-1,人工智能,领域,研究和开发智能系统的科学领域
-2,机器学习,技术,通过数据训练模型的方法
-3,深度学习,技术,基于神经网络的机器学习方法
-4,自然语言处理,技术,让计算机理解和生成人类语言的技术
-5,计算机视觉,技术,使机器能够从图像和视频中获取信息的技术
-6,神经网络,模型,模拟人脑神经元连接的计算模型
-7,卷积神经网络,模型,专门处理网格数据（如图像）的神经网络
-8,循环神经网络,模型,处理序列数据的神经网络架构
-9,Transformer,模型,基于注意力机制的序列模型架构
-10,BERT,模型,谷歌开发的预训练语言表示模型
-11,GPT,模型,OpenAI开发的生成式预训练语言模型
-12,监督学习,方法,使用标注数据训练模型的机器学习范式
-13,无监督学习,方法,从未标注数据中发现模式的学习方法
-14,强化学习,方法,通过奖励信号训练智能体的方法
-15,迁移学习,方法,将已学习知识应用到新任务的技术
-16,数据预处理,步骤,清洗和转换原始数据的过程
-17,特征工程,步骤,从原始数据中提取有用特征的过程
-18,模型评估,步骤,衡量模型性能的过程
-19,过拟合,问题,模型在训练数据上表现好但泛化差的现象
-20,正则化,解决方案,防止过拟合的技术方法
-21,批归一化,技术,加速深度网络训练的归一化方法
-22,Dropout,技术,随机丢弃神经元以防止过拟合的方法
-23,注意力机制,技术,让模型关注输入不同部分的机制
-24,TensorFlow,框架,谷歌开发的深度学习框架
-25,PyTorch,框架,Meta开发的深度学习框架
-26,图像分类,应用,将图像划分到预定义类别的任务
-27,目标检测,应用,在图像中定位和识别目标的任务
-28,机器翻译,应用,自动将文本从一种语言翻译到另一种语言
-29,情感分析,应用,判断文本情感倾向的任务
-30,语音识别,应用,将语音转换为文本的技术
+id,label,type,english_name,source_book,tags,difficulty,description
+master_dawson,罗杰·道森,Master,Roger Dawson,《优势谈判》,实战/策略/权势,中级,"美国第一谈判教练，15大谈判策略覆盖开局中局终局三阶段，强调实战优势获取"
+master_fisher,罗杰·费希尔,Master,Roger Fisher & William Ury,《谈判力》,原则/双赢/哈佛,基础,"哈佛谈判项目创始人，原则性谈判四步法，聚焦利益而非立场"
+master_voss,克里斯·沃斯,Master,Chris Voss,《掌控谈话》,FBI/情商/心理战,高级,"FBI首席人质谈判专家，战术性同理心体系，以情商驱动谈判突破"
+master_cohen,赫布·科恩,Master,Herb Cohen,《谈判无处不在》,权力/时间/信息,中级,"权力时间信息三角模型，认为世界是张谈判桌，万事皆可谈"
+master_diamond,斯图尔特·戴蒙德,Master,Stuart Diamond,《Getting More》,情感/感知/沃顿,高级,"沃顿商学院教授，情感与感知是核心战场，人比流程更重要"
+master_shell,理查德·谢尔,Master,G. Richard Shell,《为优势而谈判》,风格/适应/沃顿,中级,"沃顿商学院教授，五种谈判风格框架，知己知彼因地制宜"
+tactic_dawson_01,狮子大开口,Tactic,High Ball/Low Ball,《优势谈判》,锚定/开局/让步空间,基础,"要价远高于预期底线，留出让步空间，设立高锚点控制参照框架"
+tactic_dawson_02,虚假权威,Tactic,Bogey/Higher Authority,《优势谈判》,权威/缓冲/中间人,中级,"声称需要请示上级，保留缓冲空间，让对方对最终决策者无处施压"
+tactic_dawson_03,不情愿买家,Tactic,Reluctant Buyer/Seller,《优势谈判》,姿态/心理/稀缺感,中级,"表现出勉强和不情愿的姿态，让对方感到他们在争取你参与谈判"
+tactic_dawson_04,钳子策略,Tactic,Vise Technique,《优势谈判》,压缩/沉默/心理战,中级,"一句话压缩对方空间：你能做得更好，且不先出价不暴露底线"
+tactic_dawson_05,请示上级,Tactic,Higher Authority,《优势谈判》,权威/拖延/保护,基础,"声称无权做最终决定，避免单方面让步压力，为己方争取内部协调时间"
+tactic_dawson_06,消解僵局,Tactic,Breaking Deadlock,《优势谈判》,僵局/灵活/转换,中级,"换人换地点换议题，通过改变物理或议题环境打破卡壳局面"
+tactic_dawson_07,让步节奏管理,Tactic,Concession Management,《优势谈判》,让步/节奏/信号,中级,"让步幅度递减（大→中→小），以递减曲线暗示己方已接近极限"
+tactic_dawson_08,回收策略,Tactic,Withdrawal,《优势谈判》,撤回/测试/压力,高级,"表现出重新考虑的态度，引发对方担忧并做出反应，测试其真实底线"
+tactic_dawson_09,时间压力,Tactic,Time Pressure,《优势谈判》,时间/期限/压力,基础,"善用接近截止期限的时机，此时双方都更愿意妥协达成协议"
+tactic_dawson_10,蚕食策略,Tactic,Nibbling,《优势谈判》,蚕食/追加/终局,高级,"协议接近完成时提出小额追加要求，对方为维护大局往往做出让步"
+tactic_dawson_11,打包策略,Tactic,Package Deal,《优势谈判》,打包/整合/价值创造,中级,"将多个议题打包处理，用不重要项目换取核心重要利益"
+tactic_dawson_12,黑脸白脸,Tactic,Good Cop Bad Cop,《优势谈判》,角色/团队/心理战,中级,"团队中一人强硬一人温和，制造心理压力与慰藉的双重效果"
+tactic_dawson_13,定位让步,Tactic,Positioning Concession,《优势谈判》,让步/心理/收尾,中级,"最后关键让步刻意放小，显示已到底线，给对方赢了的心理满足感"
+tactic_dawson_14,书面记录,Tactic,Written Agreement,《优势谈判》,书面/确认/保障,基础,"任何口头承诺立即书面化确认，防止事后反悔或记忆分歧"
+tactic_dawson_15,永不平分差异,Tactic,Never Split the Difference,《优势谈判》,原则/公平陷阱/引导,高级,"平分看似公平实则对先出高价者不利，引导对方自愿接受中间价而非硬平分"
+tactic_fisher_01,对人温和对事强硬,Tactic,Soft on People Hard on Problem,《谈判力》,人与问题/分离/关系,基础,"把人与问题分开处理，不让情绪和人际关系阻碍实质利益的实现"
+tactic_fisher_02,聚焦利益非立场,Tactic,Focus on Interests Not Positions,《谈判力》,利益/立场/挖掘,中级,"挖掘为什么而非执着于要什么，背后的利益才是真正的谈判空间"
+tactic_fisher_03,创造多种选项,Tactic,Invent Options for Mutual Gain,《谈判力》,创意/选项/双赢,中级,"在决定前先脑力激荡扩大选项空间，寻找多种可能而非单一方案对抗"
+tactic_fisher_04,坚持客观标准,Tactic,Insist on Objective Criteria,《谈判力》,标准/客观/公正,中级,"以市场价行业惯例法律标准作为谈判依据，避免纯粹意志对抗"
+tactic_fisher_05,BATNA,Tactic,Best Alternative to Negotiated Agreement,《谈判力》,BATNA/底线/筹码,基础,"最佳替代方案：知道自己的退出选项才有真正筹码，改善BATNA比改善立场更重要"
+tactic_fisher_06,ZOPA,Tactic,Zone of Possible Agreement,《谈判力》,ZOPA/区间/可能性,中级,"协议潜在区间：双方BATNA之间的重叠区域，ZOPA越大越容易达成协议"
+tactic_fisher_07,利益区分,Tactic,Interest Identification,《谈判力》,利益/立场/深层需求,基础,"区分立场（想要什么）与利益（为什么要），寻找满足双方深层利益的方案"
+tactic_voss_01,战术性同理心,Tactic,Tactical Empathy,《掌控谈话》,同理心/情绪/连接,中级,"命名并承认对方情绪，理解不等于认同，情绪被看见后防御性降低"
+tactic_voss_02,镜像技术,Tactic,Mirroring,《掌控谈话》,镜像/倾听/信息,基础,"重复对方最后2-3个关键词，触发对方继续阐述，低风险高回报的信息获取技术"
+tactic_voss_03,贴标签,Tactic,Labeling,《掌控谈话》,标签/情绪/承认,中级,"命名对方情绪状态：看起来您...，承认情绪存在而非否认，降低其强度"
+tactic_voss_04,不的力量,Tactic,The Power of No,《掌控谈话》,否定/掌控感/安全,中级,"让对方说不使其有掌控感和安全感，不往往是谈判开始而非结束"
+tactic_voss_05,校准问题,Tactic,Calibrated Questions,《掌控谈话》,提问/开放式/引导,基础,"用如何/什么开头的开放式问题，让对方思考解决方案，避免用是否问题"
+tactic_voss_06,就是这样验证,Tactic,That's Right Validation,《掌控谈话》,验证/理解/共鸣,高级,"当对方说就是这样表明你完全理解了他们，区分敷衍与真正共鸣"
+tactic_voss_07,截止期限识别,Tactic,Deadline Identification,《掌控谈话》,期限/虚假/识别,中级,"人为的截止期限往往是虚假的，识别并温和质疑其真实性，化解时间压力"
+tactic_voss_08,黑天鹅信息,Tactic,Black Swan Information,《掌控谈话》,隐藏信息/突破/转折,高级,"找出改变游戏规则的隐藏信息，通常藏在对方非理性行为背后"
+tactic_voss_09,锚定极端值,Tactic,Extreme Anchor,《掌控谈话》,锚定/极端/让步,中级,"先发制人锚定极端价格，再做公平合理的让步，由高到低比由低到高更有效"
+tactic_voss_10,弯腰报价法,Tactic,Ackerman Method,《掌控谈话》,递减/节奏/底线信号,高级,"逐步递减的让步节奏（65%→85%→95%→98%），暗示接近底线"
+tactic_cohen_01,权力要素,Tactic,Power Element,《谈判无处不在》,权力/感知/准备,基础,"感知到的权力比真实权力更重要，自信、准备充分、有替代方案都是权力来源"
+tactic_cohen_02,时间要素,Tactic,Time Element,《谈判无处不在》,时间/期限/压力,基础,"接近截止期限的一方压力更大，隐藏真实期限并了解对方期限"
+tactic_cohen_03,信息要素,Tactic,Information Element,《谈判无处不在》,信息/研究/倾听,基础,"你知道的越多谈判越有利，提问倾听观察研究四位一体获取信息"
+tactic_cohen_04,苏联式谈判,Tactic,Soviet Style Negotiation,《谈判无处不在》,强硬/防御/识别,高级,"识别并防御：极端立场/不妥协/人身攻击/逐步蚕食，不要被情绪化表现所影响"
+tactic_cohen_05,双赢谈判,Tactic,Win-Win Negotiation,《谈判无处不在》,双赢/关系/长期,基础,"通过创造价值而非分割价值达成协议，关注关系和长期利益"
+tactic_cohen_06,投资心理,Tactic,Sunk Cost Psychology,《谈判无处不在》,投资/沉没成本/心理,高级,"让对方在谈判过程中投入越来越多，时间精力越多退出成本越高，更愿意达成协议"
+tactic_diamond_01,目标第一,Tactic,Goals First,《Getting More》,目标/聚焦/导向,基础,"每次谈判开始前明确真正想要什么，不要为争论而争论，始终以目标为导向"
+tactic_diamond_02,关注对方的脑,Tactic,Focus on Their Brain,《Getting More》,感知/影响/认知,高级,"谈判发生在对方大脑中，你的工作是了解并影响他们的感知和决策框架"
+tactic_diamond_03,情感先行,Tactic,Emotions First,《Getting More》,情绪/先行/连接,中级,"人先感受后理性思考，先处理情绪建立连接，再进入实质内容谈判"
+tactic_diamond_04,每个人都不同,Tactic,Every Person is Different,《Getting More》,个性化/定制/差异,中级,"放弃标准化做法，针对每个人的个性需求价值观定制专属策略"
+tactic_diamond_05,找到决策者,Tactic,Find the Decision Maker,《Getting More》,决策者/权力/效率,基础,"确认并与真正有权决定的人谈，不要浪费时间在无法拍板的中间人身上"
+tactic_diamond_06,画面感,Tactic,Visualization,《Getting More》,画面/愿景/情感,中级,"帮对方构想合作成功后的具体情景，情感化的愿景比数据更能驱动决策"
+tactic_diamond_07,增量主义,Tactic,Incrementalism,《Getting More》,步骤/信任/渐进,中级,"大目标拆成小步骤，每一步建立信任积累动力，比一次推进更易成功"
+tactic_diamond_08,等价交换,Tactic,Trading Items of Unequal Value,《Getting More》,交换/价值差/创造,高级,"找到对方高估你低成本的东西，用你低估对方高价值的换，创造价值差"
+tactic_shell_01,竞争型风格,Tactic,Competing Style,《为优势而谈判》,竞争/结果导向/一次性,基础,"高关注结果低关注关系，适用一次性交易和强势立场，风险：损害关系"
+tactic_shell_02,合作型风格,Tactic,Collaborating Style,《为优势而谈判》,合作/双高/创造,中级,"高关注结果高关注关系，适用长期合作和复杂多议题，需要较强创造力"
+tactic_shell_03,妥协型风格,Tactic,Compromising Style,《为优势而谈判》,妥协/平衡/次优,基础,"中等关注结果和关系，适用时间紧迫力量均等，风险：双方均未获最优"
+tactic_shell_04,回避型风格,Tactic,Avoiding Style,《为优势而谈判》,回避/等待/低优先级,基础,"低关注结果和关系，适用问题不重要或等待时机，风险：问题积累恶化"
+tactic_shell_05,迁就型风格,Tactic,Accommodating Style,《为优势而谈判》,迁就/关系/修复,基础,"低关注结果高关注关系，适用自己有错误或需要修复关系，风险：被利用"
+tactic_shell_06,谈判准备阶段,Tactic,Preparation Phase,《为优势而谈判》,准备/BATNA/研究,基础,"明确自身目标和BATNA，研究对方可能的BATNA和谈判风格，绝不在无准备时谈判"
+tactic_shell_07,交流信息阶段,Tactic,Information Exchange,《为优势而谈判》,倾听/信息/信任,基础,"倾听超过说话，找出对方真实需求，建立信任基础，70%倾听30%表达"
+tactic_shell_08,开场锚定阶段,Tactic,Opening Phase,《为优势而谈判》,开场/锚定/先手,中级,"决定先出价还是让对方先出价，设立有利于己方的锚定价格或条件"
+tactic_shell_09,框架设定阶段,Tactic,Framing Phase,《为优势而谈判》,框架/价值观/定位,中级,"用对方重视的标准和价值观来定位和呈现己方方案"
+tactic_shell_10,价值创造阶段,Tactic,Value Creation Phase,《为优势而谈判》,价值创造/打包/双赢,中级,"寻找可以同时满足双方利益的交换和打包方案，扩大整体蛋糕"
+tactic_shell_11,收盘确认阶段,Tactic,Closing Phase,《为优势而谈判》,收盘/书面/确认,基础,"确认每一个细节，使用书面形式固化协议，防止蚕食和反悔"
+strategy_01,以牙还牙,Strategy,Tit-for-Tat,博弈论,模仿/互惠/稳健,基础,"第一轮合作此后模仿对方上一轮行为，简单稳健可预期，在重复博弈中表现卓越"
+strategy_02,锚定效应,Strategy,Anchoring Effect,心理学/谈判学,锚定/框架/先手,基础,"率先提出极端报价让对方基于此调整，先出价者掌握参照框架控制谈判基准"
+strategy_03,BATNA替代方案,Strategy,BATNA,《谈判力》,底线/筹码/替代,基础,"知道自己的退出选项才能保持谈判底气，永远不要在没有BATNA的情况下进行重要谈判"
+strategy_04,框架重构,Strategy,Reframing,心理学/谈判学,框架/认知/表达,中级,"将损失框架重构为收益框架，同一事实用不同表达方式产生截然不同的心理效果"
+strategy_05,积极倾听,Strategy,Active Listening,沟通学,倾听/理解/信任,基础,"用重复总结提问让对方感受到被理解，70%倾听30%表达，关注言外之意"
+strategy_06,互惠原则,Strategy,Reciprocity Principle,社会心理学,互惠/义务/礼物,基础,"先给予小利触发对方回报义务感，人类天生厌恶欠债感，小礼物开启大谈判"
+strategy_07,策略性沉默,Strategy,Strategic Silence,心理学,沉默/压力/等待,中级,"提出要求后保持沉默，焦虑一方往往先开口，沉默创造对方填补空白的压力"
+strategy_08,条件让步,Strategy,Conditional Concession,谈判学,条件/绑定/保护,中级,"如果您能...我可以考虑...，将每次让步与对方行动绑定，避免单方面退让"
+strategy_09,纳什均衡识别,Strategy,Nash Equilibrium Identification,博弈论,纳什均衡/稳定/预测,高级,"识别双方都不愿单方面偏离的稳定策略组合，预测对手行为并优化自身策略"
+strategy_10,整合性谈判,Strategy,Integrative Negotiation,谈判学,整合/利益/双赢,中级,"寻找背后利益而非立场对抗，为什么你要这个揭示双方都满意的创意方案"
+comm_01,镜像技术,Communication,Mirroring,沟通心理学,镜像/复述/信息获取,基础,"重复对方最后2-3个词触发进一步阐述，低成本高效率的信息获取和信任建立技术"
+comm_02,战术性同理心,Communication,Tactical Empathy,FBI谈判,同理心/情绪/连接,中级,"我理解您为什么会有这样的感受...承认情绪建立连接化解防御，理解不等于认同"
+comm_03,校准问题,Communication,Calibrated Questions,FBI谈判,提问/引导/思考,基础,"用如何/什么开头的开放式问题让对方思考解决方案，避免使用是非问题"
+comm_04,贴标签,Communication,Labeling,FBI谈判,标签/命名/情绪,中级,"命名对方情绪状态看起来您对此感到...降低情绪强度使对方感到被理解"
+comm_05,不的保护,Communication,Power of No,FBI谈判,否定/掌控/安全感,中级,"让对方说不给予其掌控感，保护性的不使对方更安全更愿意继续谈判"
+comm_06,锚定愿景,Communication,Vision Anchoring,说服心理学,愿景/情感/画面感,中级,"描述合作成功后的美好具体情景，情感化愿景比数据更能推动决策"
+defense_01,识别好警察坏警察,Defense,Good Cop Bad Cop Counter,反谈判,识别/揭穿/防御,基础,"认出角色扮演策略后直接说出来，命名策略使其立即失效，不要被情绪操控"
+defense_02,反时间压力,Defense,Counter Time Pressure,反谈判,时间压力/测试/冷静,中级,"人为的截止期限通常是假的，说我需要确认这个期限是否真实测试其真实性"
+defense_03,应对蚕食,Defense,Counter Nibbling,反谈判,蚕食/追加/防守,中级,"协议接近达成时的额外要求是蚕食，回应一切都已谈妥任何让步都不再免费"
+defense_04,破解虚假权威,Defense,Counter False Authority,反谈判,权威/绕过/决策者,中级,"让我和有最终决定权的人直接对话，绕过无法拍板的中间人，识别权威障碍"
+defense_05,拆解极端锚定,Defense,Counter Extreme Anchor,反谈判,锚定/质疑/标准,高级,"极端报价时不直接谈判，先质疑其依据的标准和假设，拒绝从极端基准调整"
+defense_06,应对最后施压,Defense,Counter Last Minute Pressure,反谈判,终局压力/重置/强硬,高级,"程序终止时提出新要求，回应：我需要重新评估整个协议，重置谈判"
+concept_01,纳什均衡,Concept,Nash Equilibrium,博弈论,均衡/稳定/预测,高级,"双方都不愿单方面偏离的稳定策略组合，不是最优但是稳定的均衡状态"
+concept_02,零和博弈,Concept,Zero-Sum Game,博弈论,零和/对抗/分配,基础,"一方所得等于另一方所失，总价值不变，分配问题，与非零和博弈相对"
+concept_03,非零和博弈,Concept,Non-Zero-Sum Game,博弈论,非零和/合作/创造,基础,"双方利益可以同时得到满足，存在帕累托改进空间，合作创造价值"
+concept_04,帕累托最优,Concept,Pareto Optimality,博弈论,帕累托/最优/效率,高级,"无法在不损害任何一方的情况下改善某方处境的状态，谈判应追求帕累托边界"
+concept_05,信息不对称,Concept,Information Asymmetry,博弈论/信息经济学,信息/优势/不对称,中级,"交易双方掌握信息量不同，信息优势方拥有谈判优势，消除信息不对称是谈判重点"
+concept_06,承诺与可信度,Concept,Commitment and Credibility,博弈论,承诺/可信/威慑,中级,"威胁和承诺需要具备可信度才有效，言行一致和退出成本是建立可信度的关键"
+concept_07,重复博弈,Concept,Repeated Game,博弈论,重复/声誉/合作,中级,"同一组博弈者多次交手，声誉效应产生合作激励，TfT策略在此场景下极为有效"
+concept_08,锚定认知偏误,Concept,Anchoring Cognitive Bias,认知心理学,锚定/偏误/认知,基础,"第一个信息严重影响后续判断，先出价者设定参照框架，抵制：关注客观标准"
+concept_09,损失厌恶,Concept,Loss Aversion,行为经济学,损失/厌恶/框架,中级,"人对损失的痛苦是等值收益喜悦的2-2.5倍，框架为减少损失比获得收益更有说服力"
+concept_10,互惠规范,Concept,Reciprocity Norm,社会心理学,互惠/义务/社交,基础,"接受礼物或帮助后产生回报义务感，先给予触发互惠机制，广泛存在于所有文化"
+scenario_01,囚徒困境,Scenario,Prisoner's Dilemma,博弈论,合作/背叛/困境,入门,"经典非零和博弈，合作vs背叛，纳什均衡是双背叛但帕累托最优是双合作"
+scenario_02,最后通牒博弈,Scenario,Ultimatum Game,行为经济学,分配/公平/拒绝,入门,"提议者分配接受者决定接受或拒绝，揭示公平偏好与理性计算的冲突"
+scenario_03,信任博弈,Scenario,Trust Game,行为经济学,信任/互惠/投资,中级,"两阶段：投资者投入受托方3倍放大后决定返还多少，测量信任与互惠"
+scenario_04,商业谈判博弈,Scenario,Bargaining Game,谈判学,价格/让步/多轮,中级,"买卖双方多轮价格谈判，锚定让步节奏BATNA综合运用"
+scenario_05,危机谈判,Scenario,Crisis Negotiation,FBI谈判,危机/高压/同理心,高级,"四阶段危机处置：接触→理解→方案→巩固，高压情境下的沟通策略"
+scenario_06,公共品博弈,Scenario,Public Goods Game,博弈论,公共品/集体/搭便车,中级,"集体行动困境：公共池乘数效应vs个人理性，信任声誉与条件合作"
+scenario_07,联盟谈判,Scenario,Coalition Negotiation,政治博弈论,联盟/多方/策略,高级,"多方利益协调：信息扫描→联盟构建→巩固→终局转化，多方博弈"
+opponent_01,陈逻辑,Opponent,Rational Analyzer,博弈心理学,理性/数据/计算,基础,"数据驱动精确计算，弱点：对情感诉求反应迟钝，应对：使用数据和逻辑"
+opponent_02,林敏感,Opponent,Emotional Driver,博弈心理学,情感/关系/波动,基础,"重视关系情绪波动影响决策，弱点：容易被激将，应对：建立情感连接先处理情绪"
+opponent_03,钢铁王,Opponent,Aggressive Hawk,博弈心理学,强硬/压迫/鹰派,中级,"强硬立场极力压缩空间，弱点：合理反压时容易妥协，应对：保持冷静用BATNA建立底气"
+opponent_04,和谐李,Opponent,Cooperative Seeker,博弈心理学,合作/双赢/关系,基础,"寻求双赢注重长期关系，弱点：过于善意容易被利用，应对：诚实合作提出双赢方案"
+opponent_05,影子张,Opponent,Manipulative Controller,博弈心理学,操纵/心理战/隐藏,高级,"善用心理战术隐藏意图，弱点：被识破后失去优势，应对：高度警觉要求书面确认"
+opponent_06,稳健吴,Opponent,Risk Avoider,博弈心理学,风险规避/保守/稳健,基础,"保守稳健避免不确定，弱点：压力下倾向过度让步，应对：提供安全感和数据证明"
+profile_01,战略家,PsychProfile,Strategist,博弈心理学,理智/全局/规划,,"冷静理智善于全局规划，策略深度高主张强度高，建议：增加情感投入"
+profile_02,调解者,PsychProfile,Mediator,博弈心理学,调解/关系/和谐,,"天生关系维护者擅长化解冲突，合作倾向高公平敏感高，建议：学会坚守底线"
+profile_03,竞争者,PsychProfile,Competitor,博弈心理学,竞争/利益/进攻,,"目标明确勇于争取最大利益，主张强度高风险承受高，建议：关注对方利益"
+profile_04,外交家,PsychProfile,Diplomat,博弈心理学,外交/灵活/适应,,"灵活适应善于切换策略，适应灵活高情绪调节好，建议：在核心利益保持一致性"
+profile_05,分析师,PsychProfile,Analyst,博弈心理学,分析/谨慎/数据,,"谨慎周密偏好有据决策，策略深度高风险承受低，建议：增加行动果断性"
+profile_06,实用主义者,PsychProfile,Pragmatist,博弈心理学,务实/均衡/灵活,,"务实灵活根据情境选择最优策略，各维度均衡，建议：深化专项谈判技能"

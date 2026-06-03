@@ -260,6 +260,25 @@ body {
   color: #aaa;
 }
 
+.nd-eng {
+  font-size: 11px;
+  color: #5b9af0;
+  margin-bottom: 3px;
+  font-style: italic;
+}
+
+.nd-meta {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+  line-height: 1.7;
+}
+
+.nd-meta strong {
+  color: #888;
+  font-weight: 500;
+}
+
 /* Main graph area */
 #graph-area {
   flex: 1;

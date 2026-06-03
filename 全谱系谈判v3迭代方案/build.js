@@ -23,14 +23,51 @@ const path = require('path');
 const SRC = path.join(__dirname, 'src');
 const DIST = path.join(__dirname, 'dist');
 
-// 依赖顺序：被依赖者在前，bootstrap 在最后
+// 依赖顺序：被依赖者在前，bootstrap 在最后。
+// 关键：class extends 与 const 在 IIFE 中按出现顺序求值，
+//      故 base-scenario 须先于各场景，registry 须后于各场景。
 const MANIFEST = [
+  // 内核
   'core/event-bus.js',
   'core/events.js',
   'core/store.js',
+  // 静态数据
+  'data/opponents.js',
+  'data/scenarios.meta.js',
+  'data/masters.js',
+  'data/strategies.js',
+  'data/ranks.js',
+  // 通用 UI 片段
+  'ui/components.js',
+  // 分析与持久化
+  'analytics/player-data.js',
+  'analytics/psych-analyzer.js',
+  // 路由
   'ui/router.js',
+  // 场景（base 在前，registry 在后）
+  'scenarios/base-scenario.js',
+  'scenarios/prisoners.js',
+  'scenarios/ultimatum.js',
+  'scenarios/trust.js',
+  'scenarios/bargaining.js',
+  'scenarios/crisis.js',
+  'scenarios/public-goods.js',
+  'scenarios/coalition.js',
+  'scenarios/registry.js',
+  'scenarios/runner.js',
+  // 记录器（依赖 data/analytics）
+  'analytics/recorder.js',
+  // 屏幕
   'ui/screens/welcome.js',
   'ui/screens/main-menu.js',
+  'ui/screens/scenario-select.js',
+  'ui/screens/opponent-select.js',
+  'ui/screens/game-view.js',
+  'ui/screens/result.js',
+  'ui/screens/strategy-lib.js',
+  'ui/screens/psychology.js',
+  'ui/screens/dashboard.js',
+  // 启动（组合根，必须最后）
   'core/bootstrap.js',
 ];
 

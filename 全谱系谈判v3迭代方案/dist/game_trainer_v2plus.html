@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全谱系博弈实战演练系统 v2+</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --border: #2a3a5a;
+  --cyan: #00d4ff;
+  --green: #00ff9f;
+  --yellow: #ffd700;
+  --red: #ff4f6a;
+  --purple: #c084fc;
+  --dim: #4a6080;
+  --text: #c8d8f0;
+  --white: #e8f0ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100vh;font-size:14px}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.screen{display:none}
+.screen.active{display:block}
+.header{text-align:center;padding:20px 0 12px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header h1{font-size:22px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 20px var(--cyan)}
+.header .sub{color:var(--dim);font-size:11px;margin-top:4px;letter-spacing:2px}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px}
+.panel-title{color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:8px 20px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:2px;transition:all .2s;letter-spacing:1px}
+.btn:hover{background:rgba(0,212,255,.1);box-shadow:0 0 10px rgba(0,212,255,.3)}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:rgba(0,255,159,.1);box-shadow:0 0 10px rgba(0,255,159,.3)}
+.btn-yellow{border-color:var(--yellow);color:var(--yellow)}
+.btn-yellow:hover{background:rgba(255,215,0,.1)}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:rgba(255,79,106,.1)}
+.btn-purple{border-color:var(--purple);color:var(--purple)}
+.btn-purple:hover{background:rgba(192,132,252,.1)}
+.btn-cyan{border-color:var(--cyan);color:var(--cyan)}
+.btn-cyan:hover{background:rgba(0,212,255,.1);box-shadow:0 0 10px rgba(0,212,255,.3)}
+.btn-full{width:100%;display:block;text-align:left;margin-bottom:6px;padding:10px 14px}
+.btn-sm{padding:5px 12px;font-size:12px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:2px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.menu-item:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.menu-num{color:var(--cyan);font-size:16px;width:28px;text-align:center;font-weight:bold}
+.menu-text{flex:1}
+.menu-text b{color:var(--white);display:block;font-size:14px}
+.menu-text span{color:var(--dim);font-size:11px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px;cursor:pointer;transition:all .2s}
+.card:hover{border-color:var(--cyan);transform:translateY(-1px)}
+.card h3{color:var(--cyan);font-size:13px;margin-bottom:6px}
+.card .diff{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.diff-easy{background:rgba(0,255,159,.15);color:var(--green);border:1px solid rgba(0,255,159,.3)}
+.diff-med{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid rgba(255,215,0,.3)}
+.diff-hard{background:rgba(255,79,106,.15);color:var(--red);border:1px solid rgba(255,79,106,.3)}
+.card p{color:var(--dim);font-size:11px;line-height:1.5}
+.opp-card{border:1px solid var(--border);border-radius:3px;padding:10px;cursor:pointer;transition:all .2s;background:var(--bg3)}
+.opp-card:hover{border-color:var(--cyan)}
+.opp-card.selected{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.opp-card.boss-card{border-color:var(--yellow);background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px}
+.opp-name{color:var(--white);font-size:13px;font-weight:bold}
+.opp-type{color:var(--purple);font-size:11px;margin:2px 0}
+.opp-desc{color:var(--dim);font-size:11px}
+.bar-wrap{margin:6px 0}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px}
+.bar-label span:first-child{color:var(--text)}
+.bar-label span:last-child{color:var(--cyan)}
+.bar-bg{background:var(--border);border-radius:2px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.bar-cyan{background:linear-gradient(90deg,#0066aa,var(--cyan))}
+.bar-green{background:linear-gradient(90deg,#006644,var(--green))}
+.bar-yellow{background:linear-gradient(90deg,#886600,var(--yellow))}
+.bar-red{background:linear-gradient(90deg,#880022,var(--red))}
+.bar-purple{background:linear-gradient(90deg,#440088,var(--purple))}
+.score-box{text-align:center;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:3px}
+.score-num{font-size:32px;font-weight:bold;color:var(--cyan)}
+.score-lbl{color:var(--dim);font-size:11px;margin-top:2px}
+.ability-box{text-align:center;padding:8px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:3px}
+.ability-num{font-size:20px;font-weight:bold;color:var(--cyan)}
+.ability-lbl{color:var(--dim);font-size:10px;margin-top:2px;line-height:1.3}
+.outcome{display:inline-block;padding:4px 14px;border-radius:2px;font-size:12px;font-weight:bold;letter-spacing:1px}
+.outcome-win{background:rgba(0,255,159,.15);color:var(--green);border:1px solid var(--green)}
+.outcome-lose{background:rgba(255,79,106,.15);color:var(--red);border:1px solid var(--red)}
+.outcome-draw{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid var(--yellow)}
+.outcome-coop{background:rgba(0,212,255,.15);color:var(--cyan);border:1px solid var(--cyan)}
+.choice-btn{width:100%;text-align:left;padding:12px 16px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:3px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .2s;line-height:1.5}
+.choice-btn:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.choice-btn b{color:var(--cyan)}
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(42,58,90,.5);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--dim)}
+.info-val{color:var(--white)}
+.tag{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;margin:2px;border:1px solid}
+.tag-cyan{border-color:var(--cyan);color:var(--cyan)}
+.tag-green{border-color:var(--green);color:var(--green)}
+.tag-yellow{border-color:var(--yellow);color:var(--yellow)}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 16px;cursor:pointer;color:var(--dim);font-size:12px;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab:hover{color:var(--text)}
+.input-wrap{margin:12px 0}
+.input-wrap label{display:block;color:var(--dim);font-size:11px;margin-bottom:4px;letter-spacing:1px}
+.inp{background:var(--bg3);border:1px solid var(--border);color:var(--white);padding:8px 12px;font-family:inherit;font-size:14px;width:100%;border-radius:2px}
+.inp:focus{outline:none;border-color:var(--cyan)}
+.hint{padding:10px 14px;border-radius:2px;margin:8px 0;font-size:12px;line-height:1.6}
+.hint-cyan{background:rgba(0,212,255,.08);border-left:3px solid var(--cyan);color:var(--text)}
+.hint-green{background:rgba(0,255,159,.08);border-left:3px solid var(--green);color:var(--text)}
+.hint-yellow{background:rgba(255,215,0,.08);border-left:3px solid var(--yellow);color:var(--text)}
+.hint-red{background:rgba(255,79,106,.08);border-left:3px solid var(--red);color:var(--text)}
+.hint-purple{background:rgba(192,132,252,.08);border-left:3px solid var(--purple);color:var(--text)}
+.log{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:3px;padding:8px;background:var(--bg)}
+.log-entry{font-size:11px;padding:4px 0;border-bottom:1px solid rgba(42,58,90,.3);color:var(--dim)}
+.log-entry:last-child{border-bottom:none}
+.log-entry .lbl{color:var(--text)}
+.master-card{padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-bottom:10px}
+.master-name{color:var(--yellow);font-size:14px;font-weight:bold;margin-bottom:4px}
+.master-title{color:var(--dim);font-size:11px;margin-bottom:10px}
+.tactic{padding:8px 10px;background:var(--bg2);border-left:3px solid var(--cyan);margin-bottom:6px;border-radius:0 2px 2px 0}
+.tactic-name{color:var(--cyan);font-size:12px;font-weight:bold}
+.tactic-desc{color:var(--dim);font-size:11px;margin-top:2px;line-height:1.5}
+.diff-select{display:flex;gap:8px;margin:12px 0}
+.diff-btn{flex:1;padding:8px;text-align:center;border:1px solid var(--border);border-radius:3px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--dim);background:var(--bg3);transition:all .2s}
+.diff-btn:hover{border-color:var(--cyan);color:var(--text)}
+.diff-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.08)}
+.diff-btn.extreme{border-color:var(--yellow);color:var(--yellow)}
+.diff-btn.extreme.active{background:rgba(255,215,0,.08)}
+.trump-review{background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(255,79,106,.04));border:1px solid var(--yellow);border-radius:4px;padding:16px;margin-top:12px}
+.trump-review-title{color:var(--yellow);font-size:13px;font-weight:bold;margin-bottom:8px;letter-spacing:1px}
+@media(max-width:600px){
+  .grid2,.grid3,.grid6{grid-template-columns:1fr}
+  .header h1{font-size:16px}
+}
+.welcome-logo{text-align:center;padding:40px 0 20px}
+.logo-art{color:var(--cyan);font-size:13px;line-height:1.4;text-shadow:0 0 15px rgba(0,212,255,.5)}
+.stat-mini{display:inline-block;padding:6px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;font-size:12px;margin:4px}
+.stat-mini span{color:var(--cyan);font-weight:bold}
+.back-btn{color:var(--dim);cursor:pointer;font-size:12px;padding:4px 8px;border:1px solid var(--border);background:transparent;font-family:inherit;border-radius:2px}
+.back-btn:hover{color:var(--text);border-color:var(--text)}
+.flex-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- WELCOME SCREEN -->
+<div id="screen-welcome" class="screen active">
+  <div class="welcome-logo">
+    <div class="logo-art">
+╔══════════════════════════════════════╗<br>
+║  全谱系博弈实战演练系统  v2.0+       ║<br>
+║  Full-Spectrum Negotiation Trainer   ║<br>
+╚══════════════════════════════════════╝
+    </div>
+  </div>
+  <div class="panel" style="max-width:400px;margin:0 auto">
+    <div class="panel-title">▶ 进入系统</div>
+    <div class="input-wrap">
+      <label>输入您的训练代号</label>
+      <input class="inp" id="player-name-input" placeholder="例如：谈判精英" maxlength="20" autocomplete="off">
+    </div>
+    <button class="btn btn-green" style="width:100%" onclick="enterSystem()">进入训练系统 →</button>
+  </div>
+</div>
+
+<!-- MAIN MENU SCREEN -->
+<div id="screen-main" class="screen">
+  <div class="header">
+    <h1>◆ 全谱系博弈演练系统 ◆</h1>
+    <div class="sub" id="main-player-info">玩家: — | 等级: — | 训练场次: 0</div>
+  </div>
+  <div id="main-unlock-hint" style="margin-bottom:10px"></div>
+  <div id="main-menu-items">
+    <div class="menu-item" onclick="showScreen('screen-scenario-select')">
+      <div class="menu-num">①</div>
+      <div class="menu-text"><b>场景实战训练</b><span>选择博弈场景，与AI对手对决</span></div>
+    </div>
+    <div class="menu-item" onclick="quickTraining()">
+      <div class="menu-num">②</div>
+      <div class="menu-text"><b>快速训练模式</b><span>随机场景与随机对手，快速提升</span></div>
+    </div>
+    <div class="menu-item" onclick="openStrategyLibrary()">
+      <div class="menu-num">③</div>
+      <div class="menu-text"><b>策略理论库</b><span>策略卡 / 沟通技术 / 心理防御 / 六大宗师理论</span></div>
+    </div>
+    <div class="menu-item" onclick="showPsychReport()">
+      <div class="menu-num">④</div>
+      <div class="menu-text"><b>心理档案分析</b><span>查看您的8维博弈心理画像</span></div>
+    </div>
+    <div class="menu-item" onclick="showDashboard()">
+      <div class="menu-num">⑤</div>
+      <div class="menu-text"><b>训练成绩看板</b><span>历史战绩、胜率统计、成长曲线</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO SELECT SCREEN -->
+<div id="screen-scenario-select" class="screen">
+  <div class="flex-between">
+    <div class="section-title">▶ 选择训练场景</div>
+    <button class="back-btn" onclick="showScreen('screen-main')">← 返回</button>
+  </div>
+  <div id="scenario-cards-container"></div>
+</div>
+
+<!-- OPPONENT SELECT SCREEN -->
+<div id="screen-opponent-select" class="screen">
+  <div class="flex-between">
+    <div class="section-title">▶ 选择对手</div>
+    <button class="back-btn" onclick="showScreen('screen-scenario-select')">← 返回</button>
+  </div>
+  <div class="hint hint-cyan" id="selected-scenario-info">场景：—</div>
+  <div class="panel" style="margin-bottom:10px">
+    <div class="panel-title">难度选择</div>
+    <div class="diff-select" id="diff-select-btns">
+      <div class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">初级</div>
+      <div class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">中级</div>
+      <div class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">高级</div>
+      <div class="diff-btn extreme" id="extreme-diff-btn" data-diff="extreme" onclick="setDifficulty('extreme')" style="display:none">终局挑战</div>
+    </div>
+  </div>
+  <div class="grid2" id="opponent-cards-container"></div>
+  <div style="margin-top:12px">
+    <button class="btn btn-yellow" style="width:100%" onclick="selectRandomOpponent()">⚡ 随机对手（挑战未知）</button>
+  </div>
+</div>
+
+<!-- SCENARIO RUNNING SCREEN -->
+<div id="screen-running" class="screen">
+  <div id="scenario-ui"></div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="screen-result" class="screen">
+  <div class="header">
+    <h1 id="result-title">训练结果</h1>
+  </div>
+  <div id="result-content"></div>
+  <div style="margin-top:16px;text-align:center">
+    <button class="btn btn-cyan" onclick="showScreen('screen-main')" style="margin:4px">← 返回主菜单</button>
+    <button class="btn btn-green" onclick="quickTraining()" style="margin:4px">再来一局 ⚡</button>
+  </div>
+</div>
+
+<!-- STRATEGY SCREEN -->
+<div id="screen-strategy" class="screen">
+  <div class="flex-between">
+    <div class="section-title">▶ 策略理论库</div>
+    <button class="back-btn" onclick="showScreen('screen-main')">← 返回</button>
+  </div>
+  <div class="tabs" id="strategy-tabs">
+    <div class="tab active" onclick="switchStratTab('cards')">策略卡牌</div>
+    <div class="tab" onclick="switchStratTab('comm')">沟通技术</div>
+    <div class="tab" onclick="switchStratTab('defense')">心理防御</div>
+    <div class="tab" onclick="switchStratTab('masters')">六大宗师</div>
+  </div>
+  <div id="strategy-content"></div>
+</div>
+
+<!-- PSYCHOLOGY SCREEN -->
+<div id="screen-psychology" class="screen">
+  <div class="flex-between">
+    <div class="section-title">▶ 心理档案分析</div>
+    <button class="back-btn" onclick="showScreen('screen-main')">← 返回</button>
+  </div>
+  <div id="psychology-content"></div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div id="screen-dashboard" class="screen">
+  <div class="flex-between">
+    <div class="section-title">▶ 训练成绩看板</div>
+    <button class="back-btn" onclick="showScreen('screen-main')">← 返回</button>
+  </div>
+  <div id="dashboard-content"></div>
+</div>
+
+</div>
+<script>
+// ========== DATA DEFINITIONS ==========
+const SCENARIOS = {
+  prisoners: {name:'囚徒困境', diff:'easy', domain:'经典博弈', desc:'经典非零和博弈，合作还是背叛？', Class: PrisonersDilemma},
+  ultimatum: {name:'最后通牒博弈', diff:'easy', domain:'分配博弈', desc:'分配者提议，接受者决定接受或拒绝', Class: UltimatumGame},
+  trust: {name:'信任博弈', diff:'med', domain:'信任博弈', desc:'信任与回馈的两阶段测试', Class: TrustGame},
+  bargaining: {name:'商业谈判博弈', diff:'med', domain:'谈判博弈', desc:'多轮价格谈判，争取最佳成交', Class: BargainingGame},
+  crisis: {name:'危机谈判', diff:'hard', domain:'危机处置', desc:'四阶段危机处置，需要高超的沟通策略', Class: CrisisNegotiation},
+  publicgoods: {name:'公共品博弈', diff:'med', domain:'合作博弈', desc:'公共项目贡献决策，团队与个人利益的博弈', Class: PublicGoodsGame},
+  coalition: {name:'联盟谈判', diff:'hard', domain:'多方博弈', desc:'多方利益协调，建立稳定联盟', Class: CoalitionGame},
+};
+
+const OPPONENTS = [
+  {id:'rational', name:'陈逻辑', type:'理性分析型', desc:'数据驱动，精确计算每步得失', weakness:'对情感诉求反应迟钝', risk:0.3, coop:0.5, fair:0.5, assert:0.6},
+  {id:'emotional', name:'林敏感', type:'情感驱动型', desc:'重视关系，情绪波动影响决策', weakness:'容易被激将或情感操控', risk:0.5, coop:0.7, fair:0.8, assert:0.4},
+  {id:'aggressive', name:'钢铁王', type:'强硬鹰派型', desc:'强硬立场，极力压缩对方空间', weakness:'合理反压时容易妥协', risk:0.7, coop:0.2, fair:0.3, assert:0.9},
+  {id:'cooperative', name:'和谐李', type:'合作共赢型', desc:'寻求双赢，注重长期关系维护', weakness:'过于善意容易被利用', risk:0.4, coop:0.9, fair:0.8, assert:0.5},
+  {id:'manipulative', name:'影子张', type:'操纵控制型', desc:'善用心理战术，隐藏真实意图', weakness:'被识破后失去优势', risk:0.6, coop:0.3, fair:0.2, assert:0.8},
+  {id:'riskAverse', name:'稳健吴', type:'风险规避型', desc:'保守稳健，避免不确定结果', weakness:'在压力下倾向过度让步', risk:0.2, coop:0.6, fair:0.6, assert:0.4},
+];
+
+const TRUMP_BOSS = {
+  id:'trumpBoss', name:'唐纳德·特朗普', type:'极限交易型 / 高压锚定型',
+  desc:'以极端锚定、公开施压、二元胜负叙事、不可预测节奏和高频反转制造谈判压力。',
+  weakness:'遇到清晰BATNA、强替代方案、事实边界、低情绪反应和可执行退出能力时，压迫效果会下降。',
+  risk:0.95, coop:0.18, fair:0.22, assert:0.98, unpredictability:0.92, publicity:0.9, anchoring:0.98, pressure:0.96,
+  boss:true, unlockRank:'宗师级', unlockDifficulty:'extreme'
+};
+
+const PERSONALITY_TELLS = {
+  rational: ['总是要求数据支持','反复确认细节','表情克制中性'],
+  emotional: ['声音起伏明显','频繁提及"感受"','肢体语言丰富'],
+  aggressive: ['打断对方发言','设置最后期限','明确表达不满'],
+  cooperative: ['主动提出让步','寻找共同利益','保持开放态度'],
+  manipulative: ['突然改变话题','制造紧迫感','模糊关键条款'],
+  riskAverse: ['多次确认安全性','偏好保守方案','回避极端选项'],
+  trumpBoss: ['开局提出极端条件','频繁使用胜负二元叙事','制造公开压力和时间压力','突然改变议题或报价','把小让步包装成重大胜利','不断测试对方底线'],
+};
+
+const STRATEGY_CARDS = [
+  {name:'以牙还牙 (Tit-for-Tat)', tags:['经典','稳健'], desc:'第一轮合作，此后模仿对方上一轮行为。简单、稳健、可预期，在重复博弈中表现卓越。', use:'重复博弈，对抗多类型对手'},
+  {name:'锚定效应', tags:['谈判','心理'], desc:'率先提出极端报价，让对方基于此调整，而非基于真实价值。先出价者掌握参照框架。', use:'价格谈判，分配博弈'},
+  {name:'BATNA最佳替代方案', tags:['策略','必备'], desc:'知道自己的退出选项，才能在谈判中保持底气。永远不要在没有BATNA的情况下进行重要谈判。', use:'所有谈判场景'},
+  {name:'框架重构', tags:['心理','高级'], desc:'将损失框架重构为收益框架。"您将损失10万"改为"您可以保留90万"，改变对方的认知基准。', use:'说服，反驳，化解僵局'},
+  {name:'积极倾听', tags:['沟通','基础'], desc:'用重复、总结、提问让对方感受到被理解。70%倾听，30%表达。关注言外之意。', use:'建立信任，获取信息'},
+  {name:'互惠原则', tags:['心理','社交'], desc:'先给予小利，触发对方回报义务感。小礼物开启大谈判。人类天生厌恶欠债感。', use:'破冰，建立合作基础'},
+  {name:'策略性沉默', tags:['心理','高级'], desc:'提出要求后保持沉默。焦虑的一方往往先开口，在压力下做出让步。沉默是强大的武器。', use:'谈判关键节点，等待对方让步'},
+  {name:'条件让步', tags:['谈判','策略'], desc:'"如果您能...，我可以考虑..."——将每次让步与对方行动绑定，避免单方面退让，维持筹码。', use:'价格谈判，条件博弈'},
+  {name:'纳什均衡识别', tags:['博弈论','分析'], desc:'识别双方都不愿单方面偏离的稳定策略组合。理解纳什均衡有助于预测对手行为并优化自身策略。', use:'分析博弈格局'},
+  {name:'整合性谈判', tags:['谈判','双赢'], desc:'寻找背后利益，非立场对抗。"为什么你要这个？"可能揭示双方都满意的创意解决方案。', use:'复杂谈判，多议题场景'},
+];
+
+const COMM_TECHNIQUES = [
+  {name:'镜像技术', desc:'重复对方最后2-3个词，触发对方继续阐述，获取更多信息。'},
+  {name:'战术性同理心', desc:'"我理解您为什么会有这样的感受..."——承认情绪，建立连接，化解防御。'},
+  {name:'校准问题', desc:'用"如何/什么"类开放式问题，让对方思考解决方案而非抗拒。'},
+  {name:'贴标签', desc:'命名对方的情绪状态："看起来您对这个结果感到失望"——降低防御性。'},
+  {name:'"不"的保护', desc:'让对方说"不"，他们会感到掌控感，从而更愿意继续谈判。'},
+  {name:'锚定愿景', desc:'描述合作成功后的美好前景，让对方想象双赢结局。'},
+];
+
+const DEFENSE_TACTICS = [
+  {name:'识别好警察/坏警察', desc:'认出此策略后，直接说出来："我注意到你们采用了好坏角色分工"——策略失效。'},
+  {name:'反时间压力', desc:'人为的截止期限通常是假的。"我需要确认这个期限是真实的"——测试真实性。'},
+  {name:'应对蚕食', desc:'协议接近达成时的额外要求——"一切都已谈妥，让步不再免费"。'},
+  {name:'破解虚假权威', desc:'"让我和有最终决定权的人直接对话"——绕过无法拍板的中间人。'},
+  {name:'拆解极端锚定', desc:'极端报价时不直接谈判，先质疑其依据的标准和假设。'},
+  {name:'应对最后关头施压', desc:'在程序终止时提出的要求——"我需要重新评估整个协议"。'},
+];
+
+const MASTERS = {
+  dawson: {
+    name:'罗杰·道森', title:'《优势谈判》',
+    intro:'15大谈判策略，覆盖开局、中局、终局三大阶段，是谈判实战的权威教程。',
+    tactics:[
+      {stage:'开局', name:'狮子大开口', desc:'要价远高于预期，留出让步空间，设立高锚点。'},
+      {stage:'开局', name:'虚假权威', desc:'"我需要请示上级"——保留缓冲空间，让对方对最终拍板人无处施压。'},
+      {stage:'开局', name:'不情愿买家/卖家', desc:'表现出勉强姿态，让对方感到他们在争取你的参与。'},
+      {stage:'开局', name:'钳子策略', desc:'"你能做得更好"——简单一句话压缩对方空间，且不先出价。'},
+      {stage:'中局', name:'请示上级', desc:'声称无权做最终决定，避免单方面让步压力。'},
+      {stage:'中局', name:'消解僵局', desc:'换人、换地点、换议题，打破卡壳局面。'},
+      {stage:'中局', name:'让步节奏管理', desc:'让步幅度递减（大→中→小），暗示接近极限。'},
+      {stage:'中局', name:'回收策略', desc:'表现出重新考虑的态度，引发对方反应，测试底线。'},
+      {stage:'中局', name:'时间压力', desc:'接近截止期限时，谈判双方都更愿意妥协，善用时限。'},
+      {stage:'终局', name:'蚕食策略', desc:'协议接近完成时提出小额追加要求，对方为维护大局往往让步。'},
+      {stage:'终局', name:'打包策略', desc:'将多个议题打包，用不重要项目换取重要利益。'},
+      {stage:'终局', name:'黑脸白脸', desc:'团队中一人强硬、一人温和，制造心理压力与慰藉。'},
+      {stage:'终局', name:'定位让步', desc:'最后关键让步放小，显示已到底线，给对方"赢"的感觉。'},
+      {stage:'终局', name:'书面记录', desc:'任何口头承诺立即书面化，防止事后反悔。'},
+      {stage:'原则', name:'永不平分差异', desc:'平分差异看似公平，实则对先出价高者不利，要主动再让步以引导对方自愿中间价。'},
+    ]
+  },
+  fisher: {
+    name:'罗杰·费希尔 & 威廉·尤里', title:'《谈判力》',
+    intro:'哈佛谈判项目成果：基于利益的原则性谈判四步法，被全球无数谈判者奉为圣经。',
+    tactics:[
+      {stage:'原则1', name:'对人温和，对事强硬', desc:'把人与问题分开。不让情绪和关系阻碍实质利益的实现。'},
+      {stage:'原则2', name:'聚焦利益，非立场', desc:'"为什么你要这个？"背后的利益才是真正的谈判空间所在。'},
+      {stage:'原则3', name:'创造多种选项', desc:'在决定前先脑力激荡，扩大可能性空间，而非只争论单一方案。'},
+      {stage:'原则4', name:'坚持客观标准', desc:'以市场价、行业惯例、法律标准作为依据，避免意志对抗。'},
+      {stage:'工具', name:'BATNA', desc:'最佳替代方案——知道自己的退出点，才有真正的谈判筹码。'},
+      {stage:'工具', name:'ZOPA', desc:'协议潜在区间——双方BATNA之间的重叠区域，是达成交易的空间。'},
+      {stage:'工具', name:'谈判一元论', desc:'避免把立场当成底线，而是灵活在利益层面寻找满足双方的方案。'},
+    ]
+  },
+  voss: {
+    name:'克里斯·沃斯', title:'《掌控谈话》',
+    intro:'FBI首席人质谈判专家的实战技巧，以战术性同理心取代对抗，创造突破性结果。',
+    tactics:[
+      {stage:'核心', name:'战术性同理心', desc:'命名对方情绪，建立连接，化解防御。理解不等于认同。'},
+      {stage:'技术', name:'镜像 (Mirror)', desc:'重复对方最后2-3词，触发进一步阐述，获取信息。'},
+      {stage:'技术', name:'贴标签 (Label)', desc:'"看起来您..."——承认情绪存在，降低其强度。'},
+      {stage:'技术', name:'"不"的力量', desc:'让对方说"不"使其有掌控感，反而推动谈判前进。'},
+      {stage:'技术', name:'校准问题', desc:'"我怎么做才能帮助您？"——让对方思考，引导合作。'},
+      {stage:'技术', name:'"就是这样"验证', desc:'当对方说"就是这样"时，说明你完全理解了他们。'},
+      {stage:'技术', name:'截止期限', desc:'人为截止期限往往是虚假的，识别并测试其真实性。'},
+      {stage:'技术', name:'黑天鹅信息', desc:'找出改变游戏规则的隐藏信息，通常藏在对方的"疯狂"行为中。'},
+      {stage:'技术', name:'锚定极端值', desc:'先发制人锚定极端价格，再做"公平"的让步。'},
+      {stage:'技术', name:'弯腰报价法', desc:'逐步递减的让步（如3000→500→250），暗示接近底线。'},
+    ]
+  },
+  cohen: {
+    name:'赫布·科恩', title:'《谈判无处不在》',
+    intro:'权力、时间、信息三角模型，认为世界就是一张巨大的谈判桌，万事皆可谈。',
+    tactics:[
+      {stage:'三要素', name:'权力 (Power)', desc:'感知到的权力比真实权力更重要。自信、准备、替代方案都是权力来源。'},
+      {stage:'三要素', name:'时间 (Time)', desc:'接近截止期限的一方压力更大。隐藏真实期限，了解对方期限。'},
+      {stage:'三要素', name:'信息 (Information)', desc:'你知道的越多，谈判越有利。提问、倾听、观察、研究。'},
+      {stage:'风格', name:'苏联式谈判', desc:'极端立场、不妥协、人身攻击、逐步蚕食——识别并防御此类风格。'},
+      {stage:'风格', name:'双赢谈判', desc:'关注关系和长期利益，通过创造价值而非分割价值达成协议。'},
+      {stage:'策略', name:'投资心理', desc:'让对方在谈判过程中投入越来越多，增加他们退出的心理成本。'},
+    ]
+  },
+  diamond: {
+    name:'斯图尔特·戴蒙德', title:'《Getting More》',
+    intro:'沃顿商学院谈判教授，强调人比流程更重要，情感和感知是谈判的核心战场。',
+    tactics:[
+      {stage:'原则', name:'目标第一', desc:'每次谈判开始前明确：我真正想要什么？不要为争论而争论。'},
+      {stage:'原则', name:'关注对方的脑', desc:'谈判发生在对方的大脑中，你的工作是了解并影响他们的感知。'},
+      {stage:'原则', name:'情感先行', desc:'人先感受，后理性思考。先处理情绪，再谈实质。'},
+      {stage:'原则', name:'每个人都不同', desc:'放弃"标准"做法，针对每个人的个性、需求和价值观定制策略。'},
+      {stage:'工具', name:'找到决策者', desc:'和真正能做决定的人谈，不要浪费时间在无权者身上。'},
+      {stage:'工具', name:'画面感', desc:'帮对方构想合作成功后的具体情景，情感化的愿景比数据更有说服力。'},
+      {stage:'工具', name:'增量主义', desc:'大目标拆成小步骤，每一步建立信任，积累谈判成果。'},
+      {stage:'工具', name:'等价交换', desc:'找到对方高估、你低成本的东西，用你低估、对方高价值的东西交换。'},
+    ]
+  },
+  shell: {
+    name:'理查德·谢尔', title:'《为优势而谈判》',
+    intro:'沃顿商学院教授，五种谈判风格框架，强调知己知彼、因地制宜的适应性策略。',
+    tactics:[
+      {stage:'五种风格', name:'竞争型', desc:'高关注结果，低关注关系。适用：一次性交易，强势立场。风险：损害关系。'},
+      {stage:'五种风格', name:'合作型', desc:'高关注结果，高关注关系。适用：长期合作，复杂多议题。需要创造力。'},
+      {stage:'五种风格', name:'妥协型', desc:'中等关注两者。适用：时间紧迫，力量均等。风险：双方都未获最优。'},
+      {stage:'五种风格', name:'回避型', desc:'低关注两者。适用：问题不重要，等待时机。风险：问题积累。'},
+      {stage:'五种风格', name:'迁就型', desc:'低关注结果，高关注关系。适用：你错了，需修复关系。风险：被利用。'},
+      {stage:'六步骤', name:'准备阶段', desc:'明确你的目标、BATNA和对方可能的BATNA；研究对方风格和利益。'},
+      {stage:'六步骤', name:'交流阶段', desc:'倾听超过说话，找出对方真实需求，建立信任基础。'},
+      {stage:'六步骤', name:'开场阶段', desc:'决定先出价还是让对方先出价；设立有利锚点。'},
+      {stage:'六步骤', name:'框架阶段', desc:'用对方重视的标准和价值观来定位你的方案。'},
+      {stage:'六步骤', name:'价值创造', desc:'寻找可以同时满足双方利益的交换和打包方案。'},
+      {stage:'六步骤', name:'收盘阶段', desc:'确认每一个细节；使用书面形式固化协议。'},
+    ]
+  }
+};
+
+const STRATEGY_RECOMMEND_MAP = {
+  '主张强度不足': ['BATNA最佳替代方案','策略性沉默','条件让步'],
+  '策略深度不足': ['条件让步','整合性谈判','纳什均衡识别'],
+  '策略适配不足': ['框架重构','积极倾听','整合性谈判'],
+  '风险承受偏低': ['BATNA最佳替代方案','锚定效应'],
+  '情绪调节不足': ['积极倾听','战术性同理心','校准问题'],
+  '公平敏感偏高，可能过度让步': ['条件让步','BATNA最佳替代方案'],
+};
+
+// ========== STATE ==========
+let state = {
+  player: null,
+  currentScenario: null,
+  currentOpponent: null,
+  scenarioKey: null,
+  currentDifficulty: 'medium',
+  stratTab: 'cards',
+};
+
+// ========== PLAYER DATA ==========
+function createDefaultProfile() {
+  return {
+    cooperation_rate:0.5, risk:0.5, fairness:0.5, depth:0.5,
+    emotion:0.5, assert:0.5, adapt:0.5, trust:0.5,
+    scenarioStats:{}, opponentStats:{}, weakPoints:[]
+  };
+}
+
+function loadPlayer(name) {
+  const key = 'gts_player_' + name;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      const p = JSON.parse(saved);
+      const defaults = createDefaultProfile();
+      if (!p.profile) p.profile = defaults;
+      else {
+        Object.keys(defaults).forEach(k => {
+          if (p.profile[k] === undefined) p.profile[k] = defaults[k];
+        });
+      }
+      if (!p.sessions) p.sessions = [];
+      if (typeof p.total !== 'number') p.total = 0;
+      if (typeof p.wins !== 'number') p.wins = 0;
+      if (typeof p.draws !== 'number') p.draws = 0;
+      if (typeof p.losses !== 'number') p.losses = 0;
+      return p;
+    }
+  } catch(e) {
+    console.warn('loadPlayer: corrupted data, resetting.', e);
+    localStorage.removeItem('gts_player_' + name);
+  }
+  return {name, sessions:[], total:0, wins:0, draws:0, losses:0, profile: createDefaultProfile()};
+}
+
+function savePlayer() {
+  if (!state.player) return;
+  try {
+    localStorage.setItem('gts_player_' + state.player.name, JSON.stringify(state.player));
+  } catch(e) { console.warn('savePlayer failed', e); }
+}
+
+function updateScenarioStats(session) {
+  const profile = state.player.profile;
+  if (!profile.scenarioStats) profile.scenarioStats = {};
+  const key = session.scenarioKey || 'unknown';
+  if (!profile.scenarioStats[key]) profile.scenarioStats[key] = {played:0, win:0, lose:0, draw:0, coop:0};
+  const stat = profile.scenarioStats[key];
+  stat.played++;
+  if (session.outcome === 'win') stat.win++;
+  else if (session.outcome === 'lose') stat.lose++;
+  else if (session.outcome === 'coop') stat.coop++;
+  else stat.draw++;
+}
+
+function updateOpponentStats(session) {
+  const profile = state.player.profile;
+  if (!profile.opponentStats) profile.opponentStats = {};
+  const key = session.opponentId || 'unknown';
+  if (!profile.opponentStats[key]) profile.opponentStats[key] = {played:0, win:0, lose:0, draw:0, coop:0};
+  const stat = profile.opponentStats[key];
+  stat.played++;
+  if (session.outcome === 'win') stat.win++;
+  else if (session.outcome === 'lose') stat.lose++;
+  else if (session.outcome === 'coop') stat.coop++;
+  else stat.draw++;
+}
+
+function detectWeakPoints(profile) {
+  const weak = [];
+  if ((profile.assert || 0.5) < 0.42) weak.push('主张强度不足');
+  if ((profile.depth || 0.5) < 0.42) weak.push('策略深度不足');
+  if ((profile.adapt || 0.5) < 0.42) weak.push('策略适配不足');
+  if ((profile.risk || 0.5) < 0.38) weak.push('风险承受偏低');
+  if ((profile.emotion || 0.5) < 0.42) weak.push('情绪调节不足');
+  if ((profile.fairness || 0.5) > 0.78 && (profile.assert || 0.5) < 0.48) weak.push('公平敏感偏高，可能过度让步');
+  return weak;
+}
+
+function addSession(rec) {
+  if (!state.player.profile) state.player.profile = createDefaultProfile();
+  const opp = state.currentOpponent || {};
+  const sc = SCENARIOS[state.scenarioKey] || {};
+  const session = {
+    time: rec.time || new Date().toLocaleString('zh-CN'),
+    scenarioKey: rec.scenarioKey || state.scenarioKey || 'unknown',
+    scenario: rec.scenario || sc.name || '—',
+    opponentId: rec.opponentId || opp.id || 'unknown',
+    opponent: rec.opponent || opp.type || '—',
+    difficulty: rec.difficulty || state.currentDifficulty || 'medium',
+    playerScore: rec.playerScore || 0,
+    oppScore: rec.oppScore || 0,
+    outcome: rec.outcome || 'draw',
+    choices: rec.choices || [],
+    abilityScores: rec.abilityScores || calculateAbilityScores([]),
+    review: rec.review || null,
+  };
+  state.player.sessions.push(session);
+  state.player.total++;
+  if (session.outcome === 'win') state.player.wins++;
+  else if (session.outcome === 'draw' || session.outcome === 'coop') state.player.draws++;
+  else state.player.losses++;
+  updateScenarioStats(session);
+  updateOpponentStats(session);
+  state.player.profile.weakPoints = detectWeakPoints(state.player.profile);
+  savePlayer();
+}
+
+function getRank(total, wins) {
+  const wr = total > 0 ? wins / total : 0;
+  if (total === 0) return '新兵';
+  if (total < 5) return '学员';
+  if (total < 10) return wr > 0.6 ? '谈判官' : '学员进阶';
+  if (total < 20) return wr > 0.7 ? '策略师' : '谈判官';
+  if (total < 30) return wr > 0.75 ? '博弈大师' : '策略师';
+  return wr > 0.8 ? '宗师级' : '博弈大师';
+}
+
+// ========== BOSS UNLOCK ==========
+function isHighestRankPlayer() {
+  if (!state.player) return false;
+  return getRank(state.player.total, state.player.wins) === '宗师级';
+}
+function canUnlockTrumpBoss() {
+  return isHighestRankPlayer() && state.currentDifficulty === 'extreme';
+}
+function getDifficultyLabel(diff) {
+  return {easy:'初级', medium:'中级', hard:'高级', extreme:'终局挑战'}[diff] || '中级';
+}
+function getAvailableOpponents() {
+  const base = [...OPPONENTS];
+  if (canUnlockTrumpBoss()) base.push(TRUMP_BOSS);
+  return base;
+}
+function findOpponentById(oppId) {
+  if (oppId === TRUMP_BOSS.id && canUnlockTrumpBoss()) return TRUMP_BOSS;
+  return OPPONENTS.find(o => o.id === oppId) || null;
+}
+
+// ========== SCREEN NAV ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function exitTraining() {
+  if (confirm('当前训练尚未完成，确认退出？')) {
+    showScreen('screen-main');
+  }
+}
+
+function enterSystem() {
+  const n = document.getElementById('player-name-input').value.trim();
+  if (!n) { alert('请输入训练代号'); return; }
+  state.player = loadPlayer(n);
+  if (!state.player.profile) state.player.profile = createDefaultProfile();
+  updateMainMenu();
+  showScreen('screen-main');
+  renderScenarioCards();
+}
+
+function updateMainMenu() {
+  const p = state.player;
+  const rank = getRank(p.total, p.wins);
+  document.getElementById('main-player-info').textContent =
+    `训练员: ${p.name}  |  军衔: ${rank}  |  总场次: ${p.total}  |  胜率: ${p.total>0?Math.round(p.wins/p.total*100):0}%`;
+  // unlock hint
+  const hintEl = document.getElementById('main-unlock-hint');
+  if (hintEl) {
+    if (canUnlockTrumpBoss()) {
+      hintEl.innerHTML = `<div class="hint hint-yellow" style="font-size:11px">终局挑战已开启：隐藏 Boss 可能出现。</div>`;
+    } else if (isHighestRankPlayer()) {
+      hintEl.innerHTML = `<div class="hint hint-cyan" style="font-size:11px">你已达到宗师级，可在最高难度中挑战隐藏 Boss。</div>`;
+    } else {
+      hintEl.innerHTML = `<div class="hint hint-purple" style="font-size:11px">终局挑战未解锁：达到宗师级后开启隐藏 Boss。</div>`;
+    }
+  }
+}
+
+// ========== SCENARIO SELECT ==========
+function renderScenarioCards() {
+  const diffMap = {easy:'入门', med:'进阶', hard:'高阶'};
+  const diffClass = {easy:'diff-easy', med:'diff-med', hard:'diff-hard'};
+  const html = Object.entries(SCENARIOS).map(([k,s]) => `
+    <div class="card" onclick="selectScenario('${k}')">
+      <h3>${s.name}</h3>
+      <div class="diff ${diffClass[s.diff]}">${diffMap[s.diff]}</div>
+      <span class="tag tag-cyan">${s.domain}</span>
+      <p style="margin-top:8px">${s.desc}</p>
+    </div>
+  `).join('');
+  document.getElementById('scenario-cards-container').innerHTML = `<div class="grid2">${html}</div>`;
+}
+
+function selectScenario(key) {
+  state.scenarioKey = key;
+  const s = SCENARIOS[key];
+  document.getElementById('selected-scenario-info').innerHTML =
+    `已选场景：<b style="color:var(--cyan)">${s.name}</b>  <span style="color:var(--dim)">${s.desc}</span>`;
+  renderDifficultyButtons();
+  renderOpponentCards();
+  showScreen('screen-opponent-select');
+}
+
+function renderDifficultyButtons() {
+  const btns = document.querySelectorAll('#diff-select-btns .diff-btn');
+  btns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.diff === state.currentDifficulty);
+  });
+  const extremeBtn = document.getElementById('extreme-diff-btn');
+  if (extremeBtn) {
+    extremeBtn.style.display = isHighestRankPlayer() ? '' : 'none';
+  }
+}
+
+function setDifficulty(diff) {
+  state.currentDifficulty = diff;
+  renderDifficultyButtons();
+  renderOpponentCards();
+}
+
+function renderOpponentInfo(opp) {
+  const difficulty = state.currentDifficulty || 'medium';
+  if (difficulty === 'easy') return `${opp.name}｜${opp.type}｜弱点：${opp.weakness}`;
+  if (difficulty === 'medium') {
+    const tells = PERSONALITY_TELLS[opp.id] || [];
+    return `${opp.name}｜${opp.type}｜行为信号：${tells.join(' / ')}`;
+  }
+  return `未知对手｜请通过行为判断其类型`;
+}
+
+function renderOpponentCards() {
+  const opps = getAvailableOpponents();
+  const html = opps.map(o => {
+    const isBoss = o.boss;
+    const infoText = renderOpponentInfo(o);
+    return `
+      <div class="opp-card${isBoss?' boss-card':''}" onclick="startGame('${o.id}')">
+        ${isBoss ? '<div class="boss-badge">隐藏 BOSS</div>' : ''}
+        <div class="opp-name">${o.name}</div>
+        <div class="opp-type">${o.type}</div>
+        <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
+        <div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoText}</div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('opponent-cards-container').innerHTML = html;
+}
+
+function selectRandomOpponent() {
+  const opps = getAvailableOpponents();
+  const o = opps[Math.floor(Math.random() * opps.length)];
+  startGame(o.id);
+}
+
+function startGame(oppId) {
+  const opp = findOpponentById(oppId);
+  if (!opp) { alert('对手未找到或尚未解锁'); return; }
+  if (opp.boss && !canUnlockTrumpBoss()) { alert('需要达到宗师级并选择终局挑战难度才能挑战此对手'); return; }
+  state.currentOpponent = opp;
+  const sc = SCENARIOS[state.scenarioKey];
+  state.currentScenario = new sc.Class(state.currentOpponent);
+  state.currentScenario.choiceLog = [];
+  state.currentScenario.oppMemory = createOpponentMemory();
+  showScreen('screen-running');
+  state.currentScenario.render();
+}
+
+function quickTraining() {
+  const keys = Object.keys(SCENARIOS);
+  state.scenarioKey = keys[Math.floor(Math.random() * keys.length)];
+  const opps = OPPONENTS; // quick training uses base opponents only
+  const o = opps[Math.floor(Math.random() * opps.length)];
+  state.currentOpponent = o;
+  const sc = SCENARIOS[state.scenarioKey];
+  state.currentScenario = new sc.Class(state.currentOpponent);
+  state.currentScenario.choiceLog = [];
+  state.currentScenario.oppMemory = createOpponentMemory();
+  showScreen('screen-running');
+  state.currentScenario.render();
+}
+
+// ========== BEHAVIOR TAG SYSTEM ==========
+function ensureChoiceLog() {
+  if (!state.currentScenario) return [];
+  if (!state.currentScenario.choiceLog) state.currentScenario.choiceLog = [];
+  return state.currentScenario.choiceLog;
+}
+
+function recordChoice(choiceData) {
+  const log = ensureChoiceLog();
+  const normalized = {
+    round: choiceData.round || (state.currentScenario.round || 0) + 1,
+    scenarioKey: state.scenarioKey || 'unknown',
+    opponentId: state.currentOpponent ? state.currentOpponent.id : 'unknown',
+    id: choiceData.id || 'unknown_choice',
+    text: choiceData.text || '',
+    tags: choiceData.tags || [],
+    affects: choiceData.affects || {},
+    score: choiceData.score || 0
+  };
+  log.push(normalized);
+  applyProfileEffects(normalized.affects);
+  updateOpponentMemory(normalized);
+  return normalized;
+}
+
+function applyProfileEffects(affects) {
+  if (!state.player) return;
+  if (!state.player.profile) state.player.profile = createDefaultProfile();
+  const profile = state.player.profile;
+  Object.entries(affects || {}).forEach(([key, delta]) => {
+    if (typeof profile[key] !== 'number') profile[key] = 0.5;
+    profile[key] = Math.max(0, Math.min(1, profile[key] + delta));
+  });
+  savePlayer();
+}
+
+// ========== OPPONENT MEMORY ==========
+function createOpponentMemory() {
+  return {
+    playerConcessions:0, playerAggression:0, playerCooperation:0,
+    playerUsedBATNA:false, playerUsedConditionalConcession:false, playerUsedInfoGathering:false
+  };
+}
+
+function updateOpponentMemory(choice) {
+  if (!state.currentScenario) return;
+  if (!state.currentScenario.oppMemory) state.currentScenario.oppMemory = createOpponentMemory();
+  const memory = state.currentScenario.oppMemory;
+  const tags = choice.tags || [];
+  if (tags.includes('让步') || tags.includes('无条件让步')) memory.playerConcessions++;
+  if (tags.includes('强硬') || tags.includes('主张强度')) memory.playerAggression++;
+  if (tags.includes('合作') || tags.includes('关系维护')) memory.playerCooperation++;
+  if (tags.includes('BATNA')) memory.playerUsedBATNA = true;
+  if (tags.includes('条件让步')) memory.playerUsedConditionalConcession = true;
+  if (tags.includes('信息收集')) memory.playerUsedInfoGathering = true;
+}
+
+function getAdjustedOpponent(opp) {
+  if (!state.currentScenario || !state.currentScenario.oppMemory) return opp;
+  const memory = state.currentScenario.oppMemory;
+  const adjusted = Object.assign({}, opp);
+  if (memory.playerConcessions >= 2) {
+    adjusted.assert = Math.min(1, (adjusted.assert || 0.5) + 0.12);
+    adjusted.coop = Math.max(0, (adjusted.coop || 0.5) - 0.08);
+  }
+  if (memory.playerUsedBATNA) adjusted.assert = Math.max(0, (adjusted.assert || 0.5) - 0.08);
+  if (memory.playerUsedConditionalConcession) adjusted.coop = Math.min(1, (adjusted.coop || 0.5) + 0.08);
+  return adjusted;
+}
+
+// ========== ABILITY SCORING ==========
+function calculateAbilityScores(choices) {
+  const tags = (choices || []).flatMap(c => c.tags || []);
+  const has = tag => tags.includes(tag);
+  const count = tag => tags.filter(t => t === tag).length;
+  let information = 50, bottomLine = 50, concession = 50, emotion = 50, adaptation = 50, assertiveness = 50;
+  if (has('信息收集') || has('积极倾听') || has('校准问题')) information += 25;
+  if (has('BATNA') || has('底线控制') || has('反压')) bottomLine += 25;
+  if (has('条件让步') || has('筹码交换')) concession += 25;
+  if (has('无条件让步')) concession -= 25;
+  if (has('情绪调节') || has('战术性同理心') || has('降温沟通')) emotion += 25;
+  if (has('框架重构') || has('整合性谈判') || has('纳什均衡')) adaptation += 20;
+  if (has('强硬') || has('主张强度')) assertiveness += 20;
+  if (count('让步') >= 2 && !has('条件让步')) assertiveness -= 15;
+  const clamp = n => Math.max(0, Math.min(100, Math.round(n)));
+  return {
+    information: clamp(information),
+    bottomLine: clamp(bottomLine),
+    concession: clamp(concession),
+    emotion: clamp(emotion),
+    adaptation: clamp(adaptation),
+    assertiveness: clamp(assertiveness)
+  };
+}
+
+// ========== REVIEW SYSTEM ==========
+function countTags(tags) {
+  return tags.reduce((acc, tag) => { acc[tag] = (acc[tag] || 0) + 1; return acc; }, {});
+}
+
+function generateReview(session) {
+  const choices = session.choices || [];
+  const tags = choices.flatMap(c => c.tags || []);
+  const tagCount = countTags(tags);
+  const mainStrategies = Object.entries(tagCount).sort((a,b) => b[1]-a[1]).slice(0,4).map(([tag]) => tag);
+  return {
+    result: buildResultText(session),
+    mainStrategies,
+    mistake: detectMistake(session),
+    betterMove: suggestBetterMove(session),
+    nextTraining: suggestNextTraining(session)
+  };
+}
+
+function buildResultText(session) {
+  const outcomeText = {win:'本局胜利', lose:'本局失利', draw:'本局平局', coop:'本局达成合作双赢'}[session.outcome] || '本局结束';
+  return `${outcomeText}，你的得分为 ${session.playerScore}，对手得分为 ${session.oppScore}。`;
+}
+
+function detectMistake(session) {
+  const tags = (session.choices || []).flatMap(c => c.tags || []);
+  if (tags.includes('无条件让步')) return '你出现了无条件让步，容易被对手继续压缩空间。';
+  if (!tags.includes('信息收集') && session.scenarioKey !== 'prisoners') return '你进入实质博弈过快，前置信息收集不足。';
+  if (!tags.includes('BATNA') && ['bargaining','coalition','crisis'].includes(session.scenarioKey)) return '你没有明确展示替代方案或底线，谈判底气不足。';
+  if (tags.filter(t => t === '强硬').length >= 2 && !tags.includes('关系维护')) return '你的主张较强，但关系维护不足，可能影响长期合作。';
+  return '本局没有明显单点失误，但仍可优化策略组合。';
+}
+
+function suggestBetterMove(session) {
+  const tags = (session.choices || []).flatMap(c => c.tags || []);
+  if (tags.includes('无条件让步')) return '下次让步必须绑定条件，例如"如果对方接受某项交换，你再释放让步"。';
+  if (!tags.includes('信息收集') && session.scenarioKey !== 'prisoners') return '先使用开放式问题、镜像或校准问题，获取对方真实诉求后再进入实质选择。';
+  if (!tags.includes('BATNA') && ['bargaining','coalition','crisis'].includes(session.scenarioKey)) return '提前表达你的替代方案和底线，让对手知道你不是被动接受者。';
+  return '保持当前策略，同时增加信息收集、底线表达和条件让步的组合使用。';
+}
+
+function suggestNextTraining(session) {
+  const profile = state.player ? state.player.profile : createDefaultProfile();
+  const weak = detectWeakPoints(profile);
+  if (weak.includes('主张强度不足')) return '建议下一局选择强硬型对手，专练 BATNA 表达和底线控制。';
+  if (weak.includes('策略深度不足')) return '建议下一局选择商业谈判或联盟谈判，专练条件让步和筹码交换。';
+  if (weak.includes('情绪调节不足')) return '建议下一局选择危机谈判，专练战术性同理心和降温沟通。';
+  return '建议下一局进入快速训练模式，继续积累不同对手下的策略适配能力。';
+}
+
+function generateTrumpBossReview(session) {
+  const tags = (session.choices || []).flatMap(c => c.tags || []);
+  const resistedAnchor = tags.includes('BATNA') || tags.includes('底线控制');
+  const avoidedFreeConcession = !tags.includes('无条件让步');
+  const usedConditionalConcession = tags.includes('条件让步');
+  const usedInfoGathering = tags.includes('信息收集');
+  const passed = resistedAnchor && avoidedFreeConcession && (usedConditionalConcession || usedInfoGathering);
+  return {
+    title: '终局 Boss 复盘｜特朗普型高压交易模型',
+    diagnosis: passed
+      ? '你没有被极端锚定和时间压力完全牵引，能够用底线、条件交换或信息收集削弱对手压迫。'
+      : '你在极端锚定、公开压力或突然反转下出现了被动反应，说明底线表达和条件让步仍需加强。',
+    keyAdvice: [
+      '第一，不要接极端锚定的价格或条件，先质疑依据。',
+      '第二，所有让步都必须换取对方实质承诺。',
+      '第三，提前亮出BATNA，避免被对方判断为只能成交。',
+      '第四，面对时间压力时主动暂停，把节奏拉回到客观标准。',
+      '第五，不要进入对方设置的胜负叙事，要回到可执行条款。'
+    ]
+  };
+}
+
+// ========== RESULT SCREEN ==========
+function showResult(result) {
+  const sc = SCENARIOS[state.scenarioKey];
+  const opp = state.currentOpponent;
+  const outcomeClass = {win:'outcome-win', lose:'outcome-lose', draw:'outcome-draw', coop:'outcome-coop'};
+  const outcomeLabel = {win:'胜利', lose:'败北', draw:'平局', coop:'合作双赢'};
+  document.getElementById('result-title').textContent = sc.name + ' — 训练结束';
+
+  // Build session draft
+  const choices = state.currentScenario && state.currentScenario.choiceLog ? state.currentScenario.choiceLog : [];
+  const sessionDraft = {
+    time: new Date().toLocaleString('zh-CN'),
+    scenarioKey: state.scenarioKey,
+    scenario: sc.name,
+    opponentId: opp ? opp.id : 'unknown',
+    opponent: opp ? opp.type : '—',
+    difficulty: state.currentDifficulty || 'medium',
+    playerScore: result.playerScore,
+    oppScore: result.oppScore,
+    outcome: result.outcome,
+    choices,
+    abilityScores: calculateAbilityScores(choices)
+  };
+  sessionDraft.review = generateReview(sessionDraft);
+  addSession(sessionDraft);
+  updateMainMenu();
+
+  // Ability scores grid
+  const as = sessionDraft.abilityScores;
+  const abilityHtml = `
+    <div class="panel">
+      <div class="panel-title">能力评估（本局）</div>
+      <div class="grid6" style="margin-bottom:4px">
+        <div class="ability-box"><div class="ability-num" style="color:var(--cyan)">${as.information}</div><div class="ability-lbl">信息收集</div></div>
+        <div class="ability-box"><div class="ability-num" style="color:var(--red)">${as.bottomLine}</div><div class="ability-lbl">底线控制</div></div>
+        <div class="ability-box"><div class="ability-num" style="color:var(--green)">${as.concession}</div><div class="ability-lbl">条件让步</div></div>
+        <div class="ability-box"><div class="ability-num" style="color:var(--purple)">${as.emotion}</div><div class="ability-lbl">情绪管理</div></div>
+        <div class="ability-box"><div class="ability-num" style="color:var(--yellow)">${as.adaptation}</div><div class="ability-lbl">策略适配</div></div>
+        <div class="ability-box"><div class="ability-num" style="color:var(--white)">${as.assertiveness}</div><div class="ability-lbl">主张强度</div></div>
+      </div>
+    </div>`;
+
+  // Review diagnosis panel
+  const rev = sessionDraft.review;
+  const reviewHtml = `
+    <div class="panel">
+      <div class="panel-title">复盘诊断</div>
+      <div class="info-row"><span class="info-key">本局结果</span><span class="info-val">${rev.result}</span></div>
+      <div class="info-row"><span class="info-key">主要策略</span><span class="info-val">${rev.mainStrategies.length ? rev.mainStrategies.join('、') : '—'}</span></div>
+      <div class="info-row"><span class="info-key">失误诊断</span><span class="info-val" style="color:var(--yellow)">${rev.mistake}</span></div>
+      <div class="info-row"><span class="info-key">改进建议</span><span class="info-val" style="color:var(--green)">${rev.betterMove}</span></div>
+    </div>
+    <div class="hint hint-cyan" style="font-size:11px">
+      <b>下局建议：</b>${rev.nextTraining}
+    </div>`;
+
+  // Trump boss review
+  let trumpHtml = '';
+  if (opp && opp.id === 'trumpBoss') {
+    const tr = generateTrumpBossReview(sessionDraft);
+    trumpHtml = `
+      <div class="trump-review">
+        <div class="trump-review-title">${tr.title}</div>
+        <div class="hint hint-yellow" style="margin-bottom:8px">${tr.diagnosis}</div>
+        ${tr.keyAdvice.map(a => `<div class="hint hint-cyan" style="margin-bottom:4px">• ${a}</div>`).join('')}
+      </div>`;
+  }
+
+  let tipsHtml = '';
+  if (opp) {
+    const tells = PERSONALITY_TELLS[opp.id] || [];
+    tipsHtml = `
+      <div class="panel">
+        <div class="panel-title">应对 ${opp.type} 的专项技巧</div>
+        ${getOpponentTips(opp.id).map(t => `<div class="hint hint-cyan">• ${t}</div>`).join('')}
+        <div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>
+      </div>`;
+  }
+
+  document.getElementById('result-content').innerHTML = `
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="score-box"><div class="score-num">${result.playerScore}</div><div class="score-lbl">您的得分</div></div>
+      <div class="score-box"><div class="score-num">${result.oppScore}</div><div class="score-lbl">${opp?opp.name:'对手'} 得分</div></div>
+    </div>
+    <div style="text-align:center;margin-bottom:16px">
+      <span class="outcome ${outcomeClass[result.outcome]||'outcome-draw'}">${outcomeLabel[result.outcome]||result.outcome}</span>
+    </div>
+    ${abilityHtml}
+    ${reviewHtml}
+    <div class="panel">
+      <div class="panel-title">复盘分析</div>
+      ${result.summary||''}
+    </div>
+    ${tipsHtml}
+    ${trumpHtml}
+  `;
+
+  showScreen('screen-result');
+}
+
+function getOpponentTips(oppId) {
+  const tips = {
+    rational: ['使用数据和逻辑支持你的立场','避免情绪化表达，保持客观','提出具体量化方案，比感性诉求更有效','利用其信息盲点设计信息不对称'],
+    emotional: ['建立情感连接，表达关切和理解','避免纯粹逻辑压制，先处理情绪','用关系和信任作为谈判筹码','注意情绪波动，寻找情绪低谷时推进协议'],
+    aggressive: ['不要被强硬姿态吓倒，保持冷静','用你的BATNA建立真实底气','要求其提供主张的依据','合理反压：明确表示也有替代选项'],
+    cooperative: ['诚实合作，建立长期信任','提出双赢方案，强调共同利益','避免利用其善意过度索取','记录协议细节，防止善意被误解'],
+    manipulative: ['保持高度警觉，识别话术变化','要求书面确认所有关键条款','直接说出你识别到的操控手法','减慢节奏，不受人工紧迫感驱使'],
+    riskAverse: ['用数据和案例证明方案的安全性','提供保障条款和退出选项','强调不行动的风险大于行动','循序渐进，不要一次推进太多变化'],
+    trumpBoss: ['不要急于回应极端锚定，先质疑其依据和可执行性','明确你的BATNA，让对方知道你不是被迫成交','把议题拆小，避免被对方带入宏大胜负叙事','所有让步必须绑定对方的实质承诺','不要被公开压力和时间压力牵引，主动放慢节奏','用客观标准、书面条件和退出选项压缩其操控空间'],
+  };
+  return tips[oppId] || ['保持冷静，灵活应对','关注对方真实利益','适时使用沉默策略'];
+}
+
+// ========== PSYCHOLOGY ==========
+function showPsychReport() {
+  if (!state.player || state.player.total < 2) {
+    alert('请先完成至少2场博弈训练，心理档案将更加准确。');
+    return;
+  }
+  const p = state.player && state.player.profile ? state.player.profile : createDefaultProfile();
+  const dims = [
+    {key:'cooperation_rate', label:'合作倾向', val:Math.min(1,p.cooperation_rate||0.5), color:'bar-green'},
+    {key:'risk', label:'风险承受', val:Math.min(1,p.risk||0.5), color:'bar-yellow'},
+    {key:'fairness', label:'公平敏感', val:Math.min(1,p.fairness||0.5), color:'bar-cyan'},
+    {key:'depth', label:'策略深度', val:Math.min(1,p.depth||0.5), color:'bar-purple'},
+    {key:'emotion', label:'情绪调节', val:Math.min(1,p.emotion||0.5), color:'bar-cyan'},
+    {key:'assert', label:'主张强度', val:Math.min(1,p.assert||0.5), color:'bar-red'},
+    {key:'adapt', label:'适应灵活', val:Math.min(1,p.adapt||0.5), color:'bar-green'},
+    {key:'trust', label:'信任倾向', val:Math.min(1,p.trust||0.5), color:'bar-yellow'},
+  ];
+  const barsHtml = dims.map(d => `
+    <div class="bar-wrap">
+      <div class="bar-label"><span>${d.label}</span><span>${Math.round(d.val*100)}%</span></div>
+      <div class="bar-bg"><div class="bar-fill ${d.color}" style="width:${d.val*100}%"></div></div>
+    </div>
+  `).join('');
+
+  const profileType = getProfileType(p);
+  const weakPoints = detectWeakPoints(p);
+  const weakHtml = weakPoints.length
+    ? weakPoints.map(w => `<div class="hint hint-yellow">⚠ ${w}</div>`).join('')
+    : '<div class="hint hint-green">暂未发现明显短板</div>';
+
+  document.getElementById('psychology-content').innerHTML = `
+    <div class="panel">
+      <div class="panel-title">博弈心理类型</div>
+      <div style="text-align:center;padding:12px 0">
+        <div style="font-size:24px;color:var(--cyan);font-weight:bold">${profileType.name}</div>
+        <div style="color:var(--dim);font-size:12px;margin-top:6px">${profileType.desc}</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">8维心理向量分析</div>
+      ${barsHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">当前短板</div>
+      ${weakHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">成长建议</div>
+      ${profileType.advice.map(a => `<div class="hint hint-cyan">• ${a}</div>`).join('')}
+    </div>
+  `;
+  showScreen('screen-psychology');
+}
+
+function getProfileType(p) {
+  const profiles = [
+    {name:'战略家', cond:()=>p.depth>0.6&&p.assert>0.5, desc:'冷静理智，善于全局规划和长远布局',
+     advice:['适当增加情感投入以建立更强的谈判关系','尝试更多合作性策略','注意不要过于机械化']},
+    {name:'调解者', cond:()=>p.cooperation_rate>0.7&&p.fairness>0.6, desc:'天生的关系维护者，擅长化解冲突',
+     advice:['学会在合适时机坚守底线','避免为维持和谐而过度妥协','增强BATNA意识']},
+    {name:'竞争者', cond:()=>p.assert>0.7&&p.risk>0.5, desc:'目标明确，勇于争取最大利益',
+     advice:['关注对方利益，寻找双赢机会','长期关系比单次收益更有价值','练习主动倾听']},
+    {name:'外交家', cond:()=>p.adapt>0.6&&p.emotion>0.6, desc:'灵活适应，善于在不同情境切换策略',
+     advice:['在核心利益上保持一致性','增强策略深度分析能力','建立清晰的底线意识']},
+    {name:'分析师', cond:()=>p.depth>0.5&&p.risk<0.4, desc:'谨慎周密，偏好有据可查的决策路径',
+     advice:['适当增加行动果断性','在信息不完整时学会做出判断','尝试更多创新性解决方案']},
+    {name:'实用主义者', cond:()=>true, desc:'务实灵活，根据情境选择最优策略',
+     advice:['深化某一领域的专项谈判技能','建立系统性的谈判框架','记录每次谈判的经验教训']},
+  ];
+  return profiles.find(pp => pp.cond()) || profiles[profiles.length-1];
+}
+
+// ========== DASHBOARD ==========
+function showDashboard() {
+  const p = state.player;
+  const rank = getRank(p.total, p.wins);
+  const wr = p.total > 0 ? Math.round(p.wins/p.total*100) : 0;
+  const profile = p.profile || createDefaultProfile();
+  const weakPoints = detectWeakPoints(profile);
+
+  const recent = (p.sessions||[]).slice(-8).reverse();
+  const histHtml = recent.length ? recent.map(r => `
+    <div class="info-row">
+      <span class="info-key">${r.time}</span>
+      <span>${r.scenario}</span>
+      <span style="color:var(--dim)">${r.opponent}</span>
+      <span class="outcome ${r.outcome==='win'?'outcome-win':r.outcome==='lose'?'outcome-lose':r.outcome==='coop'?'outcome-coop':'outcome-draw'}" style="padding:1px 6px;font-size:10px">${r.outcome==='win'?'胜':r.outcome==='lose'?'负':r.outcome==='coop'?'合作':'平'}</span>
+    </div>
+  `).join('') : '<div style="color:var(--dim);font-size:12px;padding:8px">暂无训练记录</div>';
+
+  // Scenario stats
+  const scenarioStats = profile.scenarioStats || {};
+  const scenarioHtml = Object.keys(SCENARIOS).map(k => {
+    const s = scenarioStats[k];
+    if (!s || s.played === 0) return `<div class="info-row"><span class="info-key">${SCENARIOS[k].name}</span><span style="color:var(--dim)">未训练</span></div>`;
+    const swr = Math.round((s.win + s.coop) / s.played * 100);
+    return `<div class="info-row"><span class="info-key">${SCENARIOS[k].name}</span><span class="info-val">${s.played}场 胜率${swr}%</span></div>`;
+  }).join('');
+
+  // Opponent stats
+  const opponentStats = profile.opponentStats || {};
+  const oppHtml = OPPONENTS.map(o => {
+    const s = opponentStats[o.id];
+    if (!s || s.played === 0) return `<div class="info-row"><span class="info-key">${o.name}</span><span style="color:var(--dim)">未对战</span></div>`;
+    const owr = Math.round((s.win + s.coop) / s.played * 100);
+    return `<div class="info-row"><span class="info-key">${o.name} (${o.type})</span><span class="info-val">${s.played}场 胜率${owr}%</span></div>`;
+  }).join('');
+
+  // Weak points
+  const weakHtml = weakPoints.length
+    ? weakPoints.map(w => `<div class="hint hint-yellow" style="margin-bottom:4px">⚠ ${w}</div>`).join('')
+    : '<div class="hint hint-green">暂未发现明显短板，继续积累训练样本。</div>';
+
+  // Recent tags
+  const allChoices = (p.sessions||[]).slice(-5).flatMap(s => s.choices || []);
+  const allTags = allChoices.flatMap(c => c.tags || []);
+  const tagCount = countTags(allTags);
+  const topTags = Object.entries(tagCount).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const tagsHtml = topTags.length
+    ? topTags.map(([tag, cnt]) => `<span class="tag tag-cyan">${tag}×${cnt}</span>`).join('')
+    : '<span style="color:var(--dim);font-size:11px">暂无策略标签数据</span>';
+
+  // Next training
+  const nextTraining = suggestNextTraining({scenarioKey: state.scenarioKey, choices: allChoices});
+
+  document.getElementById('dashboard-content').innerHTML = `
+    <div class="grid3" style="margin-bottom:16px">
+      <div class="score-box"><div class="score-num" style="font-size:22px">${p.total}</div><div class="score-lbl">总训练场次</div></div>
+      <div class="score-box"><div class="score-num" style="font-size:22px;color:var(--green)">${wr}%</div><div class="score-lbl">综合胜率</div></div>
+      <div class="score-box"><div class="score-num" style="font-size:22px;color:var(--yellow)">${rank}</div><div class="score-lbl">当前军衔</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">战绩统计</div>
+      <div class="grid3">
+        <div style="text-align:center"><div style="color:var(--green);font-size:20px;font-weight:bold">${p.wins||0}</div><div style="color:var(--dim);font-size:11px">胜利</div></div>
+        <div style="text-align:center"><div style="color:var(--yellow);font-size:20px;font-weight:bold">${p.draws||0}</div><div style="color:var(--dim);font-size:11px">平局/合作</div></div>
+        <div style="text-align:center"><div style="color:var(--red);font-size:20px;font-weight:bold">${p.losses||0}</div><div style="color:var(--dim);font-size:11px">失利</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">场景胜率</div>
+      ${scenarioHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">对手胜率</div>
+      ${oppHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">当前短板</div>
+      ${weakHtml}
+    </div>
+    <div class="panel">
+      <div class="panel-title">近期高频策略标签</div>
+      <div style="padding:4px 0">${tagsHtml}</div>
+    </div>
+    <div class="hint hint-cyan">
+      <b>下局推荐：</b>${nextTraining}
+    </div>
+    <div class="panel">
+      <div class="panel-title">最近训练记录</div>
+      ${histHtml}
+    </div>
+  `;
+  showScreen('screen-dashboard');
+}
+
+// ========== STRATEGY LIBRARY ==========
+function openStrategyLibrary() {
+  showScreen('screen-strategy');
+  switchStratTab('cards');
+  renderStrategyContent();
+}
+
+function switchStratTab(tab) {
+  state.stratTab = tab;
+  document.querySelectorAll('#strategy-tabs .tab').forEach((t,i) => {
+    const tabs = ['cards','comm','defense','masters'];
+    t.classList.toggle('active', tabs[i] === tab);
+  });
+  renderStrategyContent();
+}
+
+function getRecommendedStrategies() {
+  if (!state.player || !state.player.profile) return [];
+  const weak = state.player.profile.weakPoints || detectWeakPoints(state.player.profile);
+  const names = new Set();
+  weak.forEach(w => { (STRATEGY_RECOMMEND_MAP[w] || []).forEach(n => names.add(n)); });
+  return [...names];
+}
+
+function renderStrategyContent() {
+  const tab = state.stratTab;
+  let html = '';
+  if (tab === 'cards') {
+    const recommended = getRecommendedStrategies();
+    let bannerHtml = '';
+    if (recommended.length) {
+      bannerHtml = `<div class="hint hint-yellow" style="margin-bottom:12px">
+        <b>根据你最近训练表现，建议优先复习：</b>${recommended.join('、')}
+      </div>`;
+    } else {
+      bannerHtml = `<div class="hint hint-green" style="margin-bottom:12px">暂无明显短板，建议继续通过快速训练积累样本。</div>`;
+    }
+    html = bannerHtml + STRATEGY_CARDS.map(c => `
+      <div class="master-card">
+        <div class="master-name">${c.name}</div>
+        <div style="margin:4px 0">${c.tags.map(t => `<span class="tag tag-cyan">${t}</span>`).join('')}</div>
+        <div style="color:var(--text);font-size:12px;line-height:1.6;margin:6px 0">${c.desc}</div>
+        <div style="font-size:11px;color:var(--dim)">适用场景：${c.use}</div>
+      </div>
+    `).join('');
+  } else if (tab === 'comm') {
+    html = COMM_TECHNIQUES.map(c => `
+      <div class="tactic" style="margin-bottom:8px">
+        <div class="tactic-name">${c.name}</div>
+        <div class="tactic-desc">${c.desc}</div>
+      </div>
+    `).join('');
+  } else if (tab === 'defense') {
+    html = DEFENSE_TACTICS.map(c => `
+      <div class="tactic" style="border-left-color:var(--red);margin-bottom:8px">
+        <div class="tactic-name" style="color:var(--red)">${c.name}</div>
+        <div class="tactic-desc">${c.desc}</div>
+      </div>
+    `).join('');
+  } else if (tab === 'masters') {
+    html = `<div class="grid2">${Object.entries(MASTERS).map(([k,m]) => `
+      <div class="card" onclick="showMasterDetail('${k}')">
+        <h3>${m.name}</h3>
+        <div style="color:var(--yellow);font-size:11px;margin-bottom:6px">${m.title}</div>
+        <p>${m.intro}</p>
+        <div style="margin-top:8px;font-size:11px;color:var(--cyan)">共 ${m.tactics.length} 个策略/原则 →</div>
+      </div>
+    `).join('')}</div>`;
+  }
+  document.getElementById('strategy-content').innerHTML = html;
+}
+
+function showMasterDetail(key) {
+  const m = MASTERS[key];
+  const stages = [...new Set(m.tactics.map(t => t.stage))];
+  const html = stages.map(stage => `
+    <div style="margin-bottom:12px">
+      <div style="color:var(--yellow);font-size:11px;letter-spacing:1px;margin-bottom:6px">【${stage}】</div>
+      ${m.tactics.filter(t => t.stage === stage).map(t => `
+        <div class="tactic" style="margin-bottom:6px">
+          <div class="tactic-name">${t.name}</div>
+          <div class="tactic-desc">${t.desc}</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  document.getElementById('strategy-content').innerHTML = `
+    <button class="back-btn" style="margin-bottom:12px" onclick="renderStrategyContent()">← 返回宗师列表</button>
+    <div class="master-card">
+      <div class="master-name">${m.name}</div>
+      <div class="master-title">${m.title}</div>
+      <div class="hint hint-yellow" style="margin-bottom:12px">${m.intro}</div>
+      ${html}
+    </div>
+  `;
+}
+
+// ========== SCENARIO IMPLEMENTATIONS ==========
+
+// --- PRISONERS DILEMMA ---
+function PrisonersDilemma(opp) {
+  this.opp = opp;
+  this.rounds = 5;
+  this.round = 0;
+  this.playerScore = 0;
+  this.oppScore = 0;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+
+  this.getOppDecision = function() {
+    const adjustedOpp = getAdjustedOpponent(opp);
+    // Trump Boss special logic
+    if (opp.id === 'trumpBoss') {
+      if (this.round === 0) return Math.random() < 0.9 ? 'defect' : 'coop';
+      const mem = this.oppMemory;
+      if (mem.playerUsedBATNA || mem.playerAggression > 0) return Math.random() < 0.5 ? 'defect' : 'coop';
+      if (mem.playerCooperation >= 2) return Math.random() < 0.95 ? 'defect' : 'coop';
+      return Math.random() < 0.85 ? 'defect' : 'coop';
+    }
+    const r = Math.random();
+    if (this.round === 0) return r < (adjustedOpp.coop||0.5) ? 'coop' : 'defect';
+    const last = this.log[this.log.length-1];
+    if (opp.id === 'cooperative') return r < 0.85 ? 'coop' : 'defect';
+    if (opp.id === 'aggressive') return r < 0.25 ? 'coop' : 'defect';
+    if (opp.id === 'manipulative') return r < 0.35 ? 'coop' : 'defect';
+    if (opp.id === 'rational') return last && last.player === 'defect' ? 'defect' : 'coop';
+    if (opp.id === 'emotional') return last && last.oppFeel < 0 ? 'defect' : 'coop';
+    return r < (adjustedOpp.coop||0.5) ? 'coop' : 'defect';
+  };
+
+  this.calcScores = function(p,o) {
+    if (p==='coop'&&o==='coop') return [3,3];
+    if (p==='coop'&&o==='defect') return [0,5];
+    if (p==='defect'&&o==='coop') return [5,0];
+    return [1,1];
+  };
+
+  this.render = function() {
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">囚徒困境 — 第 ${this.round+1}/${this.rounds} 轮</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="grid2" style="margin:12px 0">
+        <div class="score-box"><div class="score-num">${this.playerScore}</div><div class="score-lbl">您的分数</div></div>
+        <div class="score-box"><div class="score-num">${this.oppScore}</div><div class="score-lbl">${opp.name} 分数</div></div>
+      </div>
+      <div class="hint hint-cyan">
+        <b>场景：</b>你和 ${opp.name} 同时被捕。如果双方都沉默（合作），各判3年；
+        若你背叛对方沉默，你自由对方5年；若双方都背叛，各1年。
+        <br><b>对手档案：</b>${opp.type} — ${opp.desc}
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <div class="panel-title">选择你的策略</div>
+        <button class="choice-btn" onclick="pdChoice('coop')"><b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）</button>
+        <button class="choice-btn" onclick="pdChoice('defect')"><b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）</button>
+      </div>
+      ${this.log.length?`<div class="panel"><div class="panel-title">对局记录</div><div class="log">${this.log.map(l=>`<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player==='coop'?'合作':'背叛'} | ${opp.name}: ${l.opp==='coop'?'合作':'背叛'} | 得分: +${l.pScore} vs +${l.oScore}</div>`).join('')}</div></div>`:''}
+    `;
+  };
+
+  this.makeChoice = function(choice) {
+    const tags = choice === 'coop' ? ['合作','关系维护'] : ['背叛','强硬'];
+    const affects = choice === 'coop'
+      ? {cooperation_rate:0.04, trust:0.03}
+      : {assert:0.05, risk:0.03};
+    recordChoice({round: this.round+1, id: 'pd_'+choice, text: choice==='coop'?'合作':'背叛', tags, affects, score: 0});
+    const oppChoice = this.getOppDecision();
+    const [ps,os] = this.calcScores(choice, oppChoice);
+    this.playerScore += ps;
+    this.oppScore += os;
+    this.log.push({round:this.round+1, player:choice, opp:oppChoice, pScore:ps, oScore:os, oppFeel:choice==='defect'?-1:1});
+    this.round++;
+    if (this.round < this.rounds) {
+      this.render();
+    } else {
+      this.finish();
+    }
+  };
+
+  this.finish = function() {
+    const outcome = this.playerScore>this.oppScore?'win':this.playerScore<this.oppScore?'lose':'draw';
+    const coopCount = this.log.filter(l=>l.player==='coop').length;
+    showResult({
+      playerScore: this.playerScore,
+      oppScore: this.oppScore,
+      outcome,
+      summary: `
+        <div class="info-row"><span class="info-key">总轮数</span><span class="info-val">${this.rounds} 轮</span></div>
+        <div class="info-row"><span class="info-key">您的合作率</span><span class="info-val">${Math.round(coopCount/this.rounds*100)}%</span></div>
+        <div class="info-row"><span class="info-key">对手</span><span class="info-val">${opp.name} (${opp.type})</span></div>
+        <div class="info-row"><span class="info-key">分析</span><span class="info-val">${coopCount>=4?'高度合作策略，建立了信任':coopCount>=2?'混合策略，较为灵活':'激进背叛策略，短期收益可能较高但破坏信任'}</span></div>
+      `
+    });
+  };
+}
+function pdChoice(c) { state.currentScenario.makeChoice(c); }
+
+// --- ULTIMATUM GAME ---
+function UltimatumGame(opp) {
+  this.opp = opp;
+  this.playerScore = 0;
+  this.oppScore = 0;
+  this.rounds = 3;
+  this.round = 0;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+
+  this.getTotal = () => 100;
+
+  this.render = function() {
+    const total = this.getTotal();
+    const isProposer = this.round % 2 === 0;
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">最后通牒博弈 — 第 ${this.round+1}/${this.rounds} 轮</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="grid2" style="margin:12px 0">
+        <div class="score-box"><div class="score-num">${this.playerScore}</div><div class="score-lbl">您的总分</div></div>
+        <div class="score-box"><div class="score-num">${this.oppScore}</div><div class="score-lbl">${opp.name} 总分</div></div>
+      </div>
+      <div class="hint hint-cyan">总金额 ${total} 元待分配。${isProposer?'<b>您是提议者</b>，提出分配方案。':'<b>您是接受者</b>，'+opp.name+'将提出方案。'} 接受者拒绝则双方均得0。</div>
+      ${isProposer ? `
+        <div class="panel">
+          <div class="panel-title">提出你的分配方案（给自己保留多少？）</div>
+          <button class="choice-btn" onclick="ugChoice(70)"><b>[激进]</b> 保留 70元，给对方 30元</button>
+          <button class="choice-btn" onclick="ugChoice(60)"><b>[偏强]</b> 保留 60元，给对方 40元</button>
+          <button class="choice-btn" onclick="ugChoice(50)"><b>[公平]</b> 保留 50元，给对方 50元</button>
+          <button class="choice-btn" onclick="ugChoice(40)"><b>[让步]</b> 保留 40元，给对方 60元</button>
+        </div>
+      ` : `
+        <div id="ug-waiting" class="hint hint-yellow">${opp.name} 正在思考提案...</div>
+      `}
+      ${this.log.length?`<div class="panel"><div class="panel-title">历史记录</div><div class="log">${this.log.map(l=>`<div class="log-entry">[第${l.round}轮] 提案: 我${l.myOffer}/对方${l.theirOffer} → ${l.accepted?'<span style="color:var(--green)">接受</span>':'<span style="color:var(--red)">拒绝</span>'}</div>`).join('')}</div></div>`:''}
+    `;
+    if (!isProposer) {
+      setTimeout(() => this.oppProposes(), 1200);
+    }
+  };
+
+  this.oppProposes = function() {
+    const total = this.getTotal();
+    let offer;
+    if (opp.id==='aggressive') offer = 70;
+    else if (opp.id==='cooperative') offer = 45;
+    else if (opp.id==='emotional') offer = 50;
+    else if (opp.id==='manipulative') offer = 65;
+    else offer = 55 + Math.floor(Math.random()*10);
+    offer = Math.min(80, Math.max(20, offer));
+    const theirShare = total - offer;
+    const el = document.getElementById('ug-waiting');
+    if (el) el.innerHTML = `${opp.name} 提议：<b style="color:var(--cyan)">给您 ${theirShare}元，保留 ${offer}元</b>。`;
+    const el2 = document.getElementById('scenario-ui');
+    const btnDiv = document.createElement('div');
+    btnDiv.className = 'panel';
+    btnDiv.innerHTML = `
+      <div class="panel-title">您的决定</div>
+      <div class="hint hint-cyan">对方提议自己得 ${offer}元，给您 ${theirShare}元。</div>
+      <div style="margin-top:10px">
+        <button class="choice-btn" onclick="ugRespond(${offer},${theirShare},true)"><b>[接受]</b> 接受方案，各得所得</button>
+        <button class="choice-btn" onclick="ugRespond(${offer},${theirShare},false)"><b>[拒绝]</b> 拒绝方案，双方得0</button>
+      </div>
+    `;
+    el2.appendChild(btnDiv);
+  };
+
+  this.processProposal = function(myKeep, accepted, isMyProposal) {
+    const total = this.getTotal();
+    const theirShare = total - myKeep;
+    let myGain, oppGain;
+    if (isMyProposal) { myGain = accepted?myKeep:0; oppGain = accepted?theirShare:0; }
+    else { myGain = accepted?theirShare:0; oppGain = accepted?myKeep:0; }
+    this.playerScore += myGain;
+    this.oppScore += oppGain;
+    this.log.push({round:this.round+1, myOffer:isMyProposal?myKeep:theirShare, theirOffer:isMyProposal?theirShare:myKeep, accepted});
+    this.round++;
+    if (this.round < this.rounds) this.render();
+    else this.finish();
+  };
+
+  this.finish = function() {
+    const outcome = this.playerScore>this.oppScore?'win':this.playerScore<this.oppScore?'lose':'draw';
+    showResult({
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:`<div class="info-row"><span class="info-key">接受率</span><span class="info-val">${Math.round(this.log.filter(l=>l.accepted).length/this.log.length*100)}%</span></div>
+      <div class="info-row"><span class="info-key">最优策略</span><span class="info-val">作为提议者锚定55-60，接受者接受>30%的方案</span></div>`
+    });
+  };
+}
+function ugChoice(keep) {
+  const sc = state.currentScenario;
+  const oppLocal = sc.opp;
+  const tags = keep <= 50 ? ['公平','公平敏感'] : keep >= 65 ? ['强硬','主张强度'] : ['合作'];
+  const affects = keep <= 50 ? {fairness:0.05, cooperation_rate:0.02} : keep >= 65 ? {assert:0.05, risk:0.03} : {cooperation_rate:0.03};
+  recordChoice({round: sc.round+1, id:'ug_propose_'+keep, text:`提议保留${keep}元`, tags, affects});
+  let accepted;
+  if (oppLocal.id==='aggressive') accepted = keep<=55;
+  else if (oppLocal.id==='cooperative') accepted = keep<=65;
+  else if (oppLocal.id==='emotional') accepted = keep<=50;
+  else if (oppLocal.id==='rational') accepted = keep<=60;
+  else accepted = keep<=55+Math.random()*10;
+  sc.processProposal(keep, accepted, true);
+}
+function ugRespond(oppKeep, myShare, accept) {
+  const tags = accept ? ['合作','接受'] : ['强硬','拒绝'];
+  const affects = accept ? {cooperation_rate:0.03, fairness:0.02} : {assert:0.04, fairness:0.03};
+  recordChoice({round: state.currentScenario.round+1, id:'ug_respond_'+(accept?'accept':'reject'), text:accept?'接受提案':'拒绝提案', tags, affects});
+  state.currentScenario.processProposal(oppKeep, accept, false);
+}
+
+// --- TRUST GAME ---
+function TrustGame(opp) {
+  this.opp = opp;
+  this.playerScore = 0;
+  this.oppScore = 0;
+  this.rounds = 3;
+  this.round = 0;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+
+  this.render = function() {
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">信任博弈 — 第 ${this.round+1}/${this.rounds} 轮</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="grid2" style="margin:12px 0">
+        <div class="score-box"><div class="score-num">${this.playerScore}</div><div class="score-lbl">您的总分</div></div>
+        <div class="score-box"><div class="score-num">${this.oppScore}</div><div class="score-lbl">${opp.name} 总分</div></div>
+      </div>
+      <div class="hint hint-cyan">
+        <b>信任博弈：</b>您有10枚筹码。选择投入数额，系统3倍放大后交给 ${opp.name}，
+        ${opp.name} 再决定返还多少。这是一个信任测试！
+      </div>
+      <div class="panel">
+        <div class="panel-title">选择投入金额（总共10枚）</div>
+        <button class="choice-btn" onclick="tgInvest(10)"><b>[全力信任]</b> 投入 10枚 → 对方收到 30枚</button>
+        <button class="choice-btn" onclick="tgInvest(7)"><b>[高度信任]</b> 投入 7枚 → 对方收到 21枚</button>
+        <button class="choice-btn" onclick="tgInvest(4)"><b>[适度信任]</b> 投入 4枚 → 对方收到 12枚</button>
+        <button class="choice-btn" onclick="tgInvest(0)"><b>[零信任]</b> 投入 0枚 → 保留所有筹码</button>
+      </div>
+      ${this.log.length?`<div class="panel"><div class="panel-title">信任记录</div><div class="log">${this.log.map(l=>`<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet>0?'+':''}${l.myNet}</div>`).join('')}</div></div>`:''}
+    `;
+  };
+
+  this.invest = function(amount) {
+    const tags = amount >= 7 ? ['合作','信任','关系维护'] : amount >= 4 ? ['合作','适度信任'] : ['BATNA','底线控制'];
+    const affects = amount >= 7 ? {cooperation_rate:0.04, trust:0.03} : amount >= 4 ? {cooperation_rate:0.02, trust:0.01} : {assert:0.04, depth:0.03};
+    recordChoice({round: this.round+1, id:'tg_invest_'+amount, text:`投入${amount}枚`, tags, affects});
+    const tripled = amount * 3;
+    let returned;
+    if (opp.id==='cooperative') returned = Math.round(tripled*0.6);
+    else if (opp.id==='aggressive') returned = Math.round(tripled*0.15);
+    else if (opp.id==='manipulative') returned = Math.round(tripled*(Math.random()<0.3?0.5:0.1));
+    else if (opp.id==='riskAverse') returned = Math.round(tripled*0.4);
+    else if (opp.id==='emotional') returned = Math.round(tripled*(amount>5?0.55:0.3));
+    else returned = Math.round(tripled*0.45);
+    const kept = 10 - amount;
+    const myNet = kept + returned - 10;
+    const oppNet = tripled - returned;
+    this.playerScore += kept + returned;
+    this.oppScore += oppNet;
+    this.log.push({round:this.round+1, invested:amount, returned, myNet});
+    this.round++;
+    if (this.round < this.rounds) this.render();
+    else this.finish();
+  };
+
+  this.finish = function() {
+    const outcome = this.playerScore>this.oppScore?'win':this.playerScore<this.oppScore?'lose':'draw';
+    showResult({
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:`<div class="info-row"><span class="info-key">平均投入</span><span class="info-val">${Math.round(this.log.reduce((s,l)=>s+l.invested,0)/this.log.length)}枚</span></div>
+      <div class="info-row"><span class="info-key">平均返还率</span><span class="info-val">${Math.round(this.log.reduce((s,l)=>s+(l.returned/(l.invested*3||1)),0)/this.log.length*100)}%</span></div>
+      <div class="info-row"><span class="info-key">提示</span><span class="info-val">信任是双向的，适度投入测试对手诚意更为理性</span></div>`
+    });
+  };
+}
+function tgInvest(n) { state.currentScenario.invest(n); }
+
+// --- BARGAINING GAME ---
+function BargainingGame(opp) {
+  this.opp = opp;
+  this.rounds = 5;
+  this.round = 0;
+  this.playerScore = 0;
+  this.oppScore = 0;
+  this.myOffer = 0;
+  this.oppOffer = 100;
+  this.dealDone = false;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+  this.myAnchor = 40;
+  this.oppAnchor = 100;
+  this.trueVal = 60;
+
+  this.getOppOffer = function(playerOffer) {
+    const mem = this.oppMemory;
+    let reduction;
+    // Trump Boss special: extreme anchor, adjusts on resistance
+    if (opp.id === 'trumpBoss') {
+      if (this.round === 0) return 95; // extreme anchor
+      if (mem.playerUsedBATNA || mem.playerUsedConditionalConcession) reduction = 4 + Math.random()*3;
+      else if (mem.playerConcessions >= 2) reduction = 1 + Math.random()*2; // barely moves
+      else reduction = 3 + Math.random()*3;
+      return Math.max(this.trueVal, Math.round(this.oppOffer - reduction));
+    }
+    if (opp.id==='aggressive') reduction = 3 + Math.random()*3;
+    else if (opp.id==='cooperative') reduction = 8 + Math.random()*6;
+    else if (opp.id==='rational') reduction = 5 + Math.random()*4;
+    else if (opp.id==='riskAverse') reduction = 6 + Math.random()*5;
+    else reduction = 5 + Math.random()*5;
+    if (playerOffer < this.trueVal * 0.7) reduction *= 0.6;
+    return Math.max(this.trueVal, Math.round(this.oppOffer - reduction));
+  };
+
+  this.render = function() {
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">商业谈判 — 第 ${this.round+1}/${this.rounds} 轮</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="panel">
+        <div class="panel-title">谈判状态</div>
+        <div class="info-row"><span class="info-key">商品真实价值</span><span class="info-val" style="color:var(--dim)">约60元（双方均未知）</span></div>
+        <div class="info-row"><span class="info-key">您的当前出价</span><span class="info-val" style="color:var(--green)">${this.myOffer||this.myAnchor} 元</span></div>
+        <div class="info-row"><span class="info-key">${opp.name} 要价</span><span class="info-val" style="color:var(--red)">${this.oppOffer} 元</span></div>
+        <div class="info-row"><span class="info-key">差距</span><span class="info-val" style="color:var(--yellow)">${this.oppOffer-(this.myOffer||this.myAnchor)} 元</span></div>
+      </div>
+      <div class="hint hint-cyan">您是买方，希望以最低价买入。${opp.name}是卖方，希望以最高价卖出。</div>
+      <div class="panel">
+        <div class="panel-title">您的出价策略（第${this.round+1}轮）</div>
+        <button class="choice-btn" onclick="bgOffer(${Math.round((this.myOffer||this.myAnchor)+3)})"><b>[小幅让步]</b> 提价至 ${Math.round((this.myOffer||this.myAnchor)+3)} 元（+3）</button>
+        <button class="choice-btn" onclick="bgOffer(${Math.round((this.myOffer||this.myAnchor)+8)})"><b>[适度让步]</b> 提价至 ${Math.round((this.myOffer||this.myAnchor)+8)} 元（+8）</button>
+        <button class="choice-btn" onclick="bgOffer(${Math.round((this.myOffer||this.myAnchor)+15)})"><b>[大幅让步]</b> 提价至 ${Math.round((this.myOffer||this.myAnchor)+15)} 元（+15）</button>
+        <button class="choice-btn btn-green" onclick="bgAccept()"><b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交</button>
+        <button class="choice-btn" onclick="bgBATNA()"><b>[BATNA声明]</b> 表明替代方案，施压对方降价</button>
+      </div>
+      ${this.log.length?`<div class="panel"><div class="panel-title">谈判记录</div><div class="log">${this.log.map(l=>`<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}</div>`).join('')}</div></div>`:''}
+    `;
+  };
+
+  this.makeOffer = function(offer, choiceTags, choiceAffects) {
+    recordChoice({round: this.round+1, id:'bg_offer_'+offer, text:`出价${offer}元`, tags: choiceTags || ['让步'], affects: choiceAffects || {assert:-0.02}});
+    this.myOffer = offer;
+    const newOppOffer = this.getOppOffer(offer);
+    if (newOppOffer <= offer || newOppOffer <= this.trueVal) {
+      const deal = Math.round((offer + this.oppOffer) / 2);
+      this.finishDeal(deal);
+      return;
+    }
+    this.log.push({round:this.round+1, my:offer, opp:this.oppOffer, gap:this.oppOffer-offer});
+    this.oppOffer = newOppOffer;
+    this.round++;
+    if (this.round >= this.rounds) {
+      if (this.oppOffer - offer < 15) this.finishDeal(Math.round((offer + this.oppOffer)/2));
+      else this.finishDeal(this.oppOffer);
+    } else {
+      this.render();
+    }
+  };
+
+  this.acceptDeal = function() {
+    recordChoice({round: this.round+1, id:'bg_accept', text:'接受对方价格', tags:['无条件让步','接受'], affects:{assert:-0.04, depth:-0.02}});
+    this.finishDeal(this.oppOffer);
+  };
+
+  this.batnaDeclaration = function() {
+    recordChoice({round: this.round+1, id:'bg_batna', text:'BATNA声明', tags:['BATNA','底线控制','反压'], affects:{assert:0.04, depth:0.03}});
+    // BATNA reduces opp's next offer more
+    const reduction = 8 + Math.random()*6;
+    this.oppOffer = Math.max(this.trueVal, Math.round(this.oppOffer - reduction));
+    this.log.push({round:this.round+1, my:this.myOffer||this.myAnchor, opp:this.oppOffer, gap:this.oppOffer-(this.myOffer||this.myAnchor)});
+    this.round++;
+    if (this.round >= this.rounds) this.finishDeal(Math.round(((this.myOffer||this.myAnchor)+this.oppOffer)/2));
+    else this.render();
+  };
+
+  this.finishDeal = function(price) {
+    this.playerScore = Math.max(0, 100 - price);
+    this.oppScore = Math.max(0, price - 40);
+    const outcome = price<=55?'win':price<=65?'draw':'lose';
+    showResult({
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:`<div class="info-row"><span class="info-key">成交价格</span><span class="info-val">${price} 元</span></div>
+      <div class="info-row"><span class="info-key">相比最高价节省</span><span class="info-val">${100-price} 元</span></div>
+      <div class="info-row"><span class="info-key">评价</span><span class="info-val">${price<=55?'出色！远低于真实价值':price<=65?'良好，接近真实价值':'偏高，需要提升议价技巧'}</span></div>
+      <div class="info-row"><span class="info-key">提示</span><span class="info-val">锚定低价、小幅递减让步、保持耐心是关键</span></div>`
+    });
+  };
+}
+function bgOffer(n) {
+  const cur = state.currentScenario.myOffer || state.currentScenario.myAnchor;
+  const delta = n - cur;
+  const tags = delta <= 3 ? ['条件让步','筹码交换'] : delta <= 8 ? ['让步','适度让步'] : ['无条件让步'];
+  const affects = delta <= 3 ? {depth:0.05, assert:0.02} : delta <= 8 ? {assert:-0.02} : {assert:-0.04, depth:-0.02};
+  state.currentScenario.makeOffer(n, tags, affects);
+}
+function bgAccept() { state.currentScenario.acceptDeal(); }
+function bgBATNA() { state.currentScenario.batnaDeclaration(); }
+
+// --- CRISIS NEGOTIATION ---
+function CrisisNegotiation(opp) {
+  this.opp = opp;
+  this.stage = 0;
+  this.playerScore = 0;
+  this.oppScore = 50;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+
+  this.stages = [
+    {
+      title:'第一阶段：建立初步接触',
+      context:`危机现场：${opp.name}声称持有重要文件，威胁要公开引发连锁反应。您是谈判代表，需要建立接触。`,
+      options:[
+        {text:'战术性同理心："我理解您现在的压力，这一定非常困难..."', ps:15, os:-10, feedback:'很好！同理心降低了防御性，对话通道初步建立。', tags:['情绪调节','战术性同理心','降温沟通'], affects:{emotion:0.04}},
+        {text:'直接要求："请立即停止威胁行为，我们来谈条件。"', ps:5, os:0, feedback:'过于强硬，对方防御性增加，但明确了谈判立场。', tags:['强硬','主张强度'], affects:{assert:0.05, risk:0.03}},
+        {text:'倾听策略：沉默让对方先说，使用镜像技术复述', ps:12, os:-5, feedback:'有效的倾听技巧，获取了更多信息。', tags:['信息收集','积极倾听'], affects:{depth:0.04, adapt:0.03}},
+        {text:'权威压制："上级已经授权我全权处理，必须服从。"', ps:-5, os:10, feedback:'权威策略激化矛盾，对方更加警觉。', tags:['强硬'], affects:{assert:0.03}},
+      ]
+    },
+    {
+      title:'第二阶段：深化沟通理解',
+      context:'初步接触建立后，需要深入了解对方诉求，寻找核心利益。',
+      options:[
+        {text:'校准问题："您最担心的具体是什么？我如何才能帮助您？"', ps:15, os:-10, feedback:'开放式校准问题触发深度思考，获取关键信息。', tags:['信息收集','校准问题'], affects:{depth:0.04, adapt:0.03}},
+        {text:'贴标签技术："看起来您对当前局面感到非常愤怒和失望。"', ps:12, os:-8, feedback:'准确标签降低情绪张力，建立情感连接。', tags:['情绪调节','战术性同理心'], affects:{emotion:0.04}},
+        {text:'利益置换："告诉我您真正需要的，也许我们能找到另一条路。"', ps:18, os:-15, feedback:'直指核心利益，突破立场僵局！', tags:['整合性谈判','信息收集'], affects:{depth:0.05, adapt:0.03}},
+        {text:'拖延策略："让我去请示上级，需要一些时间。"', ps:3, os:5, feedback:'拖延可能激怒对方，但为内部协调争取时间。', tags:['让步'], affects:{assert:-0.02}},
+      ]
+    },
+    {
+      title:'第三阶段：寻找解决方案',
+      context:'对方核心诉求已初步明确，需要创造可接受的解决方案。',
+      options:[
+        {text:'整合性方案："如果我们能保证您的A需求，您是否愿意在B上妥协？"', ps:18, os:-12, feedback:'整合性谈判创造新价值，双方空间扩大。', tags:['条件让步','整合性谈判'], affects:{depth:0.05, assert:0.02}},
+        {text:'小步骤策略："先解决最小的问题，建立信任后再谈大问题。"', ps:15, os:-10, feedback:'增量式推进降低风险，积累谈判动力。', tags:['合作','关系维护'], affects:{cooperation_rate:0.04, trust:0.03}},
+        {text:'"就是这样"技术：重新表述对方诉求直到获得确认', ps:12, os:-8, feedback:'确认理解减少误解，为方案奠定基础。', tags:['信息收集','积极倾听'], affects:{depth:0.04, adapt:0.03}},
+        {text:'最后期限压力："我们只有30分钟，现在必须做决定。"', ps:-8, os:15, feedback:'人工期限适得其反，破坏了之前建立的信任。', tags:['强硬'], affects:{assert:0.03}},
+      ]
+    },
+    {
+      title:'第四阶段：巩固协议',
+      context:'双方接近共识，需要巩固并确保协议落实。',
+      options:[
+        {text:'书面确认："让我们把达成的共识逐条写下来，确保理解一致。"', ps:15, os:-10, feedback:'书面确认防止事后争议，体现专业性。', tags:['BATNA','底线控制'], affects:{assert:0.04, depth:0.03}},
+        {text:'"不"的保护：提供可接受的最低条件，让对方主动选择', ps:12, os:-8, feedback:'选择权归还给对方，增加协议持久性。', tags:['公平','框架重构'], affects:{fairness:0.05, cooperation_rate:0.02}},
+        {text:'条件绑定："如果执行协议，我们将提供额外的保障措施。"', ps:18, os:-15, feedback:'条件让步激励执行，创造正向反馈机制！', tags:['条件让步','筹码交换'], affects:{depth:0.05, assert:0.02}},
+        {text:'强制结束："时间到，必须立即执行，否则后果自负。"', ps:-10, os:20, feedback:'强制性结束摧毁信任，协议可能不持久。', tags:['强硬','无条件让步'], affects:{assert:0.03}},
+      ]
+    }
+  ];
+
+  this.render = function() {
+    const s = this.stages[this.stage];
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">危机谈判 — ${s.title}</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="grid2" style="margin:12px 0">
+        <div class="score-box"><div class="score-num">${this.playerScore}</div><div class="score-lbl">谈判积分</div></div>
+        <div class="score-box"><div class="score-num" style="color:var(--red)">${Math.max(0,this.oppScore)}</div><div class="score-lbl">危机风险值</div></div>
+      </div>
+      <div class="hint hint-yellow">${s.context}</div>
+      <div class="hint hint-cyan" style="font-size:11px">对手档案：${opp.name} | ${opp.type} | ${opp.desc}</div>
+      <div class="panel">
+        <div class="panel-title">选择谈判策略</div>
+        ${s.options.map((o,i) => `<button class="choice-btn" onclick="crisisChoice(${i})">${o.text}</button>`).join('')}
+      </div>
+      ${this.log.length?`<div class="panel"><div class="panel-title">阶段记录</div><div class="log">${this.log.map(l=>`<div class="log-entry">[${l.stage}] ${l.feedback} <span style="color:var(--green)">+${l.ps}</span></div>`).join('')}</div></div>`:''}
+    `;
+  };
+
+  this.makeChoice = function(idx) {
+    const s = this.stages[this.stage];
+    const opt = s.options[idx];
+    recordChoice({round: this.stage+1, id:'crisis_s'+this.stage+'_'+idx, text:opt.text, tags:opt.tags||[], affects:opt.affects||{}});
+    this.playerScore += opt.ps;
+    this.oppScore += opt.os;
+    this.log.push({stage:`第${this.stage+1}阶段`, feedback:opt.feedback, ps:opt.ps});
+    this.stage++;
+    if (this.stage < this.stages.length) {
+      const el = document.getElementById('scenario-ui');
+      const feedback = document.createElement('div');
+      feedback.className = `hint ${opt.ps>0?'hint-green':'hint-red'}`;
+      feedback.innerHTML = `<b>反馈：</b>${opt.feedback}`;
+      el.prepend(feedback);
+      setTimeout(() => this.render(), 1800);
+    } else {
+      this.finish();
+    }
+  };
+
+  this.finish = function() {
+    const outcome = this.playerScore>=50?'win':this.playerScore>=20?'draw':'lose';
+    showResult({
+      playerScore: this.playerScore,
+      oppScore: Math.max(0, 100-this.playerScore),
+      outcome,
+      summary:`<div class="info-row"><span class="info-key">最终谈判积分</span><span class="info-val">${this.playerScore}</span></div>
+      <div class="info-row"><span class="info-key">危机化解程度</span><span class="info-val">${this.playerScore>=50?'成功化解':'部分化解'}</span></div>
+      <div class="info-row"><span class="info-key">评级</span><span class="info-val">${this.playerScore>=60?'卓越谈判官':this.playerScore>=40?'称职谈判员':'需要加强训练'}</span></div>`
+    });
+  };
+}
+function crisisChoice(i) { state.currentScenario.makeChoice(i); }
+
+// --- PUBLIC GOODS GAME ---
+function PublicGoodsGame(opp) {
+  this.opp = opp;
+  this.rounds = 4;
+  this.round = 0;
+  this.playerScore = 40;
+  this.oppScore = 40;
+  this.multiplier = 2.2;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+
+  this.getOppContrib = function(playerContrib) {
+    if (opp.id==='cooperative') return 7 + Math.floor(Math.random()*3);
+    if (opp.id==='aggressive') return 1 + Math.floor(Math.random()*3);
+    if (opp.id==='rational') return Math.round(playerContrib * 0.9);
+    if (opp.id==='manipulative') return Math.random()<0.4?8:2;
+    return 4 + Math.floor(Math.random()*4);
+  };
+
+  this.render = function() {
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">公共品博弈 — 第${this.round+1}/${this.rounds}轮</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="grid2" style="margin:12px 0">
+        <div class="score-box"><div class="score-num">${this.playerScore}</div><div class="score-lbl">您的余额</div></div>
+        <div class="score-box"><div class="score-num">${this.oppScore}</div><div class="score-lbl">${opp.name} 余额</div></div>
+      </div>
+      <div class="hint hint-cyan">
+        每轮各有10枚筹码，可贡献到公共池。公共池总额×${this.multiplier}后平分给所有人。
+        <br>理性自私：贡献0（但若人人如此，公共品崩溃）。
+      </div>
+      <div class="panel">
+        <div class="panel-title">选择贡献数量</div>
+        <button class="choice-btn" onclick="pgContrib(10)"><b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益</button>
+        <button class="choice-btn" onclick="pgContrib(7)"><b>[高度合作]</b> 贡献 7枚 — 偏向集体</button>
+        <button class="choice-btn" onclick="pgContrib(4)"><b>[适度参与]</b> 贡献 4枚 — 平衡策略</button>
+        <button class="choice-btn" onclick="pgContrib(0)"><b>[搭便车]</b> 贡献 0枚 — 最大化个人利益</button>
+      </div>
+      ${this.log.length?`<div class="panel"><div class="panel-title">贡献记录</div><div class="log">${this.log.map(l=>`<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}</div>`).join('')}</div></div>`:''}
+    `;
+  };
+
+  this.contribute = function(amount) {
+    const tags = amount >= 7 ? ['合作','关系维护'] : amount >= 4 ? ['合作','公平'] : ['强硬','BATNA'];
+    const affects = amount >= 7 ? {cooperation_rate:0.04, trust:0.03} : amount >= 4 ? {fairness:0.05, cooperation_rate:0.02} : {assert:0.04, depth:0.03};
+    recordChoice({round: this.round+1, id:'pg_contrib_'+amount, text:`贡献${amount}枚`, tags, affects});
+    const oppContrib = this.getOppContrib(amount);
+    const pool = (amount + oppContrib) * this.multiplier;
+    const share = Math.round(pool / 2);
+    this.playerScore = this.playerScore - amount + share;
+    this.oppScore = this.oppScore - oppContrib + share;
+    this.log.push({round:this.round+1, my:amount, opp:oppContrib, pool:Math.round(pool), share});
+    this.round++;
+    if (this.round < this.rounds) this.render();
+    else this.finish();
+  };
+
+  this.finish = function() {
+    const outcome = this.playerScore>this.oppScore?'win':this.playerScore===this.oppScore?'coop':'lose';
+    const avgContrib = Math.round(this.log.reduce((s,l)=>s+l.my,0)/this.log.length);
+    showResult({
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:`<div class="info-row"><span class="info-key">平均贡献量</span><span class="info-val">${avgContrib}枚</span></div>
+      <div class="info-row"><span class="info-key">最优策略</span><span class="info-val">条件合作：模仿对方上轮贡献，避免持续被剥削</span></div>
+      <div class="info-row"><span class="info-key">启示</span><span class="info-val">公共品博弈揭示集体行动困境，信任与声誉是合作的基础</span></div>`
+    });
+  };
+}
+function pgContrib(n) { state.currentScenario.contribute(n); }
+
+// --- COALITION GAME ---
+function CoalitionGame(opp) {
+  this.opp = opp;
+  this.stage = 0;
+  this.playerScore = 0;
+  this.oppScore = 0;
+  this.allies = 0;
+  this.log = [];
+  this.choiceLog = [];
+  this.oppMemory = createOpponentMemory();
+
+  this.stages = [
+    {
+      title:'第一阶段：利益扫描',
+      context:'多方谈判开始。您需要了解各方立场，识别潜在盟友和威胁。',
+      options:[
+        {text:'广泛信息收集：私下约谈每一方，了解各自核心诉求', ps:15, allies:1, feedback:'信息优势确立，识别了两个潜在盟友。', tags:['信息收集','积极倾听'], affects:{depth:0.04, adapt:0.03}},
+        {text:'公开立场宣示：直接阐明你的方案，测试各方反应', ps:8, allies:0, feedback:'立场清晰但暴露了底线，灵活性下降。', tags:['强硬','主张强度'], affects:{assert:0.05, risk:0.03}},
+        {text:'观察等待：保持中立，让各方先交锋', ps:5, allies:0, feedback:'获得了观察机会，但错过了主动建联时机。', tags:['信息收集'], affects:{depth:0.02}},
+        {text:'与最强方结盟：立即接近实力最强的参与者', ps:-5, allies:1, feedback:'提前绑定可能失去其他联盟机会。', tags:['合作','关系维护'], affects:{cooperation_rate:0.04, trust:0.03}},
+      ]
+    },
+    {
+      title:'第二阶段：联盟构建',
+      context:`您已掌握部分信息。${opp.name}正在积极游说，与您竞争关键盟友。`,
+      options:[
+        {text:'利益整合提案：设计满足盟友核心诉求的联合方案', ps:20, allies:1, feedback:'精准的利益对接赢得关键盟友加入！', tags:['整合性谈判','条件让步'], affects:{depth:0.05, assert:0.02}},
+        {text:'价值交换：提供对方高度需要的资源，换取联盟承诺', ps:15, allies:1, feedback:'等价交换达成，联盟基础稳固。', tags:['条件让步','筹码交换'], affects:{depth:0.05, assert:0.02}},
+        {text:'揭露竞争对手弱点：向潜在盟友展示对手方案的缺陷', ps:8, allies:0, feedback:'有一定效果，但道德风险影响长期声誉。', tags:['强硬'], affects:{assert:0.03}},
+        {text:'激进报价：承诺给盟友超额利益', ps:-10, allies:0, feedback:'过度承诺损害可信度，盟友持观望态度。', tags:['无条件让步'], affects:{assert:-0.04, depth:-0.02}},
+      ]
+    },
+    {
+      title:'第三阶段：巩固联盟',
+      context:`联盟初步形成，但内部存在分歧，外部${opp.name}在尝试分化。`,
+      options:[
+        {text:'建立内部共识机制：定期沟通，透明决策过程', ps:18, allies:1, feedback:'内聚力增强，联盟稳定性大幅提升。', tags:['合作','关系维护'], affects:{cooperation_rate:0.04, trust:0.03}},
+        {text:'创造集体认同：塑造"我们"的共同价值和目标', ps:15, allies:0, feedback:'集体认同建立，联盟更具凝聚力。', tags:['情绪调节','关系维护'], affects:{emotion:0.04}},
+        {text:'设立退出成本：建立联盟离开的代价机制', ps:10, allies:0, feedback:'约束机制有效，但也限制了联盟灵活性。', tags:['BATNA','底线控制'], affects:{assert:0.04, depth:0.03}},
+        {text:'孤立对手：切断对手与中立方的联系', ps:5, allies:0, feedback:'孤立策略有风险，可能激化对抗。', tags:['强硬'], affects:{assert:0.03}},
+      ]
+    },
+    {
+      title:'第四阶段：最终谈判',
+      context:'联盟谈判进入终局，需要将联盟优势转化为最终协议。',
+      options:[
+        {text:'展示联盟实力：明确但非威胁性地呈现联盟的综合优势', ps:20, allies:0, feedback:'实力展示改变了对手的BATNA评估，协议加速达成。', tags:['BATNA','主张强度'], affects:{assert:0.04, depth:0.03}},
+        {text:'提出一揽子方案：将所有议题打包，寻找整体最优解', ps:18, allies:0, feedback:'打包策略创造了额外价值，多方受益。', tags:['整合性谈判','纳什均衡'], affects:{depth:0.05, adapt:0.03}},
+        {text:'设置最后期限：宣布联盟在X时间后单方面行动', ps:8, allies:0, feedback:'期限有效但破坏了部分谈判善意。', tags:['强硬','BATNA'], affects:{assert:0.04, risk:0.03}},
+        {text:'妥协型收尾：主动放弃部分次要利益以确保核心利益', ps:15, allies:0, feedback:'战略性妥协展现了成熟的谈判风范。', tags:['条件让步','公平'], affects:{fairness:0.05, cooperation_rate:0.02}},
+      ]
+    }
+  ];
+
+  this.render = function() {
+    const s = this.stages[this.stage];
+    const el = document.getElementById('scenario-ui');
+    el.innerHTML = `
+      <div class="flex-between">
+        <div class="section-title">联盟谈判 — ${s.title}</div>
+        <button class="back-btn" onclick="exitTraining()">✕ 退出</button>
+      </div>
+      <div class="grid3" style="margin:12px 0">
+        <div class="score-box"><div class="score-num">${this.playerScore}</div><div class="score-lbl">谈判积分</div></div>
+        <div class="score-box"><div class="score-num" style="color:var(--green)">${this.allies}</div><div class="score-lbl">当前盟友数</div></div>
+        <div class="score-box"><div class="score-num" style="color:var(--yellow)">${this.stage+1}/4</div><div class="score-lbl">阶段进度</div></div>
+      </div>
+      <div class="hint hint-cyan">${s.context}</div>
+      <div class="panel">
+        <div class="panel-title">选择谈判策略</div>
+        ${s.options.map((o,i) => `<button class="choice-btn" onclick="cgChoice(${i})">${o.text}</button>`).join('')}
+      </div>
+      ${this.log.length?`<div class="panel"><div class="panel-title">阶段记录</div><div class="log">${this.log.map(l=>`<div class="log-entry">[${l.stage}] ${l.feedback}</div>`).join('')}</div></div>`:''}
+    `;
+  };
+
+  this.makeChoice = function(idx) {
+    const s = this.stages[this.stage];
+    const opt = s.options[idx];
+    recordChoice({round: this.stage+1, id:'cg_s'+this.stage+'_'+idx, text:opt.text, tags:opt.tags||[], affects:opt.affects||{}});
+    this.playerScore += opt.ps;
+    this.allies += opt.allies || 0;
+    this.oppScore += (5 - Math.floor(opt.ps/5));
+    this.log.push({stage:`第${this.stage+1}阶段`, feedback:opt.feedback});
+    this.stage++;
+    if (this.stage < this.stages.length) {
+      const el = document.getElementById('scenario-ui');
+      const fb = document.createElement('div');
+      fb.className = `hint ${opt.ps>10?'hint-green':opt.ps>0?'hint-cyan':'hint-red'}`;
+      fb.innerHTML = `<b>阶段反馈：</b>${opt.feedback}`;
+      el.prepend(fb);
+      setTimeout(() => this.render(), 1800);
+    } else {
+      this.finish();
+    }
+  };
+
+  this.finish = function() {
+    const outcome = this.playerScore>45&&this.allies>=2?'win':this.playerScore>25?'draw':'lose';
+    showResult({
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:`<div class="info-row"><span class="info-key">总积分</span><span class="info-val">${this.playerScore}</span></div>
+      <div class="info-row"><span class="info-key">最终盟友数</span><span class="info-val">${this.allies}</span></div>
+      <div class="info-row"><span class="info-key">评级</span><span class="info-val">${this.playerScore>=55&&this.allies>=2?'联盟大师':this.playerScore>=35?'合格谈判员':'需要加强多方博弈技巧'}</span></div>`
+    });
+  };
+}
+function cgChoice(i) { state.currentScenario.makeChoice(i); }
+
+// ========== INIT ==========
+document.getElementById('player-name-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') enterSystem();
+});
+
+</script>
+</body>
+</html>

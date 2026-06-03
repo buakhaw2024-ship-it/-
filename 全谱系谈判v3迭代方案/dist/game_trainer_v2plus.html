@@ -599,6 +599,19 @@ function canUnlockTrumpBoss() {
 function getDifficultyLabel(diff) {
   return {easy:'初级', medium:'中级', hard:'高级', extreme:'终局挑战'}[diff] || '中级';
 }
+// Difficulty affects real game mechanics (opponent generosity / toughness / acceptance).
+// Trump Boss is exempt — its behavior is already calibrated to the extreme.
+function getDifficultyMod() {
+  const d = state.currentDifficulty || 'medium';
+  return {
+    // multiplier on opponent generosity (return/contribution/concession): >1 easier for player
+    coopFactor:  ({easy:1.30, medium:1.0, hard:0.78, extreme:0.62})[d] ?? 1.0,
+    // multiplier on opponent toughness (anchor/keep amount): >1 tougher
+    toughFactor: ({easy:0.82, medium:1.0, hard:1.18, extreme:1.35})[d] ?? 1.0,
+    // additive shift on ultimatum acceptance threshold: positive = accepts more (easier)
+    acceptShift: ({easy:8, medium:0, hard:-6, extreme:-12})[d] ?? 0
+  };
+}
 function getAvailableOpponents() {
   const base = [...OPPONENTS];
   if (canUnlockTrumpBoss()) base.push(TRUMP_BOSS);
@@ -1330,14 +1343,15 @@ function PrisonersDilemma(opp) {
       return Math.random() < 0.85 ? 'defect' : 'coop';
     }
     const r = Math.random();
-    if (this.round === 0) return r < (adjustedOpp.coop||0.5) ? 'coop' : 'defect';
+    const cf = getDifficultyMod().coopFactor; // higher = opponent cooperates more (easier)
+    if (this.round === 0) return r < (adjustedOpp.coop||0.5)*cf ? 'coop' : 'defect';
     const last = this.log[this.log.length-1];
-    if (opp.id === 'cooperative') return r < 0.85 ? 'coop' : 'defect';
-    if (opp.id === 'aggressive') return r < 0.25 ? 'coop' : 'defect';
-    if (opp.id === 'manipulative') return r < 0.35 ? 'coop' : 'defect';
+    if (opp.id === 'cooperative') return r < 0.85*cf ? 'coop' : 'defect';
+    if (opp.id === 'aggressive') return r < 0.25*cf ? 'coop' : 'defect';
+    if (opp.id === 'manipulative') return r < 0.35*cf ? 'coop' : 'defect';
     if (opp.id === 'rational') return last && last.player === 'defect' ? 'defect' : 'coop';
     if (opp.id === 'emotional') return last && last.oppFeel < 0 ? 'defect' : 'coop';
-    return r < (adjustedOpp.coop||0.5) ? 'coop' : 'defect';
+    return r < (adjustedOpp.coop||0.5)*cf ? 'coop' : 'defect';
   };
 
   this.calcScores = function(p,o) {
@@ -1457,12 +1471,16 @@ function UltimatumGame(opp) {
   this.oppProposes = function() {
     const total = this.getTotal();
     let offer;
-    if (opp.id==='trumpBoss') offer = 82 + Math.floor(Math.random()*4); // extreme anchor 82-85
-    else if (opp.id==='aggressive') offer = 70;
-    else if (opp.id==='cooperative') offer = 45;
-    else if (opp.id==='emotional') offer = 50;
-    else if (opp.id==='manipulative') offer = 65;
-    else offer = 55 + Math.floor(Math.random()*10);
+    if (opp.id==='trumpBoss') { offer = 82 + Math.floor(Math.random()*4); } // extreme anchor 82-85, difficulty-exempt
+    else {
+      if (opp.id==='aggressive') offer = 70;
+      else if (opp.id==='cooperative') offer = 45;
+      else if (opp.id==='emotional') offer = 50;
+      else if (opp.id==='manipulative') offer = 65;
+      else offer = 55 + Math.floor(Math.random()*10);
+      // harder = opponent keeps more for itself
+      offer = Math.round(50 + (offer - 50) * getDifficultyMod().toughFactor);
+    }
     offer = Math.min(80, Math.max(20, offer));
     const theirShare = total - offer;
     const el = document.getElementById('ug-waiting');
@@ -1513,7 +1531,8 @@ function ugChoice(keep) {
   // Base threshold varies by type; assert delta shifts it: higher assert → tougher acceptance
   const base = adj.id==='trumpBoss'?40 : adj.id==='aggressive'?55 : adj.id==='cooperative'?65 : adj.id==='emotional'?50 : adj.id==='rational'?60 : 57;
   const assertShift = ((adj.assert || 0.5) - 0.5) * -15;
-  const threshold = base + assertShift + Math.random() * 5;
+  const diffShift = adj.id==='trumpBoss' ? 0 : getDifficultyMod().acceptShift; // easier = accepts greedier offers
+  const threshold = base + assertShift + diffShift + Math.random() * 5;
   const accepted = keep <= Math.round(threshold);
   sc.processProposal(keep, accepted, true);
 }
@@ -1567,13 +1586,18 @@ function TrustGame(opp) {
     recordChoice({round: this.round+1, id:'tg_invest_'+amount, text:`投入${amount}枚`, tags, affects});
     const tripled = amount * 3;
     let returned;
-    if (opp.id==='cooperative') returned = Math.round(tripled*0.6);
-    else if (opp.id==='aggressive') returned = Math.round(tripled*0.15);
-    else if (opp.id==='manipulative') returned = Math.round(tripled*(Math.random()<0.3?0.5:0.1));
-    else if (opp.id==='riskAverse') returned = Math.round(tripled*0.4);
-    else if (opp.id==='emotional') returned = Math.round(tripled*(amount>5?0.55:0.3));
-    else if (opp.id==='trumpBoss') returned = Math.round(tripled*0.08); // near-zero return — extreme extraction
-    else returned = Math.round(tripled*0.45);
+    if (opp.id==='trumpBoss') { returned = Math.round(tripled*0.08); } // near-zero return — extreme extraction, difficulty-exempt
+    else {
+      const cf = getDifficultyMod().coopFactor;
+      let ratio;
+      if (opp.id==='cooperative') ratio = 0.6;
+      else if (opp.id==='aggressive') ratio = 0.15;
+      else if (opp.id==='manipulative') ratio = (Math.random()<0.3?0.5:0.1);
+      else if (opp.id==='riskAverse') ratio = 0.4;
+      else if (opp.id==='emotional') ratio = (amount>5?0.55:0.3);
+      else ratio = 0.45;
+      returned = Math.round(tripled * Math.min(1, ratio*cf));
+    }
     const kept = 10 - amount;
     const myNet = kept + returned - 10;
     const oppNet = tripled - returned;
@@ -1631,6 +1655,7 @@ function BargainingGame(opp) {
     else if (opp.id==='riskAverse') reduction = 6 + Math.random()*5;
     else reduction = 5 + Math.random()*5;
     if (playerOffer < this.trueVal * 0.7) reduction *= 0.6;
+    reduction *= getDifficultyMod().coopFactor; // harder = smaller concessions
     return Math.max(this.trueVal, Math.round(this.oppOffer - reduction));
   };
 
@@ -1842,12 +1867,15 @@ function PublicGoodsGame(opp) {
   this.oppMemory = createOpponentMemory();
 
   this.getOppContrib = function(playerContrib) {
-    if (opp.id==='trumpBoss') return Math.floor(Math.random()*2); // free-rider: 0 or 1
-    if (opp.id==='cooperative') return 7 + Math.floor(Math.random()*3);
-    if (opp.id==='aggressive') return 1 + Math.floor(Math.random()*3);
-    if (opp.id==='rational') return Math.round(playerContrib * 0.9);
-    if (opp.id==='manipulative') return Math.random()<0.4?8:2;
-    return 4 + Math.floor(Math.random()*4);
+    if (opp.id==='trumpBoss') return Math.floor(Math.random()*2); // free-rider: 0 or 1, difficulty-exempt
+    const cf = getDifficultyMod().coopFactor;
+    let base;
+    if (opp.id==='cooperative') base = 7 + Math.floor(Math.random()*3);
+    else if (opp.id==='aggressive') base = 1 + Math.floor(Math.random()*3);
+    else if (opp.id==='rational') base = Math.round(playerContrib * 0.9);
+    else if (opp.id==='manipulative') base = Math.random()<0.4?8:2;
+    else base = 4 + Math.floor(Math.random()*4);
+    return Math.max(0, Math.min(10, Math.round(base * cf)));
   };
 
   this.render = function() {

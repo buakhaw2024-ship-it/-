@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全谱系博弈实战演练系统 v3（开发态）</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <div id="app"><!-- 屏幕由 Router 渲染 --></div>
+</div>
+<!-- 开发态：ES Module 入口。需通过 http server 打开（file:// 受 CORS 限制）。
+     分发态：build.js 会把所有模块内联为单文件 dist/game_trainer.html，可双击运行。 -->
+<script type="module" src="core/bootstrap.js"></script>
+</body>
+</html>

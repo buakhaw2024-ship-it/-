@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全谱系博弈实战演练系统 v3</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --border: #2a3a5a;
+  --cyan: #00d4ff;
+  --green: #00ff9f;
+  --yellow: #ffd700;
+  --red: #ff4f6a;
+  --purple: #c084fc;
+  --dim: #4a6080;
+  --text: #c8d8f0;
+  --white: #e8f0ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100vh;font-size:14px}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.screen{display:none}
+.screen.active{display:block}
+
+/* Header */
+.header{text-align:center;padding:20px 0 12px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header h1{font-size:22px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 20px var(--cyan)}
+.header .sub{color:var(--dim);font-size:11px;margin-top:4px;letter-spacing:2px}
+
+/* Panels */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px}
+.panel-title{color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+
+/* Buttons */
+.btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:8px 20px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:2px;transition:all .2s;letter-spacing:1px}
+.btn:hover{background:rgba(0,212,255,.1);box-shadow:0 0 10px rgba(0,212,255,.3)}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:rgba(0,255,159,.1);box-shadow:0 0 10px rgba(0,255,159,.3)}
+.btn-yellow{border-color:var(--yellow);color:var(--yellow)}
+.btn-yellow:hover{background:rgba(255,215,0,.1)}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:rgba(255,79,106,.1)}
+.btn-purple{border-color:var(--purple);color:var(--purple)}
+.btn-purple:hover{background:rgba(192,132,252,.1)}
+.btn-full{width:100%;display:block;text-align:left;margin-bottom:6px;padding:10px 14px}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* Menu */
+.menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:2px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.menu-item:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.menu-num{color:var(--cyan);font-size:16px;width:28px;text-align:center;font-weight:bold}
+.menu-text{flex:1}
+.menu-text b{color:var(--white);display:block;font-size:14px}
+.menu-text span{color:var(--dim);font-size:11px}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* Cards */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px;cursor:pointer;transition:all .2s}
+.card:hover{border-color:var(--cyan);transform:translateY(-1px)}
+.card h3{color:var(--cyan);font-size:13px;margin-bottom:6px}
+.card .diff{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.diff-easy{background:rgba(0,255,159,.15);color:var(--green);border:1px solid rgba(0,255,159,.3)}
+.diff-med{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid rgba(255,215,0,.3)}
+.diff-hard{background:rgba(255,79,106,.15);color:var(--red);border:1px solid rgba(255,79,106,.3)}
+.card p{color:var(--dim);font-size:11px;line-height:1.5}
+
+/* Opponent card */
+.opp-card{border:1px solid var(--border);border-radius:3px;padding:10px;cursor:pointer;transition:all .2s;background:var(--bg3)}
+.opp-card:hover{border-color:var(--cyan)}
+.opp-card.selected{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.opp-name{color:var(--white);font-size:13px;font-weight:bold}
+.opp-type{color:var(--purple);font-size:11px;margin:2px 0}
+.opp-desc{color:var(--dim);font-size:11px}
+
+/* Progress bar */
+.bar-wrap{margin:6px 0}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px}
+.bar-label span:first-child{color:var(--text)}
+.bar-label span:last-child{color:var(--cyan)}
+.bar-bg{background:var(--border);border-radius:2px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.bar-cyan{background:linear-gradient(90deg,#0066aa,var(--cyan))}
+.bar-green{background:linear-gradient(90deg,#006644,var(--green))}
+.bar-yellow{background:linear-gradient(90deg,#886600,var(--yellow))}
+.bar-red{background:linear-gradient(90deg,#880022,var(--red))}
+.bar-purple{background:linear-gradient(90deg,#440088,var(--purple))}
+
+/* Score display */
+.score-box{text-align:center;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:3px}
+.score-num{font-size:32px;font-weight:bold;color:var(--cyan)}
+.score-lbl{color:var(--dim);font-size:11px;margin-top:2px}
+
+/* Outcome badge */
+.outcome{display:inline-block;padding:4px 14px;border-radius:2px;font-size:12px;font-weight:bold;letter-spacing:1px}
+.outcome-win{background:rgba(0,255,159,.15);color:var(--green);border:1px solid var(--green)}
+.outcome-lose{background:rgba(255,79,106,.15);color:var(--red);border:1px solid var(--red)}
+.outcome-draw{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid var(--yellow)}
+.outcome-coop{background:rgba(0,212,255,.15);color:var(--cyan);border:1px solid var(--cyan)}
+
+/* Choice buttons for scenarios */
+.choice-btn{width:100%;text-align:left;padding:12px 16px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:3px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .2s;line-height:1.5}
+.choice-btn:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.choice-btn b{color:var(--cyan)}
+
+/* Info rows */
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(42,58,90,.5);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--dim)}
+.info-val{color:var(--white)}
+
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;margin:2px;border:1px solid}
+.tag-cyan{border-color:var(--cyan);color:var(--cyan)}
+.tag-green{border-color:var(--green);color:var(--green)}
+.tag-yellow{border-color:var(--yellow);color:var(--yellow)}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 16px;cursor:pointer;color:var(--dim);font-size:12px;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab:hover{color:var(--text)}
+
+/* Input */
+.input-wrap{margin:12px 0}
+.input-wrap label{display:block;color:var(--dim);font-size:11px;margin-bottom:4px;letter-spacing:1px}
+.inp{background:var(--bg3);border:1px solid var(--border);color:var(--white);padding:8px 12px;font-family:inherit;font-size:14px;width:100%;border-radius:2px}
+.inp:focus{outline:none;border-color:var(--cyan)}
+
+/* Alert/hint */
+.hint{padding:10px 14px;border-radius:2px;margin:8px 0;font-size:12px;line-height:1.6}
+.hint-cyan{background:rgba(0,212,255,.08);border-left:3px solid var(--cyan);color:var(--text)}
+.hint-green{background:rgba(0,255,159,.08);border-left:3px solid var(--green);color:var(--text)}
+.hint-yellow{background:rgba(255,215,0,.08);border-left:3px solid var(--yellow);color:var(--text)}
+.hint-red{background:rgba(255,79,106,.08);border-left:3px solid var(--red);color:var(--text)}
+.hint-purple{background:rgba(192,132,252,.08);border-left:3px solid var(--purple);color:var(--text)}
+
+/* Round log */
+.log{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:3px;padding:8px;background:var(--bg)}
+.log-entry{font-size:11px;padding:4px 0;border-bottom:1px solid rgba(42,58,90,.3);color:var(--dim)}
+.log-entry:last-child{border-bottom:none}
+.log-entry .lbl{color:var(--text)}
+
+/* Master theory */
+.master-card{padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-bottom:10px}
+.master-name{color:var(--yellow);font-size:14px;font-weight:bold;margin-bottom:4px}
+.master-title{color:var(--dim);font-size:11px;margin-bottom:10px}
+.tactic{padding:8px 10px;background:var(--bg2);border-left:3px solid var(--cyan);margin-bottom:6px;border-radius:0 2px 2px 0}
+.tactic-name{color:var(--cyan);font-size:12px;font-weight:bold}
+.tactic-desc{color:var(--dim);font-size:11px;margin-top:2px;line-height:1.5}
+
+/* Responsive */
+@media(max-width:600px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .header h1{font-size:16px}
+}
+
+/* Welcome screen */
+.welcome-logo{text-align:center;padding:40px 0 20px}
+.logo-art{color:var(--cyan);font-size:13px;line-height:1.4;text-shadow:0 0 15px rgba(0,212,255,.5)}
+.stat-mini{display:inline-block;padding:6px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;font-size:12px;margin:4px}
+.stat-mini span{color:var(--cyan);font-weight:bold}
+.back-btn{color:var(--dim);cursor:pointer;font-size:12px;padding:4px 8px;border:1px solid var(--border);background:transparent;font-family:inherit;border-radius:2px}
+.back-btn:hover{color:var(--text);border-color:var(--text)}
+.flex-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
+
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="app"></div>
+</div>
+<script>
+"use strict";
+(function () {
+/* ===== core/event-bus.js ===== */
+// core/event-bus.js — 事件总线
+// 所有模块通过它通信，模块之间不直接调用彼此的行为函数。
+// 开发态：ES Module 导出 EventBus；分发态：build.js 剥离 export 后并入同一作用域。
+
+const EventBus = (() => {
+  const listeners = new Map(); // event -> Set<handler>
+
+  function on(event, handler) {
+    if (!listeners.has(event)) listeners.set(event, new Set());
+    listeners.get(event).add(handler);
+    return () => off(event, handler); // 返回取消订阅函数
+  }
+
+  function once(event, handler) {
+    const wrapper = (payload) => {
+      off(event, wrapper);
+      handler(payload);
+    };
+    return on(event, wrapper);
+  }
+
+  function off(event, handler) {
+    const set = listeners.get(event);
+    if (set) set.delete(handler);
+  }
+
+  function emit(event, payload) {
+    const set = listeners.get(event);
+    if (!set) return;
+    // 复制一份，避免 handler 内部增删订阅导致迭代异常
+    [...set].forEach((handler) => {
+      try {
+        handler(payload);
+      } catch (err) {
+        console.error(`[EventBus] handler error on "${event}":`, err);
+      }
+    });
+  }
+
+  return { on, once, off, emit };
+})();
+
+
+/* ===== core/events.js ===== */
+// core/events.js — 事件名常量（唯一事实来源）
+// 所有 emit/on 都引用这里的常量，避免裸字符串拼写错误。
+
+const EVENTS = {
+  // 导航
+  NAV_GOTO: 'nav:goto',           // payload: { screen, params }
+
+  // 对局生命周期
+  GAME_START: 'game:start',       // payload: { scenarioKey, opponentId }
+  GAME_RENDER: 'game:render',     // payload: { html } 或 { viewModel }
+  PLAYER_ACTION: 'player:action', // payload: { type, value }
+  AI_DECIDED: 'ai:decided',       // payload: { move, mood, reason }
+  ROUND_END: 'round:end',         // payload: { roundLog }
+  GAME_END: 'game:end',           // payload: { result }
+
+  // 分析
+  ANALYTICS_SCORED: 'analytics:scored', // payload: { replay, score }
+  PROFILE_UPDATED: 'profile:updated',   // payload: { profile }
+
+  // 全局状态
+  STORE_CHANGED: 'store:changed', // payload: { key, value }
+};
+
+// 屏幕标识（router 使用）
+const SCREENS = {
+  WELCOME: 'welcome',
+  MAIN: 'main',
+  SCENARIO_SELECT: 'scenario-select',
+  OPPONENT_SELECT: 'opponent-select',
+  GAME: 'game',
+  RESULT: 'result',
+  STRATEGY: 'strategy',
+  PSYCHOLOGY: 'psychology',
+  DASHBOARD: 'dashboard',
+};
+
+
+/* ===== core/store.js ===== */
+// core/store.js — 最小全局状态容器
+// 单一数据源；set 时通过事件总线广播 store:changed，UI 据此重渲染。
+
+
+const _state = {
+  player: null,        // 当前玩家档案（analytics/player-data 填充）
+  scenarioKey: null,   // 当前选中的场景
+  opponentId: null,    // 当前选中的对手
+  currentScreen: null, // 当前屏幕
+  profile: null,       // 心理画像向量
+};
+
+const Store = {
+  get(key) {
+    return key === undefined ? { ..._state } : _state[key];
+  },
+
+  set(key, value) {
+    _state[key] = value;
+    EventBus.emit(EVENTS.STORE_CHANGED, { key, value });
+  },
+
+  // 一次性更新多个字段（仅广播一次每个 key）
+  patch(partial) {
+    Object.entries(partial).forEach(([key, value]) => {
+      _state[key] = value;
+      EventBus.emit(EVENTS.STORE_CHANGED, { key, value });
+    });
+  },
+};
+
+
+/* ===== ui/router.js ===== */
+// ui/router.js — 屏幕路由
+// 维护 screenId -> 渲染函数 的注册表；监听 nav:goto 事件切换屏幕。
+// router 只负责"把哪个屏幕画到 #app"，不含任何业务逻辑。
+
+
+const _screens = new Map(); // screenId -> render(params) => htmlString
+
+const Router = {
+  // 注册一个屏幕的渲染函数
+  register(screenId, renderFn) {
+    _screens.set(screenId, renderFn);
+  },
+
+  // 初始化：绑定 nav:goto 监听，渲染首屏
+  init(rootEl, initialScreen, initialParams = {}) {
+    EventBus.on(EVENTS.NAV_GOTO, ({ screen, params }) => {
+      this._render(rootEl, screen, params || {});
+    });
+    this._render(rootEl, initialScreen, initialParams);
+  },
+
+  _render(rootEl, screenId, params) {
+    const renderFn = _screens.get(screenId);
+    if (!renderFn) {
+      rootEl.innerHTML = `<div class="hint hint-red">未注册的屏幕：${screenId}</div>`;
+      console.error(`[Router] no screen registered for "${screenId}"`);
+      return;
+    }
+    rootEl.innerHTML = renderFn(params);
+    Store.set('currentScreen', screenId);
+    // 渲染后回调（用于绑定事件、聚焦输入等）
+    if (typeof renderFn.afterRender === 'function') {
+      renderFn.afterRender(params);
+    }
+    window.scrollTo(0, 0);
+  },
+};
+
+
+/* ===== ui/screens/welcome.js ===== */
+// ui/screens/welcome.js — 欢迎屏（Phase 1 占位版）
+// 证明：事件总线 + 路由可驱动屏幕切换。Phase 2 接入真实玩家档案逻辑。
+
+
+function renderWelcome() {
+  return `
+    <div class="welcome-logo">
+      <div class="logo-art">
+╔══════════════════════════════════════╗<br>
+║  全谱系博弈实战演练系统  v3.0        ║<br>
+║  Full-Spectrum Negotiation Trainer   ║<br>
+╚══════════════════════════════════════╝
+      </div>
+    </div>
+    <div class="panel" style="max-width:420px;margin:0 auto">
+      <div class="panel-title">▶ 进入系统</div>
+      <div class="input-wrap">
+        <label>输入您的训练代号</label>
+        <input class="inp" id="player-name-input" placeholder="例如：谈判精英" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn btn-green" style="width:100%" id="btn-enter">进入训练系统 →</button>
+      <div class="hint hint-cyan" style="margin-top:12px">
+        v3 模块化内核已就绪：事件总线 / 全局状态 / 路由 / 打包管线。
+      </div>
+    </div>
+  `;
+}
+
+renderWelcome.afterRender = function () {
+  const input = document.getElementById('player-name-input');
+  const enter = () => {
+    const name = (input.value || '').trim();
+    if (!name) {
+      alert('请输入训练代号');
+      return;
+    }
+    // Phase 1：暂只把名字带去主屏，证明导航链路；Phase 2 接 player-data
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MAIN, params: { name } });
+  };
+  document.getElementById('btn-enter').addEventListener('click', enter);
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') enter();
+  });
+  input.focus();
+};
+
+
+/* ===== ui/screens/main-menu.js ===== */
+// ui/screens/main-menu.js — 主菜单（Phase 1 占位版）
+// Phase 1 仅验证导航闭环与状态读取；菜单项的真实跳转在 Phase 2 接入。
+
+
+function renderMainMenu(params = {}) {
+  const name = params.name || '训练员';
+  return `
+    <div class="header">
+      <h1>◆ 全谱系博弈演练系统 ◆</h1>
+      <div class="sub">训练员: ${name}  |  内核: v3 模块化  |  状态: Phase 1 骨架运行正常 ✓</div>
+    </div>
+    <div class="hint hint-green">
+      ✅ Phase 1 验证通过：欢迎屏 → 主屏 的切换由<b>事件总线 nav:goto</b> 驱动，
+      路由从 store 读取并渲染，UI 未直接调用任何业务逻辑。
+    </div>
+    <div id="main-menu-items">
+      <div class="menu-item" data-screen="${SCREENS.SCENARIO_SELECT}">
+        <div class="menu-num">①</div>
+        <div class="menu-text"><b>场景实战训练</b><span>选择博弈场景，与AI对手对决（Phase 2 接入）</span></div>
+      </div>
+      <div class="menu-item" data-screen="${SCREENS.STRATEGY}">
+        <div class="menu-num">②</div>
+        <div class="menu-text"><b>策略理论库</b><span>策略卡 / 沟通技术 / 心理防御 / 六大宗师（Phase 2 接入）</span></div>
+      </div>
+      <div class="menu-item" data-screen="${SCREENS.PSYCHOLOGY}">
+        <div class="menu-num">③</div>
+        <div class="menu-text"><b>心理档案分析</b><span>8维博弈心理画像（Phase 4 深化）</span></div>
+      </div>
+      <div class="menu-item" data-screen="${SCREENS.DASHBOARD}">
+        <div class="menu-num">④</div>
+        <div class="menu-text"><b>训练成绩看板</b><span>历史战绩、胜率统计（Phase 2 接入）</span></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;text-align:center">
+      <button class="back-btn" id="btn-back-welcome">← 返回欢迎屏</button>
+    </div>
+  `;
+}
+
+renderMainMenu.afterRender = function () {
+  // Phase 1：菜单项点击仅提示（目标屏未注册），返回按钮验证反向导航
+  document.querySelectorAll('#main-menu-items .menu-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const screen = el.getAttribute('data-screen');
+      alert(`「${screen}」屏幕将在 Phase 2 接入。\n当前 Phase 1 仅验证骨架与打包管线。`);
+    });
+  });
+  const back = document.getElementById('btn-back-welcome');
+  if (back) {
+    back.addEventListener('click', () => {
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.WELCOME, params: {} });
+    });
+  }
+};
+
+
+/* ===== core/bootstrap.js ===== */
+// core/bootstrap.js — 应用启动入口
+// 职责：装配模块（注册屏幕）→ 初始化路由 → 渲染首屏。
+// 这是依赖图的根，build.js 的 manifest 把它放在最后。
+
+
+function boot() {
+  const root = document.getElementById('app');
+  if (!root) {
+    console.error('[bootstrap] #app not found');
+    return;
+  }
+
+  // 注册 Phase 1 屏幕（Phase 2 起在此追加注册）
+  Router.register(SCREENS.WELCOME, renderWelcome);
+  Router.register(SCREENS.MAIN, renderMainMenu);
+
+  // 启动路由，首屏 = 欢迎屏
+  Router.init(root, SCREENS.WELCOME);
+
+  console.log('[bootstrap] v3 内核启动完成 ✓ (Phase 1)');
+}
+
+// DOM 就绪后启动
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>

@@ -1,7 +1,10 @@
-// scenarios/bargaining.js — 商业谈判博弈（从 v2.0 平移）
-// 玩家为买方（求低价），对手为卖方（求高价）。真实价值约 60。
+// scenarios/bargaining.js — 商业谈判博弈
+// Phase 3：还价由 engine 决定。你越强硬（出价压得越低）→ 鹰派 confidence 跌→被迫大让步；
+// 风险规避型在压力下过度让步；操纵型忽大忽小。
 
 import { BaseScenario } from './base-scenario.js';
+import { OpponentAI } from '../engine/opponent-ai.js';
+import { clamp } from '../engine/util.js';
 import { C } from '../ui/components.js';
 
 export class BargainingGame extends BaseScenario {
@@ -15,28 +18,16 @@ export class BargainingGame extends BaseScenario {
     this.myOffer = 0;
     this.oppOffer = 100;
     this.trueVal = 60;
+    this.lastReason = '';
   }
 
-  start() { this._render(); }
-
-  // Phase 3: 抽取到 engine
-  _oppCounter(playerOffer) {
-    const opp = this.opp;
-    let reduction;
-    if (opp.id === 'aggressive') reduction = 3 + Math.random() * 3;
-    else if (opp.id === 'cooperative') reduction = 8 + Math.random() * 6;
-    else if (opp.id === 'rational') reduction = 5 + Math.random() * 4;
-    else if (opp.id === 'riskAverse') reduction = 6 + Math.random() * 5;
-    else reduction = 5 + Math.random() * 5;
-    if (playerOffer < this.trueVal * 0.7) reduction *= 0.6;
-    return Math.max(this.trueVal, Math.round(this.oppOffer - reduction));
-  }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}</div>`
+      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -46,7 +37,7 @@ export class BargainingGame extends BaseScenario {
         C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
         C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
         C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
-      ${C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
+      ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
       ${C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
@@ -61,13 +52,22 @@ export class BargainingGame extends BaseScenario {
     if (type !== 'offer') return;
     const offer = parseInt(value, 10);
     this.myOffer = offer;
-    const newOpp = this._oppCounter(offer);
+
+    // 观察玩家强硬度：出价压得越低越强硬（可压垮鹰派、施压风险规避型）
+    const lowness = clamp((this.trueVal - offer) / this.trueVal, 0, 1);
+    const firm = offer < this.trueVal * 0.7;
+    OpponentAI.observe(this.opp.id, { aggression: firm ? 0.7 : 0.3, firm, concession: offer - (this.log.length ? this.log[this.log.length - 1].my : this.myAnchor) });
+
+    const { move: newOpp, reason } = OpponentAI.decide(this.opp.id, {
+      kind: 'bargain-counter', currentOppOffer: this.oppOffer, playerOffer: offer, trueVal: this.trueVal,
+    });
+    this.lastReason = reason;
 
     if (newOpp <= offer || newOpp <= this.trueVal) {
       this._deal(Math.round((offer + this.oppOffer) / 2));
       return;
     }
-    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer });
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason });
     this.oppOffer = newOpp;
     this.round += 1;
 

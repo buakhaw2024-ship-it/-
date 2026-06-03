@@ -1,7 +1,8 @@
-// scenarios/public-goods.js — 公共品博弈（从 v2.0 平移）
-// 公共池总额 ×2.2 后平分；个人理性 vs 集体最优的张力。
+// scenarios/public-goods.js — 公共品博弈
+// Phase 3：对手贡献由 engine 决定（理性型条件合作、操纵型飘忽等）。
 
 import { BaseScenario } from './base-scenario.js';
+import { OpponentAI } from '../engine/opponent-ai.js';
 import { C } from '../ui/components.js';
 
 export class PublicGoodsGame extends BaseScenario {
@@ -14,22 +15,12 @@ export class PublicGoodsGame extends BaseScenario {
     this.multiplier = 2.2;
   }
 
-  start() { this._render(); }
-
-  // Phase 3: 抽取到 engine
-  _oppContrib(playerContrib) {
-    const opp = this.opp;
-    if (opp.id === 'cooperative') return 7 + Math.floor(Math.random() * 3);
-    if (opp.id === 'aggressive') return 1 + Math.floor(Math.random() * 3);
-    if (opp.id === 'rational') return Math.round(playerContrib * 0.9);
-    if (opp.id === 'manipulative') return Math.random() < 0.4 ? 8 : 2;
-    return 4 + Math.floor(Math.random() * 4);
-  }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}</div>`
+      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -51,12 +42,14 @@ export class PublicGoodsGame extends BaseScenario {
   handleAction({ type, value }) {
     if (type !== 'contribute') return;
     const amount = parseInt(value, 10);
-    const oppContrib = this._oppContrib(amount);
+    const prev = this.log.length ? this.log[this.log.length - 1].my : null;
+    OpponentAI.observe(this.opp.id, { coop: amount >= 5, aggression: amount <= 1 ? 0.7 : 0.2, firm: amount <= 1 });
+    const { move: oppContrib, reason } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
     const pool = (amount + oppContrib) * this.multiplier;
     const share = Math.round(pool / 2);
     this.playerScore = this.playerScore - amount + share;
     this.oppScore = this.oppScore - oppContrib + share;
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share });
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();

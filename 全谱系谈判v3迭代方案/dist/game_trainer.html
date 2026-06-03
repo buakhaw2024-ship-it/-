@@ -517,6 +517,402 @@ const PSYCH_DIMENSIONS = [
 ];
 
 
+/* ===== engine/util.js ===== */
+// engine/util.js — 决策引擎通用工具
+
+const clamp = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+
+// 指数滑动平均：近期行为权重更高
+const ema = (prev, val, a = 0.4) => prev * (1 - a) + val * a;
+
+const rnd = (a = 0, b = 1) => a + Math.random() * (b - a);
+
+const chance = (p) => Math.random() < p;
+
+
+/* ===== engine/memory.js ===== */
+// engine/memory.js — 跨回合记忆：对手对"当前玩家"的累计认知
+// 单局内有效，每局开始 reset。用指数滑动平均使近期行为权重更高。
+
+
+const _mem = new Map();
+
+function fresh() {
+  return {
+    rounds: 0,
+    coop: 0,            // 玩家合作次数
+    defect: 0,          // 玩家背叛次数
+    coopRate: 0.5,      // 滑动合作率
+    betrayalStreak: 0,  // 当前连续背叛
+    aggression: 0.5,    // 玩家激进度（极端施压频率）
+    avgConcession: 0,   // 谈判平均让步幅度
+    investFraction: 0.5,// 信任博弈投入比例
+    firmCount: 0,       // 玩家强硬/防御次数
+    exposureScore: 0,   // 操纵者被识破累计分
+  };
+}
+
+const Memory = {
+  reset(id) { _mem.set(id, fresh()); },
+
+  get(id) {
+    if (!_mem.has(id)) _mem.set(id, fresh());
+    return _mem.get(id);
+  },
+
+  // 观察玩家一次行为，更新认知。signal 字段均可选。
+  observe(id, sig = {}) {
+    const m = this.get(id);
+    m.rounds += 1;
+    if (sig.coop === true) { m.coop += 1; m.coopRate = ema(m.coopRate, 1); m.betrayalStreak = 0; }
+    if (sig.coop === false) { m.defect += 1; m.coopRate = ema(m.coopRate, 0); m.betrayalStreak += 1; }
+    if (sig.aggression != null) m.aggression = ema(m.aggression, sig.aggression);
+    if (sig.concession != null) m.avgConcession = ema(m.avgConcession, sig.concession);
+    if (sig.investFraction != null) m.investFraction = ema(m.investFraction, sig.investFraction);
+    if (sig.firm) m.firmCount += 1;
+    if (sig.exposes) m.exposureScore += 1;
+    return m;
+  },
+};
+
+
+/* ===== engine/mood.js ===== */
+// engine/mood.js — 情绪/信任状态机：每个对手维护内部情绪，随回合演化
+// 情绪反过来调节决策（如 anger 高触发报复，confidence 低触发妥协）。
+
+
+const _mood = new Map();
+
+function fresh(persona) {
+  return {
+    trust: 0.5,
+    anger: 0,
+    patience: 1,
+    confidence: persona ? clamp(0.35 + persona.assert * 0.35) : 0.5,
+  };
+}
+
+const Mood = {
+  reset(id, persona) { _mood.set(id, fresh(persona)); },
+
+  get(id) {
+    if (!_mood.has(id)) _mood.set(id, fresh());
+    return _mood.get(id);
+  },
+
+  // 根据玩家行为演化情绪
+  react(id, sig = {}, persona = {}) {
+    const d = this.get(id);
+    if (sig.coop === true) {
+      d.trust = clamp(d.trust + 0.10);
+      d.anger = clamp(d.anger - 0.05);
+    }
+    if (sig.coop === false) {
+      d.trust = clamp(d.trust - 0.15);
+      const gain = (persona.id === 'aggressive' || persona.id === 'emotional') ? 0.28 : 0.18;
+      d.anger = clamp(d.anger + gain);
+    }
+    if (sig.aggression != null && sig.aggression > 0.6) {
+      d.patience = clamp(d.patience - 0.20);
+      d.confidence = clamp(d.confidence - (persona.id === 'aggressive' ? 0.15 : 0.08));
+    }
+    if (sig.firm) {
+      d.confidence = clamp(d.confidence - (persona.id === 'aggressive' ? 0.12 : 0.05));
+    }
+    d.patience = clamp(d.patience - 0.05); // 回合推进，耐心自然损耗
+    return d;
+  },
+};
+
+
+/* ===== engine/strategies/rational.js ===== */
+// engine/strategies/rational.js — 陈逻辑·理性分析型
+// 核心：收益最大化 + 严格以牙还牙；强记忆驱动，弱情绪。破绽：完全可预测。
+
+
+function rational(ctx, persona, mem, mood) {
+  switch (ctx.kind) {
+    case 'pd': {
+      if (ctx.round === 0) return { move: 'coop', reason: '首轮释放善意，建立可预期的互惠' };
+      return ctx.playerLastMove === 'defect'
+        ? { move: 'defect', reason: '以牙还牙：你上轮背叛，我镜像回应' }
+        : { move: 'coop', reason: '以牙还牙：你上轮合作，我维持互惠' };
+    }
+    case 'trust-return': {
+      const frac = clamp(0.40 + 0.25 * mood.trust);
+      return { move: Math.round(ctx.tripled * frac), reason: `按信任度理性返还约 ${Math.round(frac * 100)}%` };
+    }
+    case 'bargain-counter': {
+      const red = 5 * (1 - mem.aggression * 0.5) + (chance(0.5) ? 1 : 0);
+      const off = Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red));
+      return { move: off, reason: '按期望值小幅让步，你越强硬我让得越少' };
+    }
+    case 'pg-contribute': {
+      const c = ctx.playerLastContrib == null ? 5 : Math.round(ctx.playerLastContrib * 0.9);
+      return { move: clamp(c, 0, 10), reason: '条件合作：贡献与你上轮基本对齐' };
+    }
+    case 'ultimatum-propose':
+      return { move: 57, reason: '锚定接近理性均衡的 57' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 25, reason: share >= 25 ? '理性接受：有正收益就拿' : '拒绝：收益过低不值得' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/emotional.js ===== */
+// engine/strategies/emotional.js — 林敏感·情感驱动型
+// 核心：决策被 mood 主导，波动大。破绽：易被同理心安抚，也易被激怒。
+
+
+function emotional(ctx, persona, mem, mood) {
+  switch (ctx.kind) {
+    case 'pd': {
+      if (mood.anger > 0.5) return { move: 'defect', reason: `情绪主导：怒值 ${mood.anger.toFixed(2)}，报复性背叛` };
+      if (mood.trust > 0.6) return { move: 'coop', reason: `关系良好：信任 ${mood.trust.toFixed(2)}，慷慨合作` };
+      return ctx.playerLastMove === 'defect'
+        ? { move: 'defect', reason: '受上轮伤害，回敬背叛' }
+        : { move: 'coop', reason: '情绪平稳，倾向合作' };
+    }
+    case 'trust-return': {
+      const frac = clamp(0.30 + 0.40 * mood.trust - 0.25 * mood.anger);
+      return { move: Math.round(ctx.tripled * frac), reason: mood.anger > 0.4 ? '带着情绪，返还偏少' : '感到被信任，慷慨回馈' };
+    }
+    case 'bargain-counter': {
+      const red = mood.trust > 0.55 ? 10 : mood.anger > 0.4 ? 2 : 6;
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: mood.trust > 0.55 ? '关系融洽，主动大让步' : mood.anger > 0.4 ? '情绪抵触，几乎不让' : '按心情小让',
+      };
+    }
+    case 'pg-contribute': {
+      const c = mood.trust > 0.55 ? 8 : mood.anger > 0.4 ? 2 : 5;
+      return { move: c, reason: '贡献随情绪起伏' };
+    }
+    case 'ultimatum-propose':
+      return { move: mood.anger > 0.4 ? 60 : 50, reason: mood.anger > 0.4 ? '带气提案，多留给自己' : '倾向公平五五分' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      const floor = mood.anger > 0.4 ? 50 : 40;
+      return { move: share >= floor, reason: share >= floor ? '情绪可接受，同意' : `觉得不公平${mood.anger > 0.4 ? '又在气头上' : ''}，拒绝` };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/aggressive.js ===== */
+// engine/strategies/aggressive.js — 钢铁王·强硬鹰派型
+// 核心：高开价、小让步、施压。破绽：合理反压使 confidence 跌破阈值后被迫妥协。
+
+
+function aggressive(ctx, persona, mem, mood) {
+  const cracked = mood.confidence < 0.35; // 被合理反压压垮
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (cracked && ctx.round > 0) return { move: 'coop', reason: '气势被你压住，转向合作' };
+      return chance(0.78)
+        ? { move: 'defect', reason: '鹰派本能：施压背叛' }
+        : { move: 'coop', reason: '偶尔试探性合作' };
+    }
+    case 'trust-return': {
+      const frac = cracked ? 0.35 : 0.15;
+      return { move: Math.round(ctx.tripled * frac), reason: cracked ? '底气受挫，略作返还' : '强硬：返还极少' };
+    }
+    case 'bargain-counter': {
+      const red = cracked ? 12 : 3 + (chance(0.5) ? 2 : 0); // 破绽：confidence 低 → 大幅让步
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: cracked ? '被合理反压，被迫大幅妥协' : '寸土必争，几乎不让',
+      };
+    }
+    case 'pg-contribute':
+      return { move: cracked ? 5 : 2, reason: cracked ? '有所收敛' : '搭便车，贡献极低' };
+    case 'ultimatum-propose':
+      return { move: cracked ? 58 : 70, reason: cracked ? '气焰收敛' : '狮子大开口，自留七成' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      const need = cracked ? 35 : 45;
+      return { move: share >= need, reason: share >= need ? '勉强接受' : '嫌少，拒绝施压' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/cooperative.js ===== */
+// engine/strategies/cooperative.js — 和谐李·合作共赢型
+// 核心：高合作、主动让步。v3 新增"被骗觉醒"：被连续背叛后转宽容版 TfT，避免成为人形提款机。
+
+
+function cooperative(ctx, persona, mem, mood) {
+  const awakened = mem.betrayalStreak >= 2; // 善意被反复利用后觉醒
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (awakened) return { move: 'defect', reason: `善意被连续 ${mem.betrayalStreak} 次背叛消耗，宽容版TfT反击` };
+      return chance(0.85)
+        ? { move: 'coop', reason: '寻求双赢，主动合作' }
+        : { move: 'defect', reason: '偶发防御' };
+    }
+    case 'trust-return': {
+      const frac = awakened ? 0.30 : 0.60;
+      return { move: Math.round(ctx.tripled * frac), reason: awakened ? '信任受损，返还转保守' : '高度信任，慷慨回馈六成' };
+    }
+    case 'bargain-counter': {
+      const red = awakened ? 6 : 11 + (chance(0.5) ? 2 : 0);
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: awakened ? '谨慎让步' : '追求成交，大幅让步',
+      };
+    }
+    case 'pg-contribute':
+      return { move: awakened ? 4 : 8, reason: awakened ? '减少贡献以自保' : '带头贡献，造福集体' };
+    case 'ultimatum-propose':
+      return { move: awakened ? 52 : 46, reason: awakened ? '略偏自保' : '偏向对方的公平分配' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 30, reason: share >= 30 ? '宽容接受，维系关系' : '实在过低，婉拒' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/manipulative.js ===== */
+// engine/strategies/manipulative.js — 影子张·操纵控制型
+// 核心：钓鱼、忽大忽小、放长线背刺。破绽：被识破（exposureScore≥2）后操纵收益归零，转常规策略。
+
+
+function manipulative(ctx, persona, mem, mood) {
+  const exposed = mem.exposureScore >= 2;
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (exposed) {
+        return ctx.playerLastMove === 'defect'
+          ? { move: 'defect', reason: '已被识破，改打常规以牙还牙' }
+          : { move: 'coop', reason: '伪装失效，转常规互惠' };
+      }
+      return ctx.round < 2
+        ? { move: 'coop', reason: '放长线：先合作骗取信任' }
+        : { move: 'defect', reason: '收网：背刺获利' };
+    }
+    case 'trust-return': {
+      if (exposed) return { move: Math.round(ctx.tripled * 0.4), reason: '被识破，按常规返还' };
+      const early = mem.rounds < 2;
+      return {
+        move: Math.round(ctx.tripled * (early ? 0.5 : 0.1)),
+        reason: early ? '钓鱼：高返还诱你加码' : '收割：大幅克扣',
+      };
+    }
+    case 'bargain-counter': {
+      if (exposed) return { move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - 6)), reason: '被识破，稳定让步' };
+      const red = chance(0.5) ? 9 : 2;
+      return { move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)), reason: '忽大忽小，制造认知混乱' };
+    }
+    case 'pg-contribute':
+      return { move: exposed ? 5 : (chance(0.4) ? 8 : 2), reason: exposed ? '转为常规贡献' : '贡献飘忽，迷惑对手' };
+    case 'ultimatum-propose':
+      return { move: exposed ? 57 : 65, reason: exposed ? '转常规提案' : '高自留，包装话术' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 35, reason: share >= 35 ? '接受' : '拒绝以施压' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/risk-averse.js ===== */
+// engine/strategies/risk-averse.js — 稳健吴·风险规避型
+// 核心：偏好确定性、回避极端、接受"足够好"。破绽：压力下（耐心耗尽/对手强硬）过度让步。
+
+
+function riskAverse(ctx, persona, mem, mood) {
+  const pressured = mood.patience < 0.4 || mem.aggression > 0.6; // 压力下过度让步
+
+  switch (ctx.kind) {
+    case 'pd':
+      return chance(0.70)
+        ? { move: 'coop', reason: '规避双输风险，倾向稳定合作' }
+        : { move: 'defect', reason: '谨慎自保' };
+    case 'trust-return':
+      return { move: Math.round(ctx.tripled * 0.4), reason: '稳健返还，留有余地' };
+    case 'bargain-counter': {
+      const red = pressured ? 11 : 6 + (chance(0.5) ? 3 : 0);
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: pressured ? '压力之下过度让步（破绽）' : '稳健小步让',
+      };
+    }
+    case 'pg-contribute':
+      return { move: 5, reason: '中庸贡献，避免极端' };
+    case 'ultimatum-propose':
+      return { move: 55, reason: '求稳，留略多但不贪' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 25, reason: share >= 25 ? '接受以规避零收益风险' : '过低，拒绝' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/opponent-ai.js ===== */
+// engine/opponent-ai.js — AI 决策引擎统一入口
+// 装配性格(静态) + 记忆(动态认知) + 情绪(状态机) + 性格专属策略。
+// 不操作 DOM；仅通过返回值与 ai:decided 事件对外通信。
+
+
+
+const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse };
+
+const OpponentAI = {
+  // 每局开始重置该对手的记忆与情绪
+  reset(opponentId) {
+    const persona = getOpponent(opponentId);
+    Memory.reset(opponentId);
+    Mood.reset(opponentId, persona);
+  },
+
+  // 观察玩家一次行为：更新记忆 + 演化情绪（在对手做出反应前调用）
+  observe(opponentId, signal) {
+    const persona = getOpponent(opponentId);
+    Memory.observe(opponentId, signal);
+    Mood.react(opponentId, signal, persona);
+  },
+
+  // 做出决策：ctx.kind 决定决策类型，返回 { move, reason, mood }
+  decide(opponentId, ctx) {
+    const persona = getOpponent(opponentId);
+    const mem = Memory.get(opponentId);
+    const mood = Mood.get(opponentId);
+    const fn = STRATEGIES[opponentId] || STRATEGIES.rational;
+
+    const { move, reason } = fn(ctx, persona, mem, mood);
+    const snapshot = { ...mood };
+
+    EventBus.emit(EVENTS.AI_DECIDED, { opponentId, move, reason, mood: snapshot, kind: ctx.kind });
+    return { move, reason, mood: snapshot };
+  },
+
+  // 供复盘读取
+  snapshot(opponentId) {
+    return { memory: { ...Memory.get(opponentId) }, mood: { ...Mood.get(opponentId) } };
+  },
+};
+
+
 /* ===== ui/components.js ===== */
 // ui/components.js — 纯 HTML 片段构造器（无 DOM 操作，仅返回字符串）
 // 被 screens 与 scenarios 复用。游戏内交互元素统一带 data-game-action / data-value，
@@ -754,8 +1150,8 @@ class BaseScenario {
 
 
 /* ===== scenarios/prisoners.js ===== */
-// scenarios/prisoners.js — 囚徒困境（从 v2.0 平移）
-// AI 决策为 Phase 2 的伪随机逻辑，Phase 3 将抽取到 engine/。
+// scenarios/prisoners.js — 囚徒困境
+// Phase 3：AI 决策改由 engine 驱动（TfT/报复/觉醒等由记忆+情绪决定）。
 
 
 class PrisonersDilemma extends BaseScenario {
@@ -767,20 +1163,6 @@ class PrisonersDilemma extends BaseScenario {
     this.oppScore = 0;
   }
 
-  // Phase 3: 抽取到 engine/strategies/*
-  _oppDecision() {
-    const opp = this.opp;
-    const r = Math.random();
-    if (this.round === 0) return r < (opp.coop || 0.5) ? 'coop' : 'defect';
-    const last = this.log[this.log.length - 1];
-    if (opp.id === 'cooperative') return r < 0.85 ? 'coop' : 'defect';
-    if (opp.id === 'aggressive') return r < 0.25 ? 'coop' : 'defect';
-    if (opp.id === 'manipulative') return r < 0.35 ? 'coop' : 'defect';
-    if (opp.id === 'rational') return last && last.player === 'defect' ? 'defect' : 'coop';
-    if (opp.id === 'emotional') return last && last.oppFeel < 0 ? 'defect' : 'coop';
-    return r < (opp.coop || 0.5) ? 'coop' : 'defect';
-  }
-
   _scores(p, o) {
     if (p === 'coop' && o === 'coop') return [3, 3];
     if (p === 'coop' && o === 'defect') return [0, 5];
@@ -788,12 +1170,12 @@ class PrisonersDilemma extends BaseScenario {
     return [1, 1];
   }
 
-  start() { this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | 得分: +${l.pScore} vs +${l.oScore}</div>`
+      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | +${l.pScore} vs +${l.oScore}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -812,11 +1194,17 @@ class PrisonersDilemma extends BaseScenario {
 
   handleAction({ type, value }) {
     if (type !== 'choice') return;
-    const oppChoice = this._oppDecision();
+    const prev = this.log.length ? this.log[this.log.length - 1].player : null;
+    // 对手基于"此前回合"的记忆/情绪做决策（同时出招，看不到本轮）
+    const { move: oppChoice, reason } = OpponentAI.decide(this.opp.id, {
+      kind: 'pd', round: this.round, playerLastMove: prev,
+    });
     const [ps, os] = this._scores(value, oppChoice);
     this.playerScore += ps;
     this.oppScore += os;
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, oppFeel: value === 'defect' ? -1 : 1 });
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason });
+    // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
+    OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -825,12 +1213,14 @@ class PrisonersDilemma extends BaseScenario {
   _finish() {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const coop = this.log.filter((l) => l.player === 'coop').length;
+    const lastReason = this.log.length ? this.log[this.log.length - 1].reason : '';
     this.finish({
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('总轮数', `${this.rounds} 轮`) +
         C.infoRow('您的合作率', `${Math.round(coop / this.rounds * 100)}%`) +
         C.infoRow('对手', `${this.opp.name} (${this.opp.type})`) +
+        C.infoRow('对手末轮心态', lastReason || '—') +
         C.infoRow('分析', coop >= 4 ? '高度合作策略，建立了信任' : coop >= 2 ? '混合策略，较为灵活' : '激进背叛策略，短期收益可能较高但破坏信任'),
     });
   }
@@ -856,7 +1246,7 @@ class UltimatumGame extends BaseScenario {
 
   _isProposer() { return this.round % 2 === 0; }
 
-  start() { this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
@@ -885,7 +1275,11 @@ class UltimatumGame extends BaseScenario {
         ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
         ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
         ${C.logBox('历史记录', logHtml)}`);
-      setTimeout(() => { this.pendingOffer = this._oppPropose(); this._render(); }, 1000);
+      setTimeout(() => {
+        const { move } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-propose', round: this.round });
+        this.pendingOffer = move;
+        this._render();
+      }, 1000);
     } else {
       const keep = this.pendingOffer;
       const give = TOTAL - keep;
@@ -898,31 +1292,12 @@ class UltimatumGame extends BaseScenario {
     }
   }
 
-  // Phase 3: 抽取到 engine
-  _oppPropose() {
-    const opp = this.opp;
-    let offer;
-    if (opp.id === 'aggressive') offer = 70;
-    else if (opp.id === 'cooperative') offer = 45;
-    else if (opp.id === 'emotional') offer = 50;
-    else if (opp.id === 'manipulative') offer = 65;
-    else offer = 55 + Math.floor(Math.random() * 10);
-    return Math.min(80, Math.max(20, offer));
-  }
-
-  _oppAcceptsMyOffer(keep) {
-    const opp = this.opp;
-    if (opp.id === 'aggressive') return keep <= 55;
-    if (opp.id === 'cooperative') return keep <= 65;
-    if (opp.id === 'emotional') return keep <= 50;
-    if (opp.id === 'rational') return keep <= 60;
-    return keep <= 55 + Math.random() * 10;
-  }
-
   handleAction({ type, value }) {
     if (type === 'propose') {
       const keep = parseInt(value, 10);
-      const accepted = this._oppAcceptsMyOffer(keep);
+      // 观察玩家提案的强硬度（自留越多越强硬/越像在剥削）
+      OpponentAI.observe(this.opp.id, { aggression: clamp((keep - 50) / 50, 0, 1), firm: keep >= 65, coop: keep <= 50, exposes: keep >= 70 });
+      const { move: accepted } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-respond', playerKeep: keep });
       this._settle(keep, accepted, true);
     } else if (type === 'respond') {
       const keep = this.pendingOffer;
@@ -968,8 +1343,8 @@ class UltimatumGame extends BaseScenario {
 
 
 /* ===== scenarios/trust.js ===== */
-// scenarios/trust.js — 信任博弈（从 v2.0 平移）
-// 玩家投入 → 3 倍放大 → 对手决定返还多少。
+// scenarios/trust.js — 信任博弈
+// Phase 3：返还由 engine 决定；操纵型"钓鱼→收割"、对手情绪随你的投入演化。
 
 
 class TrustGame extends BaseScenario {
@@ -981,12 +1356,12 @@ class TrustGame extends BaseScenario {
     this.oppScore = 0;
   }
 
-  start() { this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}</div>`
+      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -1005,27 +1380,18 @@ class TrustGame extends BaseScenario {
     `);
   }
 
-  // Phase 3: 抽取到 engine
-  _oppReturn(tripled, amount) {
-    const opp = this.opp;
-    if (opp.id === 'cooperative') return Math.round(tripled * 0.6);
-    if (opp.id === 'aggressive') return Math.round(tripled * 0.15);
-    if (opp.id === 'manipulative') return Math.round(tripled * (Math.random() < 0.3 ? 0.5 : 0.1));
-    if (opp.id === 'riskAverse') return Math.round(tripled * 0.4);
-    if (opp.id === 'emotional') return Math.round(tripled * (amount > 5 ? 0.55 : 0.3));
-    return Math.round(tripled * 0.45);
-  }
-
   handleAction({ type, value }) {
     if (type !== 'invest') return;
     const amount = parseInt(value, 10);
     const tripled = amount * 3;
-    const returned = this._oppReturn(tripled, amount);
+    // 先观察玩家的信任姿态（影响情绪/记忆，低投入会触发操纵者"被识破"计分）
+    OpponentAI.observe(this.opp.id, { coop: amount >= 5, investFraction: amount / 10, firm: amount <= 2, exposes: amount <= 2 });
+    const { move: returned, reason } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
     const kept = 10 - amount;
     const myNet = kept + returned - 10;
     this.playerScore += kept + returned;
     this.oppScore += tripled - returned;
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet });
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -1047,8 +1413,9 @@ class TrustGame extends BaseScenario {
 
 
 /* ===== scenarios/bargaining.js ===== */
-// scenarios/bargaining.js — 商业谈判博弈（从 v2.0 平移）
-// 玩家为买方（求低价），对手为卖方（求高价）。真实价值约 60。
+// scenarios/bargaining.js — 商业谈判博弈
+// Phase 3：还价由 engine 决定。你越强硬（出价压得越低）→ 鹰派 confidence 跌→被迫大让步；
+// 风险规避型在压力下过度让步；操纵型忽大忽小。
 
 
 class BargainingGame extends BaseScenario {
@@ -1062,28 +1429,16 @@ class BargainingGame extends BaseScenario {
     this.myOffer = 0;
     this.oppOffer = 100;
     this.trueVal = 60;
+    this.lastReason = '';
   }
 
-  start() { this._render(); }
-
-  // Phase 3: 抽取到 engine
-  _oppCounter(playerOffer) {
-    const opp = this.opp;
-    let reduction;
-    if (opp.id === 'aggressive') reduction = 3 + Math.random() * 3;
-    else if (opp.id === 'cooperative') reduction = 8 + Math.random() * 6;
-    else if (opp.id === 'rational') reduction = 5 + Math.random() * 4;
-    else if (opp.id === 'riskAverse') reduction = 6 + Math.random() * 5;
-    else reduction = 5 + Math.random() * 5;
-    if (playerOffer < this.trueVal * 0.7) reduction *= 0.6;
-    return Math.max(this.trueVal, Math.round(this.oppOffer - reduction));
-  }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}</div>`
+      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -1093,7 +1448,7 @@ class BargainingGame extends BaseScenario {
         C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
         C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
         C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
-      ${C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
+      ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
       ${C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
@@ -1108,13 +1463,22 @@ class BargainingGame extends BaseScenario {
     if (type !== 'offer') return;
     const offer = parseInt(value, 10);
     this.myOffer = offer;
-    const newOpp = this._oppCounter(offer);
+
+    // 观察玩家强硬度：出价压得越低越强硬（可压垮鹰派、施压风险规避型）
+    const lowness = clamp((this.trueVal - offer) / this.trueVal, 0, 1);
+    const firm = offer < this.trueVal * 0.7;
+    OpponentAI.observe(this.opp.id, { aggression: firm ? 0.7 : 0.3, firm, concession: offer - (this.log.length ? this.log[this.log.length - 1].my : this.myAnchor) });
+
+    const { move: newOpp, reason } = OpponentAI.decide(this.opp.id, {
+      kind: 'bargain-counter', currentOppOffer: this.oppOffer, playerOffer: offer, trueVal: this.trueVal,
+    });
+    this.lastReason = reason;
 
     if (newOpp <= offer || newOpp <= this.trueVal) {
       this._deal(Math.round((offer + this.oppOffer) / 2));
       return;
     }
-    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer });
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason });
     this.oppOffer = newOpp;
     this.round += 1;
 
@@ -1246,8 +1610,8 @@ class CrisisNegotiation extends BaseScenario {
 
 
 /* ===== scenarios/public-goods.js ===== */
-// scenarios/public-goods.js — 公共品博弈（从 v2.0 平移）
-// 公共池总额 ×2.2 后平分；个人理性 vs 集体最优的张力。
+// scenarios/public-goods.js — 公共品博弈
+// Phase 3：对手贡献由 engine 决定（理性型条件合作、操纵型飘忽等）。
 
 
 class PublicGoodsGame extends BaseScenario {
@@ -1260,22 +1624,12 @@ class PublicGoodsGame extends BaseScenario {
     this.multiplier = 2.2;
   }
 
-  start() { this._render(); }
-
-  // Phase 3: 抽取到 engine
-  _oppContrib(playerContrib) {
-    const opp = this.opp;
-    if (opp.id === 'cooperative') return 7 + Math.floor(Math.random() * 3);
-    if (opp.id === 'aggressive') return 1 + Math.floor(Math.random() * 3);
-    if (opp.id === 'rational') return Math.round(playerContrib * 0.9);
-    if (opp.id === 'manipulative') return Math.random() < 0.4 ? 8 : 2;
-    return 4 + Math.floor(Math.random() * 4);
-  }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}</div>`
+      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -1297,12 +1651,14 @@ class PublicGoodsGame extends BaseScenario {
   handleAction({ type, value }) {
     if (type !== 'contribute') return;
     const amount = parseInt(value, 10);
-    const oppContrib = this._oppContrib(amount);
+    const prev = this.log.length ? this.log[this.log.length - 1].my : null;
+    OpponentAI.observe(this.opp.id, { coop: amount >= 5, aggression: amount <= 1 ? 0.7 : 0.2, firm: amount <= 1 });
+    const { move: oppContrib, reason } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
     const pool = (amount + oppContrib) * this.multiplier;
     const share = Math.round(pool / 2);
     this.playerScore = this.playerScore - amount + share;
     this.oppScore = this.oppScore - oppContrib + share;
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share });
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();

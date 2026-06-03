@@ -1,7 +1,8 @@
-// scenarios/prisoners.js — 囚徒困境（从 v2.0 平移）
-// AI 决策为 Phase 2 的伪随机逻辑，Phase 3 将抽取到 engine/。
+// scenarios/prisoners.js — 囚徒困境
+// Phase 3：AI 决策改由 engine 驱动（TfT/报复/觉醒等由记忆+情绪决定）。
 
 import { BaseScenario } from './base-scenario.js';
+import { OpponentAI } from '../engine/opponent-ai.js';
 import { C } from '../ui/components.js';
 
 export class PrisonersDilemma extends BaseScenario {
@@ -13,20 +14,6 @@ export class PrisonersDilemma extends BaseScenario {
     this.oppScore = 0;
   }
 
-  // Phase 3: 抽取到 engine/strategies/*
-  _oppDecision() {
-    const opp = this.opp;
-    const r = Math.random();
-    if (this.round === 0) return r < (opp.coop || 0.5) ? 'coop' : 'defect';
-    const last = this.log[this.log.length - 1];
-    if (opp.id === 'cooperative') return r < 0.85 ? 'coop' : 'defect';
-    if (opp.id === 'aggressive') return r < 0.25 ? 'coop' : 'defect';
-    if (opp.id === 'manipulative') return r < 0.35 ? 'coop' : 'defect';
-    if (opp.id === 'rational') return last && last.player === 'defect' ? 'defect' : 'coop';
-    if (opp.id === 'emotional') return last && last.oppFeel < 0 ? 'defect' : 'coop';
-    return r < (opp.coop || 0.5) ? 'coop' : 'defect';
-  }
-
   _scores(p, o) {
     if (p === 'coop' && o === 'coop') return [3, 3];
     if (p === 'coop' && o === 'defect') return [0, 5];
@@ -34,12 +21,12 @@ export class PrisonersDilemma extends BaseScenario {
     return [1, 1];
   }
 
-  start() { this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | 得分: +${l.pScore} vs +${l.oScore}</div>`
+      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | +${l.pScore} vs +${l.oScore}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -58,11 +45,17 @@ export class PrisonersDilemma extends BaseScenario {
 
   handleAction({ type, value }) {
     if (type !== 'choice') return;
-    const oppChoice = this._oppDecision();
+    const prev = this.log.length ? this.log[this.log.length - 1].player : null;
+    // 对手基于"此前回合"的记忆/情绪做决策（同时出招，看不到本轮）
+    const { move: oppChoice, reason } = OpponentAI.decide(this.opp.id, {
+      kind: 'pd', round: this.round, playerLastMove: prev,
+    });
     const [ps, os] = this._scores(value, oppChoice);
     this.playerScore += ps;
     this.oppScore += os;
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, oppFeel: value === 'defect' ? -1 : 1 });
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason });
+    // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
+    OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();
@@ -71,12 +64,14 @@ export class PrisonersDilemma extends BaseScenario {
   _finish() {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const coop = this.log.filter((l) => l.player === 'coop').length;
+    const lastReason = this.log.length ? this.log[this.log.length - 1].reason : '';
     this.finish({
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('总轮数', `${this.rounds} 轮`) +
         C.infoRow('您的合作率', `${Math.round(coop / this.rounds * 100)}%`) +
         C.infoRow('对手', `${this.opp.name} (${this.opp.type})`) +
+        C.infoRow('对手末轮心态', lastReason || '—') +
         C.infoRow('分析', coop >= 4 ? '高度合作策略，建立了信任' : coop >= 2 ? '混合策略，较为灵活' : '激进背叛策略，短期收益可能较高但破坏信任'),
     });
   }

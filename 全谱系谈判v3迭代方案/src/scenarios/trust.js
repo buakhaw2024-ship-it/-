@@ -1,7 +1,8 @@
-// scenarios/trust.js — 信任博弈（从 v2.0 平移）
-// 玩家投入 → 3 倍放大 → 对手决定返还多少。
+// scenarios/trust.js — 信任博弈
+// Phase 3：返还由 engine 决定；操纵型"钓鱼→收割"、对手情绪随你的投入演化。
 
 import { BaseScenario } from './base-scenario.js';
+import { OpponentAI } from '../engine/opponent-ai.js';
 import { C } from '../ui/components.js';
 
 export class TrustGame extends BaseScenario {
@@ -13,12 +14,12 @@ export class TrustGame extends BaseScenario {
     this.oppScore = 0;
   }
 
-  start() { this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
     const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}</div>`
+      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
     ).join('');
 
     this.emitRender(`
@@ -37,27 +38,18 @@ export class TrustGame extends BaseScenario {
     `);
   }
 
-  // Phase 3: 抽取到 engine
-  _oppReturn(tripled, amount) {
-    const opp = this.opp;
-    if (opp.id === 'cooperative') return Math.round(tripled * 0.6);
-    if (opp.id === 'aggressive') return Math.round(tripled * 0.15);
-    if (opp.id === 'manipulative') return Math.round(tripled * (Math.random() < 0.3 ? 0.5 : 0.1));
-    if (opp.id === 'riskAverse') return Math.round(tripled * 0.4);
-    if (opp.id === 'emotional') return Math.round(tripled * (amount > 5 ? 0.55 : 0.3));
-    return Math.round(tripled * 0.45);
-  }
-
   handleAction({ type, value }) {
     if (type !== 'invest') return;
     const amount = parseInt(value, 10);
     const tripled = amount * 3;
-    const returned = this._oppReturn(tripled, amount);
+    // 先观察玩家的信任姿态（影响情绪/记忆，低投入会触发操纵者"被识破"计分）
+    OpponentAI.observe(this.opp.id, { coop: amount >= 5, investFraction: amount / 10, firm: amount <= 2, exposes: amount <= 2 });
+    const { move: returned, reason } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
     const kept = 10 - amount;
     const myNet = kept + returned - 10;
     this.playerScore += kept + returned;
     this.oppScore += tripled - returned;
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet });
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason });
     this.round += 1;
     if (this.round < this.rounds) this._render();
     else this._finish();

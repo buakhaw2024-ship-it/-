@@ -2,6 +2,8 @@
 // 玩家与对手轮流当提议者；接受者拒绝则双方得 0。
 
 import { BaseScenario } from './base-scenario.js';
+import { OpponentAI } from '../engine/opponent-ai.js';
+import { clamp } from '../engine/util.js';
 import { C } from '../ui/components.js';
 
 const TOTAL = 100;
@@ -18,7 +20,7 @@ export class UltimatumGame extends BaseScenario {
 
   _isProposer() { return this.round % 2 === 0; }
 
-  start() { this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
 
   _render() {
     const opp = this.opp;
@@ -47,7 +49,11 @@ export class UltimatumGame extends BaseScenario {
         ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
         ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
         ${C.logBox('历史记录', logHtml)}`);
-      setTimeout(() => { this.pendingOffer = this._oppPropose(); this._render(); }, 1000);
+      setTimeout(() => {
+        const { move } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-propose', round: this.round });
+        this.pendingOffer = move;
+        this._render();
+      }, 1000);
     } else {
       const keep = this.pendingOffer;
       const give = TOTAL - keep;
@@ -60,31 +66,12 @@ export class UltimatumGame extends BaseScenario {
     }
   }
 
-  // Phase 3: 抽取到 engine
-  _oppPropose() {
-    const opp = this.opp;
-    let offer;
-    if (opp.id === 'aggressive') offer = 70;
-    else if (opp.id === 'cooperative') offer = 45;
-    else if (opp.id === 'emotional') offer = 50;
-    else if (opp.id === 'manipulative') offer = 65;
-    else offer = 55 + Math.floor(Math.random() * 10);
-    return Math.min(80, Math.max(20, offer));
-  }
-
-  _oppAcceptsMyOffer(keep) {
-    const opp = this.opp;
-    if (opp.id === 'aggressive') return keep <= 55;
-    if (opp.id === 'cooperative') return keep <= 65;
-    if (opp.id === 'emotional') return keep <= 50;
-    if (opp.id === 'rational') return keep <= 60;
-    return keep <= 55 + Math.random() * 10;
-  }
-
   handleAction({ type, value }) {
     if (type === 'propose') {
       const keep = parseInt(value, 10);
-      const accepted = this._oppAcceptsMyOffer(keep);
+      // 观察玩家提案的强硬度（自留越多越强硬/越像在剥削）
+      OpponentAI.observe(this.opp.id, { aggression: clamp((keep - 50) / 50, 0, 1), firm: keep >= 65, coop: keep <= 50, exposes: keep >= 70 });
+      const { move: accepted } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-respond', playerKeep: keep });
       this._settle(keep, accepted, true);
     } else if (type === 'respond') {
       const keep = this.pendingOffer;

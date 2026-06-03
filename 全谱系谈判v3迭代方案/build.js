@@ -37,6 +37,17 @@ const MANIFEST = [
   'data/masters.js',
   'data/strategies.js',
   'data/ranks.js',
+  // AI 决策引擎（被 scenarios 依赖，须在其之前）
+  'engine/util.js',
+  'engine/memory.js',
+  'engine/mood.js',
+  'engine/strategies/rational.js',
+  'engine/strategies/emotional.js',
+  'engine/strategies/aggressive.js',
+  'engine/strategies/cooperative.js',
+  'engine/strategies/manipulative.js',
+  'engine/strategies/risk-averse.js',
+  'engine/opponent-ai.js',
   // 通用 UI 片段
   'ui/components.js',
   // 分析与持久化

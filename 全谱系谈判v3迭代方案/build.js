@@ -84,6 +84,8 @@ const MANIFEST = [
   'ui/screens/strategy-lib.js',
   'ui/screens/psychology.js',
   'ui/screens/dashboard.js',
+  // UI 交互引导系统（依赖 DOM；被 router 调用；须在 bootstrap 之前）
+  'ui/guide.js',
   // 启动（组合根，必须最后）
   'core/bootstrap.js',
 ];

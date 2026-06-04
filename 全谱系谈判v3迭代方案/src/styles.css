@@ -350,3 +350,26 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 /* 主菜单新解锁闪光提示 */
 @keyframes menu-badge-pulse{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
 .menu-new-badge{display:inline-block;background:rgba(255,215,0,.15);border:1px solid var(--yellow);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:8px;margin-left:6px;animation:menu-badge-pulse 1.4s ease-in-out infinite;vertical-align:middle}
+
+/* ── UI 交互引导系统 ─────────────────────────────────────────────────────── */
+/* dim 层：无 selector 时提供全屏遮罩；有 spotlight 时透明（spotlight 自带暗化） */
+.guide-dim{position:fixed;inset:0;z-index:8999;pointer-events:none;transition:background .22s}
+/* spotlight：box-shadow 大范围扩散制造暗化 + 透明 "聚光孔"；自带 cyan 描边 */
+.guide-spotlight{position:fixed;border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,.72),0 0 0 2px var(--cyan),0 0 18px rgba(0,212,255,.45);z-index:9001;pointer-events:none;transition:left .28s ease,top .28s ease,width .28s ease,height .28s ease}
+/* tooltip 卡片 */
+.guide-tooltip{position:fixed;z-index:9002;background:var(--bg2);border:1px solid var(--cyan);border-radius:8px;padding:16px 18px;max-width:340px;min-width:240px;box-shadow:0 6px 32px rgba(0,0,0,.65),0 0 16px rgba(0,212,255,.18);pointer-events:all;font-family:'Courier New',monospace}
+.guide-tip-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.guide-tip-count{font-size:10px;color:var(--dim);letter-spacing:1px}
+.guide-skip-x{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 2px;font-family:inherit;line-height:1;transition:color .15s}
+.guide-skip-x:hover{color:var(--text)}
+.guide-tip-title{color:var(--cyan);font-size:13px;font-weight:bold;margin-bottom:8px;letter-spacing:.5px;line-height:1.4}
+.guide-tip-body{color:var(--text);font-size:11px;line-height:1.75;margin-bottom:14px}
+.guide-tip-btns{display:flex;gap:8px;justify-content:flex-end}
+.guide-btn{background:transparent;border:1px solid;padding:5px 14px;cursor:pointer;font-family:inherit;font-size:12px;border-radius:2px;transition:all .18s;letter-spacing:.5px}
+.guide-btn-pri{border-color:var(--cyan);color:var(--cyan)}
+.guide-btn-pri:hover{background:rgba(0,212,255,.12)}
+.guide-btn-sec{border-color:var(--border);color:var(--dim)}
+.guide-btn-sec:hover{border-color:var(--text);color:var(--text)}
+/* 右下角 ? 浮动按钮 */
+@keyframes guide-help-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.45)}70%{box-shadow:0 0 0 8px rgba(0,212,255,0)}}
+.guide-help-btn{position:fixed;bottom:20px;right:20px;width:36px;height:36px;border-radius:50%;background:var(--bg2);border:1.5px solid var(--cyan);color:var(--cyan);font-size:16px;font-weight:bold;cursor:pointer;z-index:8990;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .2s;animation:guide-help-pulse 2.8s ease-in-out infinite;box-shadow:0 0 10px rgba(0,212,255,.2)}

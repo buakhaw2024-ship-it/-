@@ -29,6 +29,10 @@ export const Router = {
       console.error(`[Router] no screen registered for "${screenId}"`);
       return;
     }
+
+    // 清理上一屏的引导 UI（在写入新 HTML 之前）
+    if (typeof hideGuide === 'function') hideGuide();
+
     rootEl.innerHTML = renderFn(params);
     Store.set('currentScreen', screenId);
 
@@ -43,5 +47,8 @@ export const Router = {
       renderFn.afterRender(params);
     }
     window.scrollTo(0, 0);
+
+    // 启动屏幕引导（首次访问自动展示；之后显示 ? 按钮）
+    if (typeof showTour === 'function') showTour(screenId);
   },
 };

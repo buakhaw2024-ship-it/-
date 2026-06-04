@@ -7,6 +7,7 @@ import { getRank } from '../../data/ranks.js';
 import { OPPONENTS } from '../../data/opponents.js';
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
 import { computeProfile, detectWeakPoints } from '../../analytics/psych-analyzer.js';
+import { DIFFICULTIES, getDifficultyLabel } from '../../engine/difficulty.js';
 import { C } from '../components.js';
 
 function winRate(sessions, filterFn) {
@@ -74,15 +75,18 @@ export function renderDashboard() {
       : C.hint('完成至少 2 场训练后将显示短板分析。', 'dim');
 
   // ── 难度分布 ──────────────────────────────────────────────────────────────
-  const diffMap = { easy:'初级', medium:'中级', hard:'高级', extreme:'终局挑战' };
+  // 标签从 difficulty 模块的 DIFFICULTIES 派生，新增难度档位自动出现
   const diffCount = sessions.reduce((acc, s) => {
     const d = s.difficulty || 'medium';
     acc[d] = (acc[d] || 0) + 1;
     return acc;
   }, {});
-  const diffHtml = Object.entries(diffMap)
-    .filter(([k]) => diffCount[k])
-    .map(([k, label]) => `<span class="tag tag-cyan">${label} ×${diffCount[k]}</span>`)
+  const diffHtml = DIFFICULTIES
+    .filter((d) => diffCount[d.key])
+    .map((d) => {
+      const cls = d.key === 'hell' ? 'tag-red' : d.key === 'extreme' ? 'tag-yellow' : 'tag-cyan';
+      return `<span class="tag ${cls}">${d.label} ×${diffCount[d.key]}</span>`;
+    })
     .join('') || '<span style="color:var(--dim);font-size:11px">暂无数据</span>';
 
   return `

@@ -41,6 +41,28 @@ const sysConvo =
   C.dialogBubble('提案 我方 60 / 对方 40 → <span style="color:var(--green)">✓ 接受</span>', 'system', '第1轮') +
   C.dialogBubble('提案 我方 70 / 对方 30 → <span style="color:var(--red)">✗ 拒绝</span>', 'system', '第2轮');
 
+// 地狱级版 Boss 卡片（红色边框 + 红徽章）
+function hellBossCard(o) {
+  return `<div class="opp-card boss-card hell-boss">
+    <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
+    <div class="boss-badge hell" style="display:block;text-align:center;margin-bottom:4px">🔥 地狱 BOSS</div>
+    <div class="opp-name" style="text-align:center">${o.name}</div>
+    <div class="opp-type" style="text-align:center">${o.type}</div>
+    <div class="opp-desc" style="margin:4px 0">极端开价、公开施压、几乎不让步，把每一步都包装成胜负叙事。</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">⚠ 地狱级：难度修正叠加到 Boss 上，无豁免，无上限</div>
+  </div>`;
+}
+
+// 难度按钮预览
+function diffButtons(active) {
+  const labels = [['easy','初级',''],['medium','中级',''],['hard','高级',''],['extreme','终局挑战',''],['hell','地狱级','btn-red']];
+  return labels.map(([k,l,base]) => {
+    const isActive = k === active;
+    const activeCls = isActive ? (k==='hell' ? 'active-diff-hell' : 'btn-cyan active-diff') : '';
+    return `<button class="btn btn-sm diff-btn ${base} ${activeCls}" style="margin:2px">${l}</button>`;
+  }).join('');
+}
+
 // 对手选择卡片
 function oppCard(o, infoLine, isBoss) {
   return `<div class="opp-card${isBoss?' boss-card':''}">
@@ -90,7 +112,21 @@ ${section('⑤ 对手选择卡片（带头像，难度分级信息）',
      ${oppCard(OPP_BOSS, '未知对手 — 请通过行为判断其类型', true)}
    </div>`)}
 
-${section('⑥ 结果屏头像头部',
+${section('⑥ 难度按钮组（地狱级红色，激活态红高亮）',
+  `<div class="preview-note">激活的「地狱级」用红色字+红色描边；其它档位激活态保持原青色。</div>
+   <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${diffButtons('hell')}</div>
+   <div style="font-size:11px;color:var(--dim)">
+     初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属 &nbsp;|&nbsp; <span style="color:var(--red)">地狱级：Boss 无豁免·无上限</span>
+   </div>`)}
+
+${section('⑦ 地狱级 Boss 卡片（红色边框 + 红徽章 + 警示）',
+  `<div class="preview-note">仅在难度=地狱级且玩家为宗师级时出现；与终局挑战的金色 Boss 卡片做视觉对比。</div>
+   <div class="grid2">
+     ${oppCard(OPP_BOSS, '未知对手 — 请通过行为判断其类型', true)}
+     ${hellBossCard(OPP_BOSS)}
+   </div>`)}
+
+${section('⑧ 结果屏头像头部',
   `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 14px">
      ${C.avatarBadge(OPP_BOSS, 40)}
      <div style="text-align:left">

@@ -112,6 +112,7 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .tag-cyan{border-color:var(--cyan);color:var(--cyan)}
 .tag-green{border-color:var(--green);color:var(--green)}
 .tag-yellow{border-color:var(--yellow);color:var(--yellow)}
+.tag-red{border-color:var(--red);color:var(--red)}
 
 /* Tabs */
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}

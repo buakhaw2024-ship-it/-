@@ -116,6 +116,7 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .tag-cyan{border-color:var(--cyan);color:var(--cyan)}
 .tag-green{border-color:var(--green);color:var(--green)}
 .tag-yellow{border-color:var(--yellow);color:var(--yellow)}
+.tag-red{border-color:var(--red);color:var(--red)}
 
 /* Tabs */
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
@@ -168,8 +169,11 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
 /* Boss card + difficulty UI */
 .boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-card.hell-boss{border-color:var(--red)!important;background:linear-gradient(135deg,rgba(255,79,106,.12),rgba(255,0,0,.06));box-shadow:0 0 22px rgba(255,79,106,.25)}
 .boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.boss-badge.hell{border-color:var(--red);color:var(--red)}
 .active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
+.active-diff-hell{background:rgba(255,79,106,.15)!important;border-color:var(--red)!important;color:var(--red)!important;font-weight:bold}
 
 /* ── Negotiation table chrome ────────────────────────────────────────── */
 .nego-chrome{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;position:relative;overflow:hidden}
@@ -335,7 +339,37 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
   </div>
    </div>
 
-<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑥ 结果屏头像头部</h2><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 14px">
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑥ 难度按钮组（地狱级红色，激活态红高亮）</h2><div class="preview-note">激活的「地狱级」用红色字+红色描边；其它档位激活态保持原青色。</div>
+   <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"><button class="btn btn-sm diff-btn  " style="margin:2px">初级</button><button class="btn btn-sm diff-btn  " style="margin:2px">中级</button><button class="btn btn-sm diff-btn  " style="margin:2px">高级</button><button class="btn btn-sm diff-btn  " style="margin:2px">终局挑战</button><button class="btn btn-sm diff-btn btn-red active-diff-hell" style="margin:2px">地狱级</button></div>
+   <div style="font-size:11px;color:var(--dim)">
+     初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属 &nbsp;|&nbsp; <span style="color:var(--red)">地狱级：Boss 无豁免·无上限</span>
+   </div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑦ 地狱级 Boss 卡片（红色边框 + 红徽章 + 警示）</h2><div class="preview-note">仅在难度=地狱级且玩家为宗师级时出现；与终局挑战的金色 Boss 卡片做视觉对比。</div>
+   <div class="grid2">
+     <div class="opp-card boss-card">
+    <div class="opp-card-avatar"><div class="nego-avatar-ring boss-ring" style="width:38px;height:38px">
+      <span class="nego-avatar-emoji" style="font-size:17px">👑</span>
+    </div></div>
+    <div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>
+    <div class="opp-name" style="text-align:center">极限交易者</div>
+    <div class="opp-type" style="text-align:center">极限交易型 / 高压锚定型</div>
+    <div class="opp-desc" style="margin:4px 0">样例描述文本：该对手的行为风格与谈判倾向。</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">未知对手 — 请通过行为判断其类型</div>
+  </div>
+     <div class="opp-card boss-card hell-boss">
+    <div class="opp-card-avatar"><div class="nego-avatar-ring boss-ring" style="width:38px;height:38px">
+      <span class="nego-avatar-emoji" style="font-size:17px">👑</span>
+    </div></div>
+    <div class="boss-badge hell" style="display:block;text-align:center;margin-bottom:4px">🔥 地狱 BOSS</div>
+    <div class="opp-name" style="text-align:center">极限交易者</div>
+    <div class="opp-type" style="text-align:center">极限交易型 / 高压锚定型</div>
+    <div class="opp-desc" style="margin:4px 0">极端开价、公开施压、几乎不让步，把每一步都包装成胜负叙事。</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">⚠ 地狱级：难度修正叠加到 Boss 上，无豁免，无上限</div>
+  </div>
+   </div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑧ 结果屏头像头部</h2><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 14px">
      <div class="nego-avatar-ring boss-ring" style="width:40px;height:40px">
       <span class="nego-avatar-emoji" style="font-size:18px">👑</span>
     </div>

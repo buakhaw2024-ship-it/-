@@ -31,6 +31,13 @@ export const Router = {
     }
     rootEl.innerHTML = renderFn(params);
     Store.set('currentScreen', screenId);
+
+    // 地狱模式 body class：仅在对局/结果屏且难度为 hell 时附加
+    const hellOn = Store.get('difficulty') === 'hell' && (screenId === 'game' || screenId === 'result');
+    if (document.body && document.body.classList) {
+      document.body.classList.toggle('hell-mode', hellOn);
+    }
+
     // 渲染后回调（用于绑定事件、聚焦输入等）
     if (typeof renderFn.afterRender === 'function') {
       renderFn.afterRender(params);

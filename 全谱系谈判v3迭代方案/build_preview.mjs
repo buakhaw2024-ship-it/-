@@ -104,6 +104,15 @@ const page = `<!DOCTYPE html>
 <title>谈判桌 UI 预览</title>
 <style>${css}
 .preview-note{color:var(--dim);font-size:11px;margin-bottom:10px}
+/* preview-only: mirror body.hell-mode selectors so a scoped container shows the same look */
+.hell-mode-demo{border:1px dashed rgba(255,79,106,.25);padding:12px;border-radius:3px}
+.hell-mode-demo .tl-current{background:var(--red);border-color:var(--red);animation:hell-pulse-dot 1.1s ease-in-out infinite}
+.hell-mode-demo .tl-done{background:rgba(255,79,106,.55);border-color:rgba(255,79,106,.55)}
+.hell-mode-demo .bubble-ai{border-color:rgba(255,79,106,.28);background:linear-gradient(135deg,rgba(255,79,106,.05),var(--bg3))}
+.hell-mode-demo .bubble-ai .bubble-label{color:var(--red)}
+.hell-mode-demo .bubble-player{border-color:rgba(255,79,106,.18);background:rgba(255,79,106,.04)}
+.hell-mode-demo .bubble-player .bubble-label{color:#ff9aa8}
+.hell-mode-demo .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,.6)}
 </style></head>
 <body><div class="container">
 <div class="header"><h1>◆ 谈判桌 UI 预览 ◆</h1><div class="sub">PHASE 7 · 可视化谈判桌组件静态预览（样例数据）</div></div>
@@ -163,6 +172,23 @@ ${section('⑨ 结果屏头像头部',
        <div style="color:var(--purple);font-size:10px">${OPP_BOSS.type}</div>
      </div>
    </div>`)}
+
+${section('⑩ 地狱模式全局渲染（body.hell-mode 级联：时间线/气泡/头部）',
+  `<div class="preview-note">下面用 hell-mode-demo 容器模拟 body.hell-mode 的效果——回合点变红脉冲、AI 气泡红色描边、玩家气泡红粉化、头部 H1 转红。</div>
+   <div class="hell-mode-demo">
+     <div class="header"><h1>关税战 — 训练结束（地狱级演示）</h1></div>
+     ${C.roundTimeline([{}, {}, {}], 5, 3)}
+     <div class="bubble-log">
+       ${C.dialogBubble('我提出 25% 关税，要么接受，要么走人。', 'ai', `${OPP_BOSS.name} 😡`)}
+       ${C.dialogBubble('我需要确认底层数据，能否先暂停 24 小时？', 'player', '你 · 第3轮')}
+       ${C.dialogBubble('24 小时也没有，价格只会更糟。', 'ai', `${OPP_BOSS.name} 🔥`)}
+     </div>
+   </div>`)}
+
+${section('⑪ 地狱戳（结果屏）— 通过 / 失败',
+  `<div class="preview-note">仅当难度=地狱级时显示在结果屏头部下方；通过=绿色戳，失败=红色戳。</div>
+   <div class="hell-stamp-wrap"><span class="hell-stamp pass">★ 地狱已通过 ★</span></div>
+   <div class="hell-stamp-wrap"><span class="hell-stamp">✗ 地狱级 失败 ✗</span></div>`)}
 
 <div style="text-align:center;color:var(--dim);font-size:10px;margin:30px 0 10px">
   此预览由 build_preview.mjs 用真实组件 + 真实样式生成 · 与 dist/game_trainer.html 视觉一致

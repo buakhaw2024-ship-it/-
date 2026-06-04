@@ -81,8 +81,17 @@ export function renderResult() {
       </div>
     </div>` : '';
 
+  // 地狱级专属：在结果上方加一个对角戳（通过/失败）
+  const difficultyTop = Store.get('difficulty');
+  let hellStamp = '';
+  if (difficultyTop === 'hell') {
+    const passed = result.outcome === 'win' || result.outcome === 'cooperative';
+    hellStamp = `<div class="hell-stamp-wrap"><span class="hell-stamp ${passed ? 'pass' : ''}">${passed ? '★ 地狱已通过 ★' : '✗ 地狱级 失败 ✗'}</span></div>`;
+  }
+
   return `
     <div class="header"><h1>${scenarioName} — 训练结束</h1></div>
+    ${hellStamp}
     ${avatarHead}
     <div class="grid2" style="margin-bottom:12px">
       ${C.scoreBox(result.playerScore, '您的得分')}

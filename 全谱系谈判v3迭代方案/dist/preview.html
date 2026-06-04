@@ -272,7 +272,32 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 @keyframes hell-indicator-pulse{0%,100%{opacity:.75;letter-spacing:3px}50%{opacity:1;letter-spacing:4px}}
 .hell-indicator{background:rgba(255,79,106,.1);border:1px solid rgba(255,79,106,.35);border-radius:2px;padding:4px 12px;font-size:10px;color:var(--red);text-align:center;margin-bottom:8px;animation:hell-indicator-pulse 2.2s ease-in-out infinite;text-transform:uppercase;font-weight:bold}
 
+/* ── Global hell-mode cascade (body.hell-mode applied by router) ───── */
+@keyframes hell-pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(255,79,106,.6)}50%{box-shadow:0 0 0 6px rgba(255,79,106,0)}}
+body.hell-mode .tl-current{background:var(--red);border-color:var(--red);animation:hell-pulse-dot 1.1s ease-in-out infinite}
+body.hell-mode .tl-done{background:rgba(255,79,106,.55);border-color:rgba(255,79,106,.55)}
+body.hell-mode .bubble-ai{border-color:rgba(255,79,106,.28);background:linear-gradient(135deg,rgba(255,79,106,.05),var(--bg3))}
+body.hell-mode .bubble-ai .bubble-label{color:var(--red)}
+body.hell-mode .bubble-player{border-color:rgba(255,79,106,.18);background:rgba(255,79,106,.04)}
+body.hell-mode .bubble-player .bubble-label{color:#ff9aa8}
+body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,.6)}
+
+/* Hell stamp on result screen — diagonal pass/fail */
+@keyframes hell-stamp-in{from{opacity:0;transform:rotate(-12deg) scale(2)}to{opacity:.92;transform:rotate(-12deg) scale(1)}}
+.hell-stamp{display:inline-block;padding:6px 22px;border:3px solid var(--red);color:var(--red);font-size:18px;font-weight:bold;letter-spacing:6px;transform:rotate(-12deg);text-shadow:0 0 8px rgba(255,79,106,.5);box-shadow:0 0 16px rgba(255,79,106,.35),inset 0 0 8px rgba(255,79,106,.15);background:rgba(10,14,26,.8);animation:hell-stamp-in .5s cubic-bezier(.34,1.56,.64,1);font-family:'Courier New',monospace}
+.hell-stamp.pass{border-color:var(--green);color:var(--green);text-shadow:0 0 8px rgba(0,255,159,.5);box-shadow:0 0 16px rgba(0,255,159,.35),inset 0 0 8px rgba(0,255,159,.15)}
+.hell-stamp-wrap{text-align:center;margin:14px 0}
+
 .preview-note{color:var(--dim);font-size:11px;margin-bottom:10px}
+/* preview-only: mirror body.hell-mode selectors so a scoped container shows the same look */
+.hell-mode-demo{border:1px dashed rgba(255,79,106,.25);padding:12px;border-radius:3px}
+.hell-mode-demo .tl-current{background:var(--red);border-color:var(--red);animation:hell-pulse-dot 1.1s ease-in-out infinite}
+.hell-mode-demo .tl-done{background:rgba(255,79,106,.55);border-color:rgba(255,79,106,.55)}
+.hell-mode-demo .bubble-ai{border-color:rgba(255,79,106,.28);background:linear-gradient(135deg,rgba(255,79,106,.05),var(--bg3))}
+.hell-mode-demo .bubble-ai .bubble-label{color:var(--red)}
+.hell-mode-demo .bubble-player{border-color:rgba(255,79,106,.18);background:rgba(255,79,106,.04)}
+.hell-mode-demo .bubble-player .bubble-label{color:#ff9aa8}
+.hell-mode-demo .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,.6)}
 </style></head>
 <body><div class="container">
 <div class="header"><h1>◆ 谈判桌 UI 预览 ◆</h1><div class="sub">PHASE 7 · 可视化谈判桌组件静态预览（样例数据）</div></div>
@@ -459,6 +484,36 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
        <div style="color:var(--purple);font-size:10px">极限交易型 / 高压锚定型</div>
      </div>
    </div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑩ 地狱模式全局渲染（body.hell-mode 级联：时间线/气泡/头部）</h2><div class="preview-note">下面用 hell-mode-demo 容器模拟 body.hell-mode 的效果——回合点变红脉冲、AI 气泡红色描边、玩家气泡红粉化、头部 H1 转红。</div>
+   <div class="hell-mode-demo">
+     <div class="header"><h1>关税战 — 训练结束（地狱级演示）</h1></div>
+     <div class="round-timeline"><div class="tl-label">第4/5轮</div><div class="tl-dots"><div class="tl-dot tl-done" title="第1轮"></div><div class="tl-dot tl-done" title="第2轮"></div><div class="tl-dot tl-done" title="第3轮"></div><div class="tl-dot tl-current" title="第4轮"></div><div class="tl-dot tl-pending" title="第5轮"></div></div></div>
+     <div class="bubble-log">
+       <div class="bubble-row bubble-row-ai">
+      <div class="bubble bubble-ai">
+        <div class="bubble-label">极限交易者 😡</div>
+        <div class="bubble-text">我提出 25% 关税，要么接受，要么走人。</div>
+      </div>
+    </div>
+       <div class="bubble-row bubble-row-player">
+      <div class="bubble bubble-player">
+        <div class="bubble-label">你 · 第3轮</div>
+        <div class="bubble-text">我需要确认底层数据，能否先暂停 24 小时？</div>
+      </div>
+    </div>
+       <div class="bubble-row bubble-row-ai">
+      <div class="bubble bubble-ai">
+        <div class="bubble-label">极限交易者 🔥</div>
+        <div class="bubble-text">24 小时也没有，价格只会更糟。</div>
+      </div>
+    </div>
+     </div>
+   </div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑪ 地狱戳（结果屏）— 通过 / 失败</h2><div class="preview-note">仅当难度=地狱级时显示在结果屏头部下方；通过=绿色戳，失败=红色戳。</div>
+   <div class="hell-stamp-wrap"><span class="hell-stamp pass">★ 地狱已通过 ★</span></div>
+   <div class="hell-stamp-wrap"><span class="hell-stamp">✗ 地狱级 失败 ✗</span></div>
 
 <div style="text-align:center;color:var(--dim);font-size:10px;margin:30px 0 10px">
   此预览由 build_preview.mjs 用真实组件 + 真实样式生成 · 与 dist/game_trainer.html 视觉一致

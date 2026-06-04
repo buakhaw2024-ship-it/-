@@ -11,6 +11,10 @@ const _state = {
   currentScreen: null, // 当前屏幕
   profile: null,       // 心理画像向量
   difficulty: 'medium',// 难度：easy/medium/hard/extreme（影响真实博弈机制）
+  // v2 体验增强
+  activeVariant: null,    // 当前场景变体
+  hiddenObjective: null,  // 当前局隐藏目标
+  experienceFlags: {},    // 局内体验标记
 };
 
 export const Store = {

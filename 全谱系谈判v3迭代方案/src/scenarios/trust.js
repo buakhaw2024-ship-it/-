@@ -3,6 +3,9 @@
 
 import { BaseScenario } from './base-scenario.js';
 import { OpponentAI } from '../engine/opponent-ai.js';
+import { Memory } from '../engine/memory.js';
+import { loadReputation } from '../engine/reputation.js';
+import { pickContextualLine } from '../data/opponent-lines-v2.js';
 import { C } from '../ui/components.js';
 
 export class TrustGame extends BaseScenario {
@@ -14,13 +17,19 @@ export class TrustGame extends BaseScenario {
     this.oppScore = 0;
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('trust'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const pText = `投入 ${l.invested} 枚`;
-      const oText = `返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -31,8 +40,11 @@ export class TrustGame extends BaseScenario {
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
       </div>
-      ${C.hint(`<b>信任博弈：</b>您有 10 枚筹码。选择投入数额，系统 3 倍放大后交给 ${opp.name}，${opp.name} 再决定返还多少。这是一个信任测试！`)}
-      ${C.panel('选择投入金额（总共 10 枚）',
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择投入金额（总共 10 枚）',
         C.actionBtn('invest', '10', '<b>[全力信任]</b> 投入 10枚 → 对方收到 30枚') +
         C.actionBtn('invest', '7', '<b>[高度信任]</b> 投入 7枚 → 对方收到 21枚') +
         C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
@@ -43,7 +55,7 @@ export class TrustGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type !== 'invest') return;
     this._peekSnap = null;
     const amount = parseInt(value, 10);
@@ -55,8 +67,16 @@ export class TrustGame extends BaseScenario {
     const myNet = kept + returned - 10;
     this.playerScore += kept + returned;
     this.oppScore += tripled - returned;
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood });
+    const line = pickContextualLine(this.opp, {
+      action: amount >= 5 ? 'coop' : amount <= 2 ? 'firm' : '',
+      mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
+      exposed: Memory.get(this.opp.id).exposureScore >= 2,
+    });
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood, line });
     this.round += 1;
+    if (this.round < this.rounds && this.round >= 1) {
+      if (this.maybeAskCounterQuestion('invest', value)) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }

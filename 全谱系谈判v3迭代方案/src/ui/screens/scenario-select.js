@@ -4,16 +4,22 @@ import { EventBus } from '../../core/event-bus.js';
 import { EVENTS, SCREENS } from '../../core/events.js';
 import { Store } from '../../core/store.js';
 import { SCENARIO_META, DIFF_LABEL, DIFF_CLASS } from '../../data/scenarios.meta.js';
+import { previewVariantName } from '../../data/scenario-variants-v2.js';
 import { C } from '../components.js';
 
 export function renderScenarioSelect() {
-  const cards = Object.entries(SCENARIO_META).map(([key, s]) => `
+  const diff = Store.get('difficulty') || 'medium';
+  const cards = Object.entries(SCENARIO_META).map(([key, s]) => {
+    const variantHint = previewVariantName(key, diff);
+    return `
     <div class="card" data-key="${key}">
       <h3>${s.name}</h3>
       <div class="diff ${DIFF_CLASS[s.diff]}">${DIFF_LABEL[s.diff]}</div>
       ${C.tag(s.domain)}
       <p style="margin-top:8px">${s.desc}</p>
-    </div>`).join('');
+      ${variantHint ? `<div style="font-size:10px;color:var(--yellow);margin-top:6px">本局可能情境：${variantHint}</div>` : ''}
+    </div>`;
+  }).join('');
 
   return `
     <div class="flex-between">

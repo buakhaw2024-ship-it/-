@@ -51,13 +51,20 @@ const MANIFEST = [
   'engine/strategies/risk-averse.js',
   'engine/strategies/trump-boss.js',
   'engine/opponent-ai.js',
-  // 通用 UI 片段
-  'ui/avatars.js',
-  'ui/components.js',
-  // 分析与持久化
+  // 分析与持久化（player-data 需在 v2 数据/插件之前）
   'analytics/player-data.js',
   'analytics/psych-analyzer.js',
   'analytics/replay.js',
+  // 通用 UI 片段（依赖 Mood/Reputation/Store）
+  'ui/avatars.js',
+  'ui/components.js',
+  // v2 体验增强（依赖 Mood/Memory/Reputation/Store/EventBus）
+  'data/opponent-lines-v2.js',
+  'data/scenario-variants-v2.js',
+  'engine/situation-events-v2.js',
+  'engine/counter-questions-v2.js',
+  'engine/hidden-objectives-v2.js',
+  'analytics/opponent-insight-v2.js',
   // 路由
   'ui/router.js',
   // 场景（base 在前，registry 在后）

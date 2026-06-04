@@ -6,6 +6,8 @@ import { Store } from '../../core/store.js';
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
 import { C } from '../components.js';
 import { renderBoxOpenModal } from '../cards.js';
+import { buildOpponentFinalComment } from '../../data/opponent-lines-v2.js';
+import { buildOpponentInnerThought } from '../../analytics/opponent-insight-v2.js';
 
 export function renderResult() {
   const data = Store.get('lastResult');
@@ -14,6 +16,31 @@ export function renderResult() {
       <div style="text-align:center;margin-top:16px"><button class="btn" data-nav="${SCREENS.MAIN}">← 返回主菜单</button></div>`;
   }
   const { result, opp, scenarioName, tips, tells, replay } = data;
+
+  // v2 体验增强结果块
+  let v2Blocks = '';
+  if (result.variant) {
+    v2Blocks += C.panel('本局情境',
+      C.infoRow('情境名称', result.variant.name) +
+      C.infoRow('胜利指标', (result.variant.successMetric || []).join(' / ')));
+  }
+  if (result.hiddenObjective) {
+    const h = result.hiddenObjective;
+    v2Blocks += C.panel('隐藏目标',
+      C.hint(`${h.passed ? '✅ 完成' : '❌ 未完成'}｜${h.title}<br><span style="color:var(--dim);font-size:11px">${h.desc}</span><br>${h.rewardHint ? '<span style="font-size:10px;color:var(--yellow)">' + h.rewardHint + '</span>' : ''}`,
+        h.passed ? 'green' : 'yellow'));
+  }
+  if (opp) {
+    const finalLine = buildOpponentFinalComment(opp, result.outcome);
+    if (finalLine) {
+      v2Blocks += C.panel('对手终局评价',
+        C.dialogBubble(finalLine, 'ai', `${opp.name} 说`));
+    }
+    const inner = buildOpponentInnerThought(opp, result);
+    if (inner) {
+      v2Blocks += C.panel('对手真实想法', C.hint(inner, opp.boss ? 'red' : 'purple'));
+    }
+  }
 
   const tipsPanel = opp ? C.panel(`应对 ${opp.type} 的专项技巧`,
     tips.map((t) => C.hint(`• ${t}`)).join('') +
@@ -100,6 +127,7 @@ export function renderResult() {
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
     ${C.panel('复盘分析', result.summary || '')}
+    ${v2Blocks}
     ${replayPanel}
     ${tipsPanel}
     ${bossReviewPanel}

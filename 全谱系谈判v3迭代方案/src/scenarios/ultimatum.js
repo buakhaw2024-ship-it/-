@@ -20,14 +20,18 @@ export class UltimatumGame extends BaseScenario {
 
   _isProposer() { return this.round % 2 === 0; }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('ultimatum'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
-      const res = l.accepted
-        ? `<span style="color:var(--green)">✓ 接受</span>`
-        : `<span style="color:var(--red)">✗ 拒绝</span>`;
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
+      const res = l.accepted ? `<span style="color:var(--green)">✓ 接受</span>` : `<span style="color:var(--red)">✗ 拒绝</span>`;
       return C.dialogBubble(`提案 我方 ${l.myOffer} / 对方 ${l.theirOffer} → ${res}`, 'system', `第${l.round}轮`);
     }).join('');
 
@@ -36,11 +40,18 @@ export class UltimatumGame extends BaseScenario {
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
-      </div>`;
+      </div>
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}`;
 
+    if (blockNormal) {
+      this.emitRender(`${head}${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
+      return;
+    }
     if (this._isProposer()) {
       this.emitRender(`${head}
-        ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是提议者</b>，提出分配方案。接受者拒绝则双方均得 0。`)}
         ${C.panel('提出你的分配方案（给自己保留多少？）',
           C.actionBtn('propose', '70', '<b>[激进]</b> 保留 70元，给对方 30元') +
           C.actionBtn('propose', '60', '<b>[偏强]</b> 保留 60元，给对方 40元') +
@@ -48,9 +59,7 @@ export class UltimatumGame extends BaseScenario {
           C.actionBtn('propose', '40', '<b>[让步]</b> 保留 40元，给对方 60元'))}
         ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     } else if (this.pendingOffer == null) {
-      // 接受者回合：先展示"对手思考中"，稍后生成报价
       this.emitRender(`${head}
-        ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
         ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
         ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
       setTimeout(() => {
@@ -71,6 +80,7 @@ export class UltimatumGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
+    if (this.interceptCommonAction(type, value)) return;
     if (type === 'propose') {
       const keep = parseInt(value, 10);
       // 观察玩家提案的强硬度（自留越多越强硬/越像在剥削）
@@ -103,6 +113,13 @@ export class UltimatumGame extends BaseScenario {
       accepted,
     });
     this.round += 1;
+    // 可能触发反问
+    if (this.round < this.rounds && this.round >= 1) {
+      const tags = isMyProposal
+        ? (myKeep >= 65 ? ['强硬', '锚定效应'] : myKeep <= 45 ? ['合作', '关系维护'] : [])
+        : (accepted ? ['合作', '关系维护'] : ['强硬', '反压']);
+      if (this.maybeAskCounterQuestion('propose', tags[0])) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }

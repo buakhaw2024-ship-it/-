@@ -19,6 +19,15 @@ export const EVENTS = {
 
   // 全局状态
   STORE_CHANGED: 'store:changed', // payload: { key, value }
+
+  // v2 体验增强
+  EXPERIENCE_VARIANT_PICKED:    'experience:variant-picked',
+  EXPERIENCE_EVENT_TRIGGERED:   'experience:event-triggered',
+  EXPERIENCE_EVENT_RESOLVED:    'experience:event-resolved',
+  OPPONENT_QUESTION_TRIGGERED:  'opponent:question-triggered',
+  OPPONENT_QUESTION_RESOLVED:   'opponent:question-resolved',
+  HIDDEN_OBJECTIVE_PICKED:      'hidden-objective:picked',
+  HIDDEN_OBJECTIVE_RESOLVED:    'hidden-objective:resolved',
 };
 
 // 屏幕标识（router 使用）

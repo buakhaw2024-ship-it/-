@@ -3,6 +3,9 @@
 
 import { BaseScenario } from './base-scenario.js';
 import { OpponentAI } from '../engine/opponent-ai.js';
+import { Memory } from '../engine/memory.js';
+import { loadReputation } from '../engine/reputation.js';
+import { pickContextualLine } from '../data/opponent-lines-v2.js';
 import { C } from '../ui/components.js';
 
 export class PublicGoodsGame extends BaseScenario {
@@ -15,13 +18,19 @@ export class PublicGoodsGame extends BaseScenario {
     this.multiplier = 2.2;
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('publicgoods'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const pText = `贡献 ${l.my} 枚`;
-      const oText = `贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -32,8 +41,11 @@ export class PublicGoodsGame extends BaseScenario {
         ${C.scoreBox(this.playerScore, '您的余额')}
         ${C.scoreBox(this.oppScore, `${opp.name} 余额`)}
       </div>
-      ${C.hint(`每轮各有 10 枚筹码，可贡献到公共池。公共池总额 ×${this.multiplier} 后平分给所有人。<br>理性自私：贡献 0（但若人人如此，公共品崩溃）。`)}
-      ${C.panel('选择贡献数量',
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择贡献数量',
         C.actionBtn('contribute', '10', '<b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益') +
         C.actionBtn('contribute', '7', '<b>[高度合作]</b> 贡献 7枚 — 偏向集体') +
         C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
@@ -44,7 +56,7 @@ export class PublicGoodsGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type !== 'contribute') return;
     this._peekSnap = null;
     const amount = parseInt(value, 10);
@@ -55,8 +67,15 @@ export class PublicGoodsGame extends BaseScenario {
     const share = Math.round(pool / 2);
     this.playerScore = this.playerScore - amount + share;
     this.oppScore = this.oppScore - oppContrib + share;
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood });
+    const line = pickContextualLine(this.opp, {
+      action: amount >= 5 ? 'coop' : amount <= 1 ? 'firm' : '',
+      mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
+    });
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood, line });
     this.round += 1;
+    if (this.round < this.rounds && this.round >= 1) {
+      if (this.maybeAskCounterQuestion('contribute', value)) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }

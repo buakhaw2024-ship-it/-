@@ -500,6 +500,15 @@ const EVENTS = {
 
   // 全局状态
   STORE_CHANGED: 'store:changed', // payload: { key, value }
+
+  // v2 体验增强
+  EXPERIENCE_VARIANT_PICKED:    'experience:variant-picked',
+  EXPERIENCE_EVENT_TRIGGERED:   'experience:event-triggered',
+  EXPERIENCE_EVENT_RESOLVED:    'experience:event-resolved',
+  OPPONENT_QUESTION_TRIGGERED:  'opponent:question-triggered',
+  OPPONENT_QUESTION_RESOLVED:   'opponent:question-resolved',
+  HIDDEN_OBJECTIVE_PICKED:      'hidden-objective:picked',
+  HIDDEN_OBJECTIVE_RESOLVED:    'hidden-objective:resolved',
 };
 
 // 屏幕标识（router 使用）
@@ -529,6 +538,10 @@ const _state = {
   currentScreen: null, // 当前屏幕
   profile: null,       // 心理画像向量
   difficulty: 'medium',// 难度：easy/medium/hard/extreme（影响真实博弈机制）
+  // v2 体验增强
+  activeVariant: null,    // 当前场景变体
+  hiddenObjective: null,  // 当前局隐藏目标
+  experienceFlags: {},    // 局内体验标记
 };
 
 const Store = {
@@ -1462,300 +1475,6 @@ const OpponentAI = {
 };
 
 
-/* ===== ui/avatars.js ===== */
-// ui/avatars.js — 角色专属泡泡马特风格 Q 版头像（纯 SVG，64×64 viewBox）
-// 设计语言：超大圆头、大圆眼+高光、简洁配饰、撞色背景、Q 版萌系。
-// 7 个角色各借鉴一个潮玩 IP 的视觉符号（Skullpanda/Crybaby/Molly/Dimoo/Pucky/Hirono/原创 Boss）。
-
-const SVG = {
-  // 陈逻辑（理性）— Skullpanda 灵感：冷色调、黑白头盖、呆毛、面无表情
-  rational: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#2a3550"/>
-  <circle cx="32" cy="33" r="22" fill="#f4e8d8"/>
-  <path d="M10 30 Q10 10 32 10 Q54 10 54 30 Q48 16 32 16 Q16 16 10 30 Z" fill="#1a1a28"/>
-  <path d="M14 28 Q18 24 22 26 Q26 22 30 26 Q34 22 38 26 Q42 24 46 26 Q50 24 50 28 Q44 26 32 26 Q20 26 14 28 Z" fill="#0a0a14"/>
-  <path d="M29 12 L35 12 L32 4 Z" fill="#1a1a28"/>
-  <circle cx="24" cy="36" r="4" fill="#1a1a28"/>
-  <circle cx="40" cy="36" r="4" fill="#1a1a28"/>
-  <circle cx="25.5" cy="34.5" r="1.3" fill="#fff"/>
-  <circle cx="41.5" cy="34.5" r="1.3" fill="#fff"/>
-  <line x1="29" y1="46" x2="35" y2="46" stroke="#9090a0" stroke-width="1.5" stroke-linecap="round"/>
-</svg>`,
-
-  // 林敏感（情感）— Crybaby 灵感：水蓝色调、泪滴、粉腮红、颤抖嘴
-  emotional: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#7ea7d8"/>
-  <circle cx="32" cy="33" r="22" fill="#fbe4d6"/>
-  <path d="M10 28 Q10 10 32 10 Q54 10 54 28 Q48 16 32 16 Q16 16 10 28 Z" fill="#5a7dc0"/>
-  <path d="M14 24 Q18 20 22 24 Q24 21 28 24 Q32 21 36 24 Q40 21 42 24 Q46 20 50 24 Q48 22 32 22 Q16 22 14 24 Z" fill="#4a6db0"/>
-  <path d="M18 14 L20 10 L22 14 Z M30 8 L32 4 L34 8 Z M44 14 L46 10 L42 14 Z" fill="#7ea7d8" opacity=".6"/>
-  <circle cx="24" cy="36" r="4.5" fill="#1a1a28"/>
-  <circle cx="40" cy="36" r="4.5" fill="#1a1a28"/>
-  <circle cx="25.5" cy="34.5" r="1.5" fill="#fff"/>
-  <circle cx="41.5" cy="34.5" r="1.5" fill="#fff"/>
-  <path d="M22 40 Q21 44 23 46 Q25 44 24 40 Z" fill="#7ac0ff"/>
-  <path d="M40 40 Q39 44 41 46 Q43 44 42 40 Z" fill="#7ac0ff"/>
-  <ellipse cx="20" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".6"/>
-  <ellipse cx="44" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".6"/>
-  <path d="M28 48 Q30 50 32 48 Q34 50 36 48" stroke="#a04050" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-</svg>`,
-
-  // 钢铁王（鹰派）— Molly 灵感：红色头带、金发、怒眉、抿嘴
-  aggressive: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#7d2828"/>
-  <circle cx="32" cy="33" r="22" fill="#fbe4d6"/>
-  <path d="M10 30 Q10 8 32 8 Q54 8 54 30 Q48 16 32 16 Q16 16 10 30 Z" fill="#f0c850"/>
-  <path d="M14 26 Q22 22 32 24 Q42 22 50 26 Q44 24 32 24 Q20 24 14 26 Z" fill="#d8a830"/>
-  <rect x="10" y="22" width="44" height="5" rx="1" fill="#e84040"/>
-  <rect x="10" y="22" width="44" height="1.5" fill="#c02020"/>
-  <path d="M19 28 L29 31 L27 27 Z" fill="#5a3010"/>
-  <path d="M45 28 L35 31 L37 27 Z" fill="#5a3010"/>
-  <circle cx="24" cy="36" r="3.8" fill="#1a1a28"/>
-  <circle cx="40" cy="36" r="3.8" fill="#1a1a28"/>
-  <circle cx="25" cy="35" r="1.2" fill="#fff"/>
-  <circle cx="41" cy="35" r="1.2" fill="#fff"/>
-  <path d="M28 45 Q32 43 36 45" stroke="#a04050" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-</svg>`,
-
-  // 和谐李（合作）— Dimoo 灵感：温暖棕、云朵头饰、弯月笑眼、大笑嘴
-  cooperative: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#3a7a5a"/>
-  <circle cx="32" cy="33" r="22" fill="#fbe4d6"/>
-  <path d="M10 28 Q10 10 32 10 Q54 10 54 28 Q48 16 32 16 Q16 16 10 28 Z" fill="#8a5a3a"/>
-  <ellipse cx="20" cy="14" rx="6" ry="4" fill="#fff" opacity=".92"/>
-  <ellipse cx="32" cy="10" rx="7" ry="4" fill="#fff" opacity=".92"/>
-  <ellipse cx="44" cy="14" rx="6" ry="4" fill="#fff" opacity=".92"/>
-  <path d="M19 34 Q24 39 29 34" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  <path d="M35 34 Q40 39 45 34" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  <ellipse cx="20" cy="42" rx="4" ry="2.8" fill="#ff90a0" opacity=".55"/>
-  <ellipse cx="44" cy="42" rx="4" ry="2.8" fill="#ff90a0" opacity=".55"/>
-  <path d="M24 44 Q32 52 40 44 Z" fill="#ff7080" stroke="#a04050" stroke-width="1.6" stroke-linejoin="round"/>
-  <path d="M27 44 L37 44" stroke="#fff" stroke-width="1.6"/>
-</svg>`,
-
-  // 影子张（操纵）— Pucky 灵感：紫色调、小恶魔角、坏笑、露齿
-  manipulative: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#2a0a48"/>
-  <circle cx="32" cy="33" r="22" fill="#e8d4f0"/>
-  <path d="M10 28 Q10 10 32 10 Q54 10 54 28 Q48 16 32 16 Q16 16 10 28 Z" fill="#7028a0"/>
-  <path d="M16 12 L20 4 L23 14 Z" fill="#3a0a50"/>
-  <path d="M48 12 L44 4 L41 14 Z" fill="#3a0a50"/>
-  <path d="M17 13 L20 6 L22 12 Z" fill="#5018a0" opacity=".7"/>
-  <path d="M47 13 L44 6 L42 12 Z" fill="#5018a0" opacity=".7"/>
-  <path d="M20 28 Q24 26 28 28" stroke="#3a0a50" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-  <path d="M36 28 Q40 26 44 28" stroke="#3a0a50" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-  <path d="M19 35 Q24 39 29 35" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  <path d="M35 35 Q40 39 45 35" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  <path d="M24 44 Q32 50 40 44" stroke="#a04050" stroke-width="2" fill="none" stroke-linecap="round"/>
-  <path d="M30 45 L30 47 L32 48.5 L34 47 L34 45 Z" fill="#fff" stroke="#a04050" stroke-width="0.6"/>
-</svg>`,
-
-  // 稳健吴（规避）— Hirono 灵感：灰连帽衫、半遮帽子、害羞闭眼、帽绳
-  riskAverse: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#4a4a5a"/>
-  <path d="M4 32 Q4 4 32 4 Q60 4 60 32 L60 42 Q60 36 50 30 L14 30 Q4 36 4 42 Z" fill="#6a6a7a"/>
-  <path d="M10 24 Q14 14 32 12 Q50 14 54 24 Q44 22 32 22 Q20 22 10 24 Z" fill="#5a5a6a"/>
-  <circle cx="32" cy="34" r="20" fill="#fbe4d6"/>
-  <path d="M14 28 Q14 14 32 14 Q50 14 50 28 Q44 20 32 20 Q20 20 14 28 Z" fill="#6a6a7a"/>
-  <path d="M20 36 Q24 33 28 36" stroke="#1a1a28" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-  <path d="M36 36 Q40 33 44 36" stroke="#1a1a28" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-  <ellipse cx="21" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".5"/>
-  <ellipse cx="43" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".5"/>
-  <path d="M29 46 Q32 44 35 46" stroke="#a04050" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  <line x1="22" y1="48" x2="22" y2="60" stroke="#3a3a4a" stroke-width="2"/>
-  <line x1="42" y1="48" x2="42" y2="60" stroke="#3a3a4a" stroke-width="2"/>
-  <circle cx="22" cy="60" r="2.2" fill="#9090a0"/>
-  <circle cx="42" cy="60" r="2.2" fill="#9090a0"/>
-</svg>`,
-
-  // 极限交易者（Boss）— 自创 Q 版：金色蓬松发、橘脸、眯眼噘嘴、深蓝礼服+红领带
-  trumpBoss: `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#1a3055"/>
-  <circle cx="32" cy="34" r="22" fill="#f0a070"/>
-  <path d="M8 28 Q6 6 32 4 Q58 6 56 28 Q52 12 44 10 Q32 6 20 10 Q12 12 8 28 Z" fill="#e8b040"/>
-  <path d="M12 24 Q22 14 32 20 Q42 14 52 24 Q50 18 40 16 Q32 18 24 16 Q14 18 12 24 Z" fill="#f0c860"/>
-  <path d="M14 22 Q24 12 32 18 Q40 12 50 22" stroke="#d09028" stroke-width="0.8" fill="none" opacity=".7"/>
-  <path d="M19 30 Q24 28 28 32" stroke="#a87018" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-  <path d="M36 32 Q40 28 45 30" stroke="#a87018" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-  <ellipse cx="24" cy="36" rx="3" ry="1.2" fill="#1a1a28"/>
-  <ellipse cx="40" cy="36" rx="3" ry="1.2" fill="#1a1a28"/>
-  <ellipse cx="25" cy="35.5" rx="0.8" ry="0.6" fill="#fff"/>
-  <ellipse cx="41" cy="35.5" rx="0.8" ry="0.6" fill="#fff"/>
-  <ellipse cx="32" cy="46" rx="5" ry="2.6" fill="#b04050"/>
-  <ellipse cx="32" cy="45.5" rx="3.2" ry="0.9" fill="#d06070"/>
-  <path d="M4 56 Q32 50 60 56 L60 64 L4 64 Z" fill="#152848"/>
-  <path d="M22 54 L32 60 L42 54 L42 56 L32 62 L22 56 Z" fill="#fbfbfb"/>
-  <path d="M28 56 L36 56 L34 64 L30 64 Z" fill="#c02020"/>
-  <path d="M29 56 L35 56 L35 57 L29 57 Z" fill="#e04040"/>
-</svg>`,
-};
-
-function avatarSvg(oppId) {
-  return SVG[oppId] || SVG.cooperative;
-}
-
-const AVATAR_IDS = Object.keys(SVG);
-
-
-/* ===== ui/components.js ===== */
-// ui/components.js — 纯 HTML 片段构造器（无 DOM 操作，仅返回字符串）
-// 被 screens 与 scenarios 复用。游戏内交互元素统一带 data-game-action / data-value，
-// 由 game-view 的事件委托翻译成 player:action 事件。
-
-
-const C = {
-  // 对手头像 emoji 映射（保留为 fallback / 角色徽章场景）
-  avatarEmoji(oppId) {
-    const MAP = {
-      rational: '🧮', emotional: '🌊', aggressive: '🦅',
-      cooperative: '🤝', manipulative: '🎭', riskAverse: '🛡️', trumpBoss: '👑',
-    };
-    return MAP[oppId] || '🤝';
-  },
-
-  // 角色专属风格化 SVG 头像（无外部资源）
-  avatarSvg(oppId) {
-    return avatarSvg(oppId);
-  },
-
-  // 独立头像徽章（结果屏等处复用）—— 使用 SVG 头像
-  avatarBadge(opp, size = 44) {
-    if (!opp) return '';
-    const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
-    return `<div class="${ringCls} avatar-svg-host" style="width:${size}px;height:${size}px">${this.avatarSvg(opp.id)}</div>`;
-  },
-
-  panel(title, body) {
-    return `<div class="panel"><div class="panel-title">${title}</div>${body}</div>`;
-  },
-
-  hint(text, kind = 'cyan') {
-    return `<div class="hint hint-${kind}">${text}</div>`;
-  },
-
-  scoreBox(num, label, color) {
-    const style = color ? ` style="color:${color}"` : '';
-    return `<div class="score-box"><div class="score-num"${style}>${num}</div><div class="score-lbl">${label}</div></div>`;
-  },
-
-  bar(label, val, colorClass = 'bar-cyan') {
-    const pct = Math.round(Math.min(1, Math.max(0, val)) * 100);
-    return `<div class="bar-wrap">
-      <div class="bar-label"><span>${label}</span><span>${pct}%</span></div>
-      <div class="bar-bg"><div class="bar-fill ${colorClass}" style="width:${pct}%"></div></div>
-    </div>`;
-  },
-
-  infoRow(key, val) {
-    return `<div class="info-row"><span class="info-key">${key}</span><span class="info-val">${val}</span></div>`;
-  },
-
-  tag(text, cls = 'tag-cyan') {
-    return `<span class="tag ${cls}">${text}</span>`;
-  },
-
-  outcomeBadge(outcome) {
-    const map = {
-      win:  ['outcome-win', '胜利'],
-      lose: ['outcome-lose', '败北'],
-      draw: ['outcome-draw', '平局'],
-      coop: ['outcome-coop', '合作双赢'],
-    };
-    const [cls, label] = map[outcome] || ['outcome-draw', outcome];
-    return `<span class="outcome ${cls}">${label}</span>`;
-  },
-
-  // 对局内的页眉（含退出按钮）
-  gameHeader(title) {
-    return `<div class="flex-between">
-      <div class="section-title">${title}</div>
-      <button class="back-btn" data-game-action="exit">✕ 退出</button>
-    </div>`;
-  },
-
-  // 对局内的动作按钮：点击经委托发出 player:action {type:action, value}
-  actionBtn(action, value, html, extraClass = '') {
-    return `<button class="choice-btn ${extraClass}" data-game-action="${action}" data-value="${value}">${html}</button>`;
-  },
-
-  // 回合日志容器
-  logBox(title, entriesHtml) {
-    if (!entriesHtml) return '';
-    return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
-  },
-
-  // 将情绪状态映射为直觉表情（用于 AI 气泡标签）
-  moodEmoji(mood) {
-    if (!mood) return '';
-    const { trust = 0, anger = 0, patience = 0, confidence = 0 } = mood;
-    if (anger > 0.72) return '😠';
-    if (anger > 0.50 && trust < 0.40) return '😤';
-    if (trust > 0.72) return '😊';
-    if (trust > 0.50 && anger < 0.35) return '🤝';
-    if (patience < 0.25) return '⏰';
-    if (confidence > 0.75) return '😎';
-    return '🤔';
-  },
-
-  // 对话气泡：who='ai'|'player'|'system'
-  dialogBubble(text, who = 'ai', label = '') {
-    if (!text) return '';
-    if (who === 'system') {
-      return `<div class="bubble-row"><div class="bubble bubble-system">${label ? `<div class="bubble-label">${label}</div>` : ''}<div class="bubble-text">${text}</div></div></div>`;
-    }
-    return `<div class="bubble-row bubble-row-${who}">
-      <div class="bubble bubble-${who}">
-        ${label ? `<div class="bubble-label">${label}</div>` : ''}
-        <div class="bubble-text">${text}</div>
-      </div>
-    </div>`;
-  },
-
-  // 回合时间线（圆点轨）
-  roundTimeline(log, total, current) {
-    const done = log ? log.length : 0;
-    const dots = Array.from({ length: total }, (_, i) => {
-      const cls = i < done ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
-      return `<div class="tl-dot ${cls}" title="第${i + 1}轮"></div>`;
-    }).join('');
-    return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮 <button class="info-tip-btn" data-itip="rounds" title="回合说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
-  },
-
-  // 阶段进度条（用于危机/联盟等多阶段场景）
-  stageProgress(current, total) {
-    const dots = Array.from({ length: total }, (_, i) => {
-      const cls = i < current ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
-      return `<div class="tl-dot ${cls}" title="第${i + 1}阶段"></div>`;
-    }).join('');
-    return `<div class="round-timeline"><div class="tl-label">阶段${current + 1}/${total} <button class="info-tip-btn" data-itip="rounds" title="阶段说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
-  },
-
-  // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
-  moodSparkline(series) {
-    if (!series || !series.length) return '';
-    const W = 280, H = 48, n = series.length;
-    const x = (i) => (n > 1 ? (i / (n - 1)) * (W - 8) + 4 : W / 2);
-    const y = (v) => (H - 4) - v * (H - 8);
-    const line = (key, color) => {
-      const pts = series.map((m, i) => `${x(i).toFixed(0)},${y(m[key] || 0).toFixed(0)}`).join(' ');
-      const dots = series.map((m, i) => `<circle cx="${x(i).toFixed(0)}" cy="${y(m[key] || 0).toFixed(0)}" r="2" fill="${color}"/>`).join('');
-      return `<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts}"/>${dots}`;
-    };
-    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="background:var(--bg);border:1px solid var(--border);border-radius:3px">
-      ${line('trust', 'var(--cyan)')}${line('anger', 'var(--red)')}
-    </svg>
-    <div style="font-size:10px;color:var(--dim);margin-top:2px">— 信任(青) ／ — 愤怒(红)　对手情绪随回合演化</div>`;
-  },
-};
-
-
 /* ===== analytics/player-data.js ===== */
 // analytics/player-data.js — 玩家档案 + LocalStorage 持久化
 // 兼容 v2.0 存档：key = gts_player_<name>，字段 {name,sessions,total,wins,draws,losses}
@@ -2087,6 +1806,1097 @@ function buildReplay(kind, rounds, opp, result) {
 }
 
 
+/* ===== ui/avatars.js ===== */
+// ui/avatars.js — 角色专属泡泡马特风格 Q 版头像（纯 SVG，64×64 viewBox）
+// 设计语言：超大圆头、大圆眼+高光、简洁配饰、撞色背景、Q 版萌系。
+// 7 个角色各借鉴一个潮玩 IP 的视觉符号（Skullpanda/Crybaby/Molly/Dimoo/Pucky/Hirono/原创 Boss）。
+
+const SVG = {
+  // 陈逻辑（理性）— Skullpanda 灵感：冷色调、黑白头盖、呆毛、面无表情
+  rational: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#2a3550"/>
+  <circle cx="32" cy="33" r="22" fill="#f4e8d8"/>
+  <path d="M10 30 Q10 10 32 10 Q54 10 54 30 Q48 16 32 16 Q16 16 10 30 Z" fill="#1a1a28"/>
+  <path d="M14 28 Q18 24 22 26 Q26 22 30 26 Q34 22 38 26 Q42 24 46 26 Q50 24 50 28 Q44 26 32 26 Q20 26 14 28 Z" fill="#0a0a14"/>
+  <path d="M29 12 L35 12 L32 4 Z" fill="#1a1a28"/>
+  <circle cx="24" cy="36" r="4" fill="#1a1a28"/>
+  <circle cx="40" cy="36" r="4" fill="#1a1a28"/>
+  <circle cx="25.5" cy="34.5" r="1.3" fill="#fff"/>
+  <circle cx="41.5" cy="34.5" r="1.3" fill="#fff"/>
+  <line x1="29" y1="46" x2="35" y2="46" stroke="#9090a0" stroke-width="1.5" stroke-linecap="round"/>
+</svg>`,
+
+  // 林敏感（情感）— Crybaby 灵感：水蓝色调、泪滴、粉腮红、颤抖嘴
+  emotional: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#7ea7d8"/>
+  <circle cx="32" cy="33" r="22" fill="#fbe4d6"/>
+  <path d="M10 28 Q10 10 32 10 Q54 10 54 28 Q48 16 32 16 Q16 16 10 28 Z" fill="#5a7dc0"/>
+  <path d="M14 24 Q18 20 22 24 Q24 21 28 24 Q32 21 36 24 Q40 21 42 24 Q46 20 50 24 Q48 22 32 22 Q16 22 14 24 Z" fill="#4a6db0"/>
+  <path d="M18 14 L20 10 L22 14 Z M30 8 L32 4 L34 8 Z M44 14 L46 10 L42 14 Z" fill="#7ea7d8" opacity=".6"/>
+  <circle cx="24" cy="36" r="4.5" fill="#1a1a28"/>
+  <circle cx="40" cy="36" r="4.5" fill="#1a1a28"/>
+  <circle cx="25.5" cy="34.5" r="1.5" fill="#fff"/>
+  <circle cx="41.5" cy="34.5" r="1.5" fill="#fff"/>
+  <path d="M22 40 Q21 44 23 46 Q25 44 24 40 Z" fill="#7ac0ff"/>
+  <path d="M40 40 Q39 44 41 46 Q43 44 42 40 Z" fill="#7ac0ff"/>
+  <ellipse cx="20" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".6"/>
+  <ellipse cx="44" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".6"/>
+  <path d="M28 48 Q30 50 32 48 Q34 50 36 48" stroke="#a04050" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+</svg>`,
+
+  // 钢铁王（鹰派）— Molly 灵感：红色头带、金发、怒眉、抿嘴
+  aggressive: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#7d2828"/>
+  <circle cx="32" cy="33" r="22" fill="#fbe4d6"/>
+  <path d="M10 30 Q10 8 32 8 Q54 8 54 30 Q48 16 32 16 Q16 16 10 30 Z" fill="#f0c850"/>
+  <path d="M14 26 Q22 22 32 24 Q42 22 50 26 Q44 24 32 24 Q20 24 14 26 Z" fill="#d8a830"/>
+  <rect x="10" y="22" width="44" height="5" rx="1" fill="#e84040"/>
+  <rect x="10" y="22" width="44" height="1.5" fill="#c02020"/>
+  <path d="M19 28 L29 31 L27 27 Z" fill="#5a3010"/>
+  <path d="M45 28 L35 31 L37 27 Z" fill="#5a3010"/>
+  <circle cx="24" cy="36" r="3.8" fill="#1a1a28"/>
+  <circle cx="40" cy="36" r="3.8" fill="#1a1a28"/>
+  <circle cx="25" cy="35" r="1.2" fill="#fff"/>
+  <circle cx="41" cy="35" r="1.2" fill="#fff"/>
+  <path d="M28 45 Q32 43 36 45" stroke="#a04050" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+</svg>`,
+
+  // 和谐李（合作）— Dimoo 灵感：温暖棕、云朵头饰、弯月笑眼、大笑嘴
+  cooperative: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#3a7a5a"/>
+  <circle cx="32" cy="33" r="22" fill="#fbe4d6"/>
+  <path d="M10 28 Q10 10 32 10 Q54 10 54 28 Q48 16 32 16 Q16 16 10 28 Z" fill="#8a5a3a"/>
+  <ellipse cx="20" cy="14" rx="6" ry="4" fill="#fff" opacity=".92"/>
+  <ellipse cx="32" cy="10" rx="7" ry="4" fill="#fff" opacity=".92"/>
+  <ellipse cx="44" cy="14" rx="6" ry="4" fill="#fff" opacity=".92"/>
+  <path d="M19 34 Q24 39 29 34" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <path d="M35 34 Q40 39 45 34" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <ellipse cx="20" cy="42" rx="4" ry="2.8" fill="#ff90a0" opacity=".55"/>
+  <ellipse cx="44" cy="42" rx="4" ry="2.8" fill="#ff90a0" opacity=".55"/>
+  <path d="M24 44 Q32 52 40 44 Z" fill="#ff7080" stroke="#a04050" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M27 44 L37 44" stroke="#fff" stroke-width="1.6"/>
+</svg>`,
+
+  // 影子张（操纵）— Pucky 灵感：紫色调、小恶魔角、坏笑、露齿
+  manipulative: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#2a0a48"/>
+  <circle cx="32" cy="33" r="22" fill="#e8d4f0"/>
+  <path d="M10 28 Q10 10 32 10 Q54 10 54 28 Q48 16 32 16 Q16 16 10 28 Z" fill="#7028a0"/>
+  <path d="M16 12 L20 4 L23 14 Z" fill="#3a0a50"/>
+  <path d="M48 12 L44 4 L41 14 Z" fill="#3a0a50"/>
+  <path d="M17 13 L20 6 L22 12 Z" fill="#5018a0" opacity=".7"/>
+  <path d="M47 13 L44 6 L42 12 Z" fill="#5018a0" opacity=".7"/>
+  <path d="M20 28 Q24 26 28 28" stroke="#3a0a50" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <path d="M36 28 Q40 26 44 28" stroke="#3a0a50" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <path d="M19 35 Q24 39 29 35" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <path d="M35 35 Q40 39 45 35" stroke="#1a1a28" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <path d="M24 44 Q32 50 40 44" stroke="#a04050" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M30 45 L30 47 L32 48.5 L34 47 L34 45 Z" fill="#fff" stroke="#a04050" stroke-width="0.6"/>
+</svg>`,
+
+  // 稳健吴（规避）— Hirono 灵感：灰连帽衫、半遮帽子、害羞闭眼、帽绳
+  riskAverse: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#4a4a5a"/>
+  <path d="M4 32 Q4 4 32 4 Q60 4 60 32 L60 42 Q60 36 50 30 L14 30 Q4 36 4 42 Z" fill="#6a6a7a"/>
+  <path d="M10 24 Q14 14 32 12 Q50 14 54 24 Q44 22 32 22 Q20 22 10 24 Z" fill="#5a5a6a"/>
+  <circle cx="32" cy="34" r="20" fill="#fbe4d6"/>
+  <path d="M14 28 Q14 14 32 14 Q50 14 50 28 Q44 20 32 20 Q20 20 14 28 Z" fill="#6a6a7a"/>
+  <path d="M20 36 Q24 33 28 36" stroke="#1a1a28" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M36 36 Q40 33 44 36" stroke="#1a1a28" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <ellipse cx="21" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".5"/>
+  <ellipse cx="43" cy="42" rx="3" ry="2" fill="#ff90a0" opacity=".5"/>
+  <path d="M29 46 Q32 44 35 46" stroke="#a04050" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <line x1="22" y1="48" x2="22" y2="60" stroke="#3a3a4a" stroke-width="2"/>
+  <line x1="42" y1="48" x2="42" y2="60" stroke="#3a3a4a" stroke-width="2"/>
+  <circle cx="22" cy="60" r="2.2" fill="#9090a0"/>
+  <circle cx="42" cy="60" r="2.2" fill="#9090a0"/>
+</svg>`,
+
+  // 极限交易者（Boss）— 自创 Q 版：金色蓬松发、橘脸、眯眼噘嘴、深蓝礼服+红领带
+  trumpBoss: `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="30" fill="#1a3055"/>
+  <circle cx="32" cy="34" r="22" fill="#f0a070"/>
+  <path d="M8 28 Q6 6 32 4 Q58 6 56 28 Q52 12 44 10 Q32 6 20 10 Q12 12 8 28 Z" fill="#e8b040"/>
+  <path d="M12 24 Q22 14 32 20 Q42 14 52 24 Q50 18 40 16 Q32 18 24 16 Q14 18 12 24 Z" fill="#f0c860"/>
+  <path d="M14 22 Q24 12 32 18 Q40 12 50 22" stroke="#d09028" stroke-width="0.8" fill="none" opacity=".7"/>
+  <path d="M19 30 Q24 28 28 32" stroke="#a87018" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M36 32 Q40 28 45 30" stroke="#a87018" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <ellipse cx="24" cy="36" rx="3" ry="1.2" fill="#1a1a28"/>
+  <ellipse cx="40" cy="36" rx="3" ry="1.2" fill="#1a1a28"/>
+  <ellipse cx="25" cy="35.5" rx="0.8" ry="0.6" fill="#fff"/>
+  <ellipse cx="41" cy="35.5" rx="0.8" ry="0.6" fill="#fff"/>
+  <ellipse cx="32" cy="46" rx="5" ry="2.6" fill="#b04050"/>
+  <ellipse cx="32" cy="45.5" rx="3.2" ry="0.9" fill="#d06070"/>
+  <path d="M4 56 Q32 50 60 56 L60 64 L4 64 Z" fill="#152848"/>
+  <path d="M22 54 L32 60 L42 54 L42 56 L32 62 L22 56 Z" fill="#fbfbfb"/>
+  <path d="M28 56 L36 56 L34 64 L30 64 Z" fill="#c02020"/>
+  <path d="M29 56 L35 56 L35 57 L29 57 Z" fill="#e04040"/>
+</svg>`,
+};
+
+function avatarSvg(oppId) {
+  return SVG[oppId] || SVG.cooperative;
+}
+
+const AVATAR_IDS = Object.keys(SVG);
+
+
+/* ===== ui/components.js ===== */
+// ui/components.js — 纯 HTML 片段构造器（无 DOM 操作，仅返回字符串）
+// 被 screens 与 scenarios 复用。游戏内交互元素统一带 data-game-action / data-value，
+// 由 game-view 的事件委托翻译成 player:action 事件。
+
+
+const C = {
+  // 对手头像 emoji 映射（保留为 fallback / 角色徽章场景）
+  avatarEmoji(oppId) {
+    const MAP = {
+      rational: '🧮', emotional: '🌊', aggressive: '🦅',
+      cooperative: '🤝', manipulative: '🎭', riskAverse: '🛡️', trumpBoss: '👑',
+    };
+    return MAP[oppId] || '🤝';
+  },
+
+  // 角色专属风格化 SVG 头像（无外部资源）
+  avatarSvg(oppId) {
+    return avatarSvg(oppId);
+  },
+
+  // 独立头像徽章（结果屏等处复用）—— 使用 SVG 头像
+  avatarBadge(opp, size = 44) {
+    if (!opp) return '';
+    const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+    return `<div class="${ringCls} avatar-svg-host" style="width:${size}px;height:${size}px">${this.avatarSvg(opp.id)}</div>`;
+  },
+
+  panel(title, body) {
+    return `<div class="panel"><div class="panel-title">${title}</div>${body}</div>`;
+  },
+
+  hint(text, kind = 'cyan') {
+    return `<div class="hint hint-${kind}">${text}</div>`;
+  },
+
+  scoreBox(num, label, color) {
+    const style = color ? ` style="color:${color}"` : '';
+    return `<div class="score-box"><div class="score-num"${style}>${num}</div><div class="score-lbl">${label}</div></div>`;
+  },
+
+  bar(label, val, colorClass = 'bar-cyan') {
+    const pct = Math.round(Math.min(1, Math.max(0, val)) * 100);
+    return `<div class="bar-wrap">
+      <div class="bar-label"><span>${label}</span><span>${pct}%</span></div>
+      <div class="bar-bg"><div class="bar-fill ${colorClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  },
+
+  infoRow(key, val) {
+    return `<div class="info-row"><span class="info-key">${key}</span><span class="info-val">${val}</span></div>`;
+  },
+
+  tag(text, cls = 'tag-cyan') {
+    return `<span class="tag ${cls}">${text}</span>`;
+  },
+
+  outcomeBadge(outcome) {
+    const map = {
+      win:  ['outcome-win', '胜利'],
+      lose: ['outcome-lose', '败北'],
+      draw: ['outcome-draw', '平局'],
+      coop: ['outcome-coop', '合作双赢'],
+    };
+    const [cls, label] = map[outcome] || ['outcome-draw', outcome];
+    return `<span class="outcome ${cls}">${label}</span>`;
+  },
+
+  // 对局内的页眉（含退出按钮）
+  gameHeader(title) {
+    return `<div class="flex-between">
+      <div class="section-title">${title}</div>
+      <button class="back-btn" data-game-action="exit">✕ 退出</button>
+    </div>`;
+  },
+
+  // 对局内的动作按钮：点击经委托发出 player:action {type:action, value}
+  actionBtn(action, value, html, extraClass = '') {
+    return `<button class="choice-btn ${extraClass}" data-game-action="${action}" data-value="${value}">${html}</button>`;
+  },
+
+  // 回合日志容器
+  logBox(title, entriesHtml) {
+    if (!entriesHtml) return '';
+    return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
+  },
+
+  // 将情绪状态映射为直觉表情（用于 AI 气泡标签）
+  moodEmoji(mood) {
+    if (!mood) return '';
+    const { trust = 0, anger = 0, patience = 0, confidence = 0 } = mood;
+    if (anger > 0.72) return '😠';
+    if (anger > 0.50 && trust < 0.40) return '😤';
+    if (trust > 0.72) return '😊';
+    if (trust > 0.50 && anger < 0.35) return '🤝';
+    if (patience < 0.25) return '⏰';
+    if (confidence > 0.75) return '😎';
+    return '🤔';
+  },
+
+  // 对话气泡：who='ai'|'player'|'system'
+  dialogBubble(text, who = 'ai', label = '') {
+    if (!text) return '';
+    if (who === 'system') {
+      return `<div class="bubble-row"><div class="bubble bubble-system">${label ? `<div class="bubble-label">${label}</div>` : ''}<div class="bubble-text">${text}</div></div></div>`;
+    }
+    return `<div class="bubble-row bubble-row-${who}">
+      <div class="bubble bubble-${who}">
+        ${label ? `<div class="bubble-label">${label}</div>` : ''}
+        <div class="bubble-text">${text}</div>
+      </div>
+    </div>`;
+  },
+
+  // 回合时间线（圆点轨）
+  roundTimeline(log, total, current) {
+    const done = log ? log.length : 0;
+    const dots = Array.from({ length: total }, (_, i) => {
+      const cls = i < done ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
+      return `<div class="tl-dot ${cls}" title="第${i + 1}轮"></div>`;
+    }).join('');
+    return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮 <button class="info-tip-btn" data-itip="rounds" title="回合说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
+  },
+
+  // 关系温度计：显式展示对手 Mood + 跨局记忆，高难度提示伪装
+  relationshipPanel(opp) {
+    if (!opp) return '';
+    const mood = Mood.get(opp.id);
+    const rep = loadReputation(opp.id);
+    const diff = Store.get('difficulty') || 'medium';
+    const pct = (n) => Math.round(clamp(n || 0, 0, 1) * 100);
+    const memText = rep.games >= 2
+      ? `已交手 ${rep.games} 次 · 上局：${rep.lastOutcome || '—'} · 历史合作率 ${Math.round((rep.coopRate || 0.5) * 100)}%`
+      : '首次或低样本交手 · 对手尚未完全建档';
+    const warn = (diff === 'hell' || diff === 'extreme')
+      ? '<div style="font-size:10px;color:var(--red);margin-top:4px">⚠ 高难度下，对手可能伪装情绪，状态仅供参考。</div>'
+      : (diff === 'hard' ? '<div style="font-size:10px;color:var(--dim);margin-top:4px">状态估计存在误差。</div>' : '');
+    return `<div class="panel relationship-panel" style="padding:10px 12px">
+      <div class="panel-title">对手状态监测</div>
+      ${this.bar('信任', (mood.trust || 0), 'bar-green')}
+      ${this.bar('愤怒', (mood.anger || 0), 'bar-red')}
+      ${this.bar('耐心', (mood.patience || 0), 'bar-yellow')}
+      ${this.bar('自信', (mood.confidence || 0), 'bar-purple')}
+      <div style="font-size:10px;color:var(--dim);margin-top:6px">${memText}</div>
+      ${warn}
+    </div>`;
+  },
+
+  // 阶段进度条（用于危机/联盟等多阶段场景）
+  stageProgress(current, total) {
+    const dots = Array.from({ length: total }, (_, i) => {
+      const cls = i < current ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
+      return `<div class="tl-dot ${cls}" title="第${i + 1}阶段"></div>`;
+    }).join('');
+    return `<div class="round-timeline"><div class="tl-label">阶段${current + 1}/${total} <button class="info-tip-btn" data-itip="rounds" title="阶段说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
+  },
+
+  // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
+  moodSparkline(series) {
+    if (!series || !series.length) return '';
+    const W = 280, H = 48, n = series.length;
+    const x = (i) => (n > 1 ? (i / (n - 1)) * (W - 8) + 4 : W / 2);
+    const y = (v) => (H - 4) - v * (H - 8);
+    const line = (key, color) => {
+      const pts = series.map((m, i) => `${x(i).toFixed(0)},${y(m[key] || 0).toFixed(0)}`).join(' ');
+      const dots = series.map((m, i) => `<circle cx="${x(i).toFixed(0)}" cy="${y(m[key] || 0).toFixed(0)}" r="2" fill="${color}"/>`).join('');
+      return `<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts}"/>${dots}`;
+    };
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="background:var(--bg);border:1px solid var(--border);border-radius:3px">
+      ${line('trust', 'var(--cyan)')}${line('anger', 'var(--red)')}
+    </svg>
+    <div style="font-size:10px;color:var(--dim);margin-top:2px">— 信任(青) ／ — 愤怒(红)　对手情绪随回合演化</div>`;
+  },
+};
+
+
+/* ===== data/opponent-lines-v2.js ===== */
+// data/opponent-lines-v2.js — 情境化对手台词库
+// 台词桶由 mood / memory / reputation / action / outcome 联合驱动，不是纯随机。
+
+
+const OPP_LINES_V2 = {
+  rational: {
+    greet: ['数据模型已载入。请开始你的选择。', '我会根据收益矩阵计算最优反应。', '情绪不是变量。让我们进入博弈。'],
+    coopHighTrust: ['合作路径正在收敛，继续保持。', '你的选择提高了双方期望收益。', '理性上，这是一个可持续策略。'],
+    coopLowTrust: ['你现在选择合作，但历史记录显示我还不能完全信任你。', '合作信号收到，但我需要更多样本确认。', '单次合作不足以改变模型判断。'],
+    defect: ['背叛行为已记录，我会调整下一轮反应。', '你选择了短期收益路径。', '偏离合作均衡，后续代价会上升。'],
+    underPressure: ['你的施压缺少客观依据。', '请给出数据，否则我不会调整判断。', '强硬不是问题，问题是你有没有事实支撑。'],
+    afterPlayerWin: ['上次你赢了，我已经更新模型。', '你之前的策略被记录了，这次不会完全有效。', '历史样本显示你不是普通对手。'],
+    afterPlayerLose: ['你的上次失误很明显，希望你已经修正。', '从历史记录看，你容易在中段暴露底线。', '如果你重复旧策略，结果不会改变。'],
+    win: ['结果符合预期。', '我的模型胜出了。', '数据没有情绪，但有结论。'],
+    lose: ['模型误差超过预期，我需要重新校准。', '你做出了非常规但有效的选择。', '这次你突破了我的预测。'],
+    draw: ['均衡结果。', '双方都没有明显偏离稳定策略。', '平局说明当前策略组合接近均衡。'],
+  },
+
+  emotional: {
+    greet: ['我们能不能不要把气氛弄得太僵？', '我希望这次可以好好谈。', '我会在意你的态度，不只是你的选择。'],
+    coopHighTrust: ['谢谢你，我感觉你是真的愿意合作。', '这样我会更愿意相信你。', '你刚才的选择让我放松了一点。'],
+    coopLowTrust: ['你现在合作了，可我还记得你之前的做法。', '我想相信你，但我有点犹豫。', '这次我先接受，但我还会观察。'],
+    defect: ['你为什么要这样？我以为我们可以合作。', '这让我很不舒服。', '我会记住这次。'],
+    underPressure: ['你这样说让我压力很大。', '如果你继续逼我，我可能会直接拒绝。', '我需要被尊重，不是被压迫。'],
+    afterPlayerWin: ['上次你赢了，可我其实有点受伤。', '我不确定这次还能不能信任你。', '我记得你上次是怎么赢的。'],
+    afterPlayerLose: ['上次你输了，但我不想把你逼得太难看。', '希望这次我们可以更平和一点。', '你上次有点急，这次慢慢来。'],
+    win: ['我赢了，但我不想把关系弄坏。', '这不是我最想要的结果，但还好。', '也许我们下次可以不这么对抗。'],
+    lose: ['我输了。希望你不是故意伤害我。', '这局我有点难受。', '我会记住这个感觉。'],
+    draw: ['平局也好，至少没有太糟。', '我可以接受这个结果。', '还算公平吧。'],
+  },
+
+  aggressive: {
+    greet: ['别绕弯子，直接来。', '让我看看你有没有底气。', '你最好准备好被压到墙角。'],
+    coopHighTrust: ['合作？你是在示弱，还是有后手？', '你这么好说话，我反而想继续压一压。', '别以为合作就能让我让步。'],
+    coopLowTrust: ['现在才想合作？晚了点。', '我不吃这一套。', '你前面的动作已经暴露你了。'],
+    defect: ['这才像个对手。', '终于有点意思了。', '你敢反击，我就更要看看你能扛多久。'],
+    underPressure: ['你在反压我？很好。', '有胆量，但别虚张声势。', '你要是没底牌，就别装强硬。'],
+    afterPlayerWin: ['上次你赢了，这次我不会给你同样机会。', '我记得你那套打法。', '这次我会先下重手。'],
+    afterPlayerLose: ['上次你扛不住，这次也一样。', '你之前已经证明你会退。', '我知道你的压力点在哪里。'],
+    win: ['不堪一击。', '我说过，强者拿结果。', '下一个。'],
+    lose: ['你赢了，但别以为我服了。', '这次算你打穿了我的防线。', '我记住你了。'],
+    draw: ['平局不算结束。', '你撑住了，但还没赢。', '下一局我会更狠。'],
+  },
+
+  cooperative: {
+    greet: ['我希望我们能找到一个双方都能接受的方案。', '先别急着对抗，看看有没有共同利益。', '合作不是软弱，是更聪明的选择。'],
+    coopHighTrust: ['这正是我希望看到的。', '我们之间的信任在增加。', '这样谈下去，双方都有机会赢。'],
+    coopLowTrust: ['我愿意再给合作一次机会。', '虽然我还有顾虑，但这一步是好的。', '我希望你这次是真诚的。'],
+    defect: ['你这样会伤害合作基础。', '我不想报复，但我必须保护自己。', '如果你持续这样，我会改变策略。'],
+    underPressure: ['我们可以坚定，但没必要互相压迫。', '如果只是比谁更强硬，双方都会损失。', '我建议回到共同目标。'],
+    afterPlayerWin: ['上次你赢了，我希望这次我们能双赢。', '我记得你很会争取利益，但也希望你考虑关系。', '你有实力，所以更应该做长期选择。'],
+    afterPlayerLose: ['上次结果对你不利，这次我们可以重新建立合作。', '我不想利用你的弱点。', '我们可以把这局谈得更稳。'],
+    win: ['我赢了，但我更希望我们都赢。', '结果不错，但关系也要保留。', '希望你没有觉得被压迫。'],
+    lose: ['你赢了。如果这是公平结果，我接受。', '这次我让得多了一点，但关系还在。', '希望你记得我的善意。'],
+    draw: ['平局也不错，至少没有破坏关系。', '双方都保留了空间。', '这是一个可以继续谈的结果。'],
+  },
+
+  manipulative: {
+    greet: ['我们不用急，慢慢聊。', '你很聪明，我想看看你会怎么选。', '先放松，真正的关键通常不在表面。'],
+    coopHighTrust: ['你愿意合作，这很好。', '我喜欢信任我的人。', '继续这样，我们会很顺利。'],
+    coopLowTrust: ['你现在释放善意，是策略还是诚意？', '我先记下这一步。', '你的合作来得有点突然。'],
+    defect: ['哦？你也会这样玩。', '看来你不是那么单纯。', '有趣，我得重新评估你。'],
+    underPressure: ['你急了。', '真正有底牌的人通常不会这么用力。', '你越施压，我越想知道你怕什么。'],
+    exposed: ['你看出来了？不错。', '既然你识破了，那我们换一种玩法。', '看来你不是普通人。'],
+    afterPlayerWin: ['上次你赢了，但你暴露了习惯。', '我已经看过你的打法了。', '这次我不会让你那么顺。'],
+    afterPlayerLose: ['上次你输在太早相信我。', '我猜你这次会变谨慎。', '你会不会矫枉过正？我很好奇。'],
+    win: ['结果从一开始就差不多定了。', '你以为你在选择，其实我一直在引导。', '别难过，大多数人都会这样。'],
+    lose: ['你打乱了我的节奏。', '这次你没有掉进来。', '我承认，你比我预期难对付。'],
+    draw: ['平局也许是最安全的假象。', '我们都没有把底牌亮完。', '这局还没真正结束。'],
+  },
+
+  riskAverse: {
+    greet: ['我们稳一点，不要冒太大风险。', '我希望每一步都有退路。', '先确认边界，再谈条件。'],
+    coopHighTrust: ['这样比较安全，我可以接受。', '合作让我感觉风险下降了。', '这一步很稳。'],
+    coopLowTrust: ['我还需要更多确定性。', '现在合作可以，但请不要突然变卦。', '我不喜欢不确定。'],
+    defect: ['这太冒险了。', '你这样会让局面失控。', '我得收缩防线。'],
+    underPressure: ['你逼得太紧了，我可能只能退。', '压力太大，我需要重新评估。', '我不想在这种状态下做决定。'],
+    afterPlayerWin: ['上次你赢了，我会更谨慎。', '你让我意识到风险比我想的大。', '这次我会保守一点。'],
+    afterPlayerLose: ['上次你失败了，可能是因为冒进。', '我建议你这次稳一些。', '不要再把局势推到不可控。'],
+    win: ['安全地赢下来了。', '结果还不错，风险也可控。', '稳健是有价值的。'],
+    lose: ['我担心的事情还是发生了。', '这次风险控制失败。', '我需要更保守。'],
+    draw: ['平局可以接受。', '至少没有失控。', '这个结果比较稳。'],
+  },
+
+  trumpBoss: {
+    greet: ['我只和赢家谈。', '你最好有底牌。', '我会开一个你不喜欢但必须面对的条件。'],
+    coopHighTrust: ['你这么合作？那我当然要再要一点。', '你让步太快了。', '这就是我喜欢的对手，容易成交。'],
+    coopLowTrust: ['你现在合作，是因为你没选择吧？', '我不相信善意，我只相信筹码。', '合作可以，但条件由我定。'],
+    defect: ['你也会反击？很好。', '这才像谈判。', '别停，看看谁先退。'],
+    underPressure: ['你有替代方案？拿出来。', '很多人一开始都说自己有底牌。', '如果你的 BATNA 不够硬，我会继续压。'],
+    afterPlayerWin: ['上次你赢了，这次我会先锚死你。', '我记得你，但我不怕你。', '这次没有轻松局。'],
+    afterPlayerLose: ['你上次已经软过一次。', '我知道你会退。', '你可以假装强硬，但我会测试到底。'],
+    win: ['我说过，我要赢。', '这就是交易。', '你被锚住了。'],
+    lose: ['你赢了这一次。不错。', '你确实有底牌。', '这次我低估了你。'],
+    draw: ['平局在我看来不是赢。', '你撑住了，但还没打穿我。', '我们还会再见。'],
+  },
+};
+
+function pickContextualLine(opp, ctx = {}) {
+  if (!opp) return '';
+  const lib = OPP_LINES_V2[opp.id];
+  if (!lib) return '';
+
+  const mood = ctx.mood || {};
+  const rep = ctx.reputation || {};
+  const action = ctx.action || '';
+  const outcome = ctx.outcome || '';
+
+  let bucket = 'greet';
+  if (outcome) {
+    if (outcome === 'win') bucket = 'lose';
+    else if (outcome === 'lose') bucket = 'win';
+    else bucket = 'draw';
+  } else if (rep.lastOutcome === 'win' && ctx.round === 0) {
+    bucket = 'afterPlayerWin';
+  } else if (rep.lastOutcome === 'lose' && ctx.round === 0) {
+    bucket = 'afterPlayerLose';
+  } else if (ctx.exposed && lib.exposed) {
+    bucket = 'exposed';
+  } else if (action === 'firm' || action === 'batna' || action === 'pressure') {
+    bucket = 'underPressure';
+  } else if (action === 'defect' || action === 'aggressive') {
+    bucket = 'defect';
+  } else if (action === 'coop' || action === 'cooperative') {
+    bucket = (mood.trust || 0) >= 0.55 ? 'coopHighTrust' : 'coopLowTrust';
+  }
+
+  const arr = lib[bucket] || lib.greet || [];
+  if (!arr.length) return '';
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getOpponentOpeningLine(opp) {
+  if (!opp) return '';
+  const rep = loadReputation(opp.id);
+  const mood = Mood.get(opp.id);
+  const memory = Memory.get(opp.id);
+  return pickContextualLine(opp, { round: 0, mood, memory, reputation: rep });
+}
+
+function buildOpponentFinalComment(opp, outcome) {
+  if (!opp) return '';
+  const rep = loadReputation(opp.id);
+  const mood = Mood.get(opp.id);
+  const memory = Memory.get(opp.id);
+  return pickContextualLine(opp, { outcome, mood, memory, reputation: rep });
+}
+
+
+/* ===== data/scenario-variants-v2.js ===== */
+// data/scenario-variants-v2.js — 场景情境变量包
+// 每个变体包含：context（背景文本）/ hint（提示）/ stakes（多维筹码）/ successMetric（胜利指标）
+// hiddenObjectivePool / eventPool / moodBias（开局情绪偏置）
+
+
+const SCENARIO_VARIANTS_V2 = {
+  prisoners: [
+    {
+      id: 'pd_classic', name: '经典囚徒困境',
+      context: '你和${opp}因涉嫌合伙盗窃被分别审讯。警方给出交易条件。',
+      hint: '合作=沉默；背叛=供出对方。重复博弈中，信任修复比单轮收益更重要。',
+      stakes: { money: 0.2, relationship: 0.5, reputation: 0.4, timePressure: 0.7, publicPressure: 0.1 },
+      successMetric: ['总分', '合作率', '末轮互信'],
+      hiddenObjectivePool: ['restoreTrust', 'avoidMutualDefect'],
+      eventPool: ['silencePressure', 'newEvidence', 'deadlineThreat'],
+      moodBias: { trust: -0.05, anger: 0.05 },
+    },
+    {
+      id: 'pd_market', name: '市场份额博弈',
+      context: '你和${opp}是市场上仅有的两家供应商。双方可以维持高价，也可以降价抢市场。',
+      hint: '合作=维持价格；背叛=降价抢市场。短期抢量可能引发长期价格战。',
+      stakes: { money: 0.9, relationship: 0.3, reputation: 0.6, timePressure: 0.4, publicPressure: 0.5 },
+      successMetric: ['利润', '市场稳定', '长期信誉'],
+      hiddenObjectivePool: ['avoidPriceWar', 'avoidMutualDefect'],
+      eventPool: ['marketRumor', 'publicPressure', 'newEvidence'],
+      moodBias: { confidence: 0.05 },
+    },
+    {
+      id: 'pd_alliance', name: '战略联盟评估',
+      context: '你的公司和${opp}考虑组建研发联盟。双方都需要投入核心专利。',
+      hint: '合作=投入专利；背叛=保留核心技术。真正风险是被对方白嫖。',
+      stakes: { money: 0.7, relationship: 0.8, reputation: 0.6, timePressure: 0.3, publicPressure: 0.2 },
+      successMetric: ['技术突破', '知识保护', '伙伴关系'],
+      hiddenObjectivePool: ['restoreTrust', 'avoidMutualDefect'],
+      eventPool: ['silencePressure', 'newEvidence', 'coffeeBreak'],
+      moodBias: { trust: 0.05 },
+    },
+  ],
+
+  ultimatum: [
+    {
+      id: 'ult_bonus', name: '项目奖金分配',
+      context: '你和${opp}共同完成一个项目，公司给出100万元项目奖金，需要由一方提出分配方案。',
+      hint: '提议过贪可能被拒绝，过度让利会损失自身收益。',
+      stakes: { money: 0.8, relationship: 0.6, reputation: 0.6, timePressure: 0.4, publicPressure: 0.2 },
+      successMetric: ['收益', '公平感', '后续合作'],
+      hiddenObjectivePool: ['fairButFirm', 'avoidEscalation'],
+      eventPool: ['coffeeBreak', 'deadlineThreat', 'publicPressure'],
+      moodBias: { trust: 0.05 },
+    },
+    {
+      id: 'ult_divorce', name: '高压财产分割',
+      context: '你和${opp}正在进行财产分割谈判。拒绝协议会导致漫长诉讼。',
+      hint: '拒绝不是零成本。公平、情绪、时间成本会同时影响选择。',
+      unlockDifficulty: 'hard',
+      stakes: { money: 0.9, relationship: 0.2, reputation: 0.4, timePressure: 0.8, publicPressure: 0.3 },
+      successMetric: ['净收益', '诉讼风险', '情绪控制'],
+      hiddenObjectivePool: ['avoidEscalation', 'fairButFirm'],
+      eventPool: ['deadlineThreat', 'publicPressure', 'newEvidence'],
+      moodBias: { anger: 0.15, patience: -0.1 },
+    },
+  ],
+
+  trust: [
+    {
+      id: 'trust_invest', name: '创业投资',
+      context: '你是投资人，${opp}是创业者。你决定投入金额，他决定回报比例。',
+      hint: '投入越多，回报潜力越大；但对方也可能利用你的信任。',
+      stakes: { money: 0.8, relationship: 0.7, reputation: 0.5, timePressure: 0.3, publicPressure: 0.2 },
+      successMetric: ['投资回报', '信任校准', '风险控制'],
+      hiddenObjectivePool: ['restoreTrust', 'askForEvidence'],
+      eventPool: ['newEvidence', 'coffeeBreak', 'silencePressure'],
+      moodBias: { trust: 0.05 },
+    },
+    {
+      id: 'trust_loan', name: '私人借贷',
+      context: '${opp}向你提出私人借款请求。你决定借多少，对方决定最终偿还多少。',
+      hint: '金钱与关系绑定。借太少伤关系，借太多风险失控。',
+      stakes: { money: 0.6, relationship: 0.9, reputation: 0.4, timePressure: 0.5, publicPressure: 0.1 },
+      successMetric: ['资金安全', '关系维护', '边界表达'],
+      hiddenObjectivePool: ['restoreTrust', 'avoidFastConcession'],
+      eventPool: ['coffeeBreak', 'newEvidence', 'silencePressure'],
+      moodBias: { anger: -0.03, trust: 0.08 },
+    },
+  ],
+
+  bargaining: [
+    {
+      id: 'bar_car', name: '二手车交易',
+      context: '你想买${opp}的车。他开价${start}，你的心理价位接近${trueVal}。',
+      hint: '价格只是表层，车况、付款方式、交付时间都可以成为筹码。',
+      stakes: { money: 0.9, relationship: 0.2, reputation: 0.2, timePressure: 0.5, publicPressure: 0.1 },
+      successMetric: ['成交价', '让步纪律', '信息收集'],
+      hiddenObjectivePool: ['avoidFastConcession', 'askForEvidence'],
+      eventPool: ['newEvidence', 'deadlineThreat', 'silencePressure'],
+      moodBias: { confidence: 0.05 },
+    },
+    {
+      id: 'bar_salary', name: '薪资谈判',
+      context: '你拿到了${opp}公司的 offer。对方给出${start}k月薪，你期望接近${trueVal}k。',
+      hint: '薪资、奖金、期权、入职时间、职级都可以打包交换。',
+      unlockDifficulty: 'hard',
+      stakes: { money: 0.8, relationship: 0.7, reputation: 0.7, timePressure: 0.6, publicPressure: 0.1 },
+      successMetric: ['总包', '关系', '入职条件'],
+      hiddenObjectivePool: ['packageDeal', 'avoidFastConcession'],
+      eventPool: ['deadlineThreat', 'coffeeBreak', 'newEvidence'],
+      moodBias: { patience: 0.05 },
+    },
+  ],
+
+  crisis: [
+    {
+      id: 'crisis_hostage', name: '人质劫持事件',
+      context: '${opp}劫持了一座大楼，声称持有危险物。你是现场谈判代表。',
+      hint: '目标不是赢辩论，而是降温、稳住、换取安全动作。',
+      stakes: { money: 0.1, relationship: 0.4, reputation: 0.9, timePressure: 0.9, publicPressure: 0.8 },
+      successMetric: ['情绪降温', '安全承诺', '避免升级'],
+      hiddenObjectivePool: ['avoidEscalation', 'restoreTrust'],
+      eventPool: ['publicPressure', 'deadlineThreat', 'newEvidence'],
+      moodBias: { anger: 0.2, patience: -0.15 },
+    },
+    {
+      id: 'crisis_social', name: '社交媒体危机',
+      context: '${opp}在公开平台持续抨击你的组织，舆论热度正在上升。',
+      hint: '公开场域下，每一句话都可能被截图传播。',
+      unlockDifficulty: 'hard',
+      stakes: { money: 0.5, relationship: 0.5, reputation: 1.0, timePressure: 0.8, publicPressure: 1.0 },
+      successMetric: ['舆论降温', '事实澄清', '关系修复'],
+      hiddenObjectivePool: ['avoidEscalation', 'askForEvidence'],
+      eventPool: ['publicPressure', 'newEvidence', 'deadlineThreat'],
+      moodBias: { anger: 0.1, confidence: 0.1 },
+    },
+  ],
+
+  publicgoods: [
+    {
+      id: 'pg_community', name: '社区基金',
+      context: '你和${opp}都是社区居民。每人决定向公共基金投入多少。',
+      hint: '公共收益会被共享，但每个人都有搭便车冲动。',
+      stakes: { money: 0.4, relationship: 0.8, reputation: 0.8, timePressure: 0.2, publicPressure: 0.6 },
+      successMetric: ['集体收益', '个人收益', '声誉'],
+      hiddenObjectivePool: ['restoreTrust', 'fairButFirm'],
+      eventPool: ['publicPressure', 'coffeeBreak', 'newEvidence'],
+      moodBias: { trust: 0.08 },
+    },
+  ],
+
+  coalition: [
+    {
+      id: 'coalition_board', name: '董事会联盟',
+      context: '你需要在董事会中协调多方，与${opp}争夺关键支持票。',
+      hint: '多方博弈中，单点胜利不等于联盟稳定。',
+      stakes: { money: 0.7, relationship: 0.8, reputation: 0.8, timePressure: 0.6, publicPressure: 0.5 },
+      successMetric: ['支持票', '联盟稳定', '未来合作'],
+      hiddenObjectivePool: ['packageDeal', 'restoreTrust'],
+      eventPool: ['publicPressure', 'newEvidence', 'coffeeBreak'],
+      moodBias: { confidence: 0.05 },
+    },
+  ],
+};
+
+const DIFF_ORDER_V2 = ['easy', 'medium', 'hard', 'extreme', 'hell'];
+
+function canUseVariant(v, difficulty) {
+  if (!v.unlockDifficulty) return true;
+  return DIFF_ORDER_V2.indexOf(difficulty || 'medium') >= DIFF_ORDER_V2.indexOf(v.unlockDifficulty);
+}
+
+function pickScenarioVariantV2(scenarioKey, difficulty) {
+  const pool = SCENARIO_VARIANTS_V2[scenarioKey] || [];
+  const available = pool.filter((v) => canUseVariant(v, difficulty));
+  if (!available.length) return null;
+
+  const player = Store.get('player');
+  const lastMap = player && player._lastVariants ? player._lastVariants : {};
+  const lastId = lastMap[scenarioKey];
+
+  const filtered = available.filter((v) => v.id !== lastId);
+  const list = filtered.length ? filtered : available;
+  const chosen = list[Math.floor(Math.random() * list.length)];
+
+  if (player) {
+    player._lastVariants = player._lastVariants || {};
+    player._lastVariants[scenarioKey] = chosen.id;
+    savePlayer(player);
+    Store.set('player', player);
+  }
+
+  Store.set('activeVariant', chosen);
+  if (EVENTS.EXPERIENCE_VARIANT_PICKED) {
+    EventBus.emit(EVENTS.EXPERIENCE_VARIANT_PICKED, { scenarioKey, variant: chosen });
+  }
+  return chosen;
+}
+
+function previewVariantName(scenarioKey, difficulty) {
+  const pool = SCENARIO_VARIANTS_V2[scenarioKey] || [];
+  const available = pool.filter((v) => canUseVariant(v, difficulty));
+  if (!available.length) return '';
+  const v = available[Math.floor(Math.random() * available.length)];
+  return v.name;
+}
+
+function renderVariantText(template, opp, params = {}) {
+  if (!template) return '';
+  return template
+    .replace(/\$\{opp\}/g, opp ? opp.name : '对手')
+    .replace(/\$\{start\}/g, String(params.start || 80))
+    .replace(/\$\{trueVal\}/g, String(params.trueVal || 55))
+    .replace(/\$\{total\}/g, String(params.total || 100));
+}
+
+function applyVariantMoodBias(oppId, variant) {
+  if (!oppId || !variant || !variant.moodBias) return;
+  const m = Mood.get(oppId);
+  Object.entries(variant.moodBias).forEach(([key, delta]) => {
+    if (typeof m[key] === 'number') m[key] = clamp(m[key] + delta, 0, 1);
+  });
+}
+
+
+/* ===== engine/situation-events-v2.js ===== */
+// engine/situation-events-v2.js — 局势卡（中局事件）
+// 不直接加减分；通过改变 Mood / Memory 让玩家感受到行为后果。
+
+
+const SITUATION_CARDS = {
+  silencePressure: {
+    id: 'silencePressure', title: '沉默施压',
+    text: '对手突然停止说话，直视你，试图让你先打破沉默。',
+    choices: [
+      { id: 'mirrorSilence', text: '同样保持沉默', desc: '用沉默回应沉默，测试谁先承压。',
+        mood: { patience: -0.08, confidence: -0.04 }, memory: { firm: true }, tags: ['策略性沉默', '底线控制'] },
+      { id: 'explainMore', text: '主动解释你的立场', desc: '缓和气氛，但可能暴露更多底牌。',
+        mood: { trust: 0.04, confidence: 0.04 }, memory: { aggression: 0.2 }, tags: ['关系维护', '信息暴露'] },
+      { id: 'askQuestion', text: '反问对方真正顾虑', desc: '把压力转化为信息收集。',
+        mood: { trust: 0.03, patience: -0.03 }, memory: { exposes: true }, tags: ['信息收集', '校准问题'] },
+    ],
+  },
+
+  newEvidence: {
+    id: 'newEvidence', title: '新证据出现',
+    text: '你突然获得一个新信息：对方底线可能比表面更弱。',
+    choices: [
+      { id: 'hardPush', text: '立即强势施压', desc: '可能快速拿到让步，也可能激怒对手。',
+        mood: { anger: 0.12, confidence: -0.06 }, memory: { aggression: 0.8, firm: true }, tags: ['强硬', '高风险'] },
+      { id: 'quietHold', text: '不动声色，继续原计划', desc: '保留信息优势，降低暴露风险。',
+        mood: { confidence: -0.03 }, memory: { exposes: true }, tags: ['信息优势', '策略深度'] },
+      { id: 'testBoundary', text: '小幅试探对方反应', desc: '用低成本动作验证信息真假。',
+        mood: { patience: -0.03 }, memory: { firm: true, aggression: 0.45 }, tags: ['试探', '风险控制'] },
+    ],
+  },
+
+  coffeeBreak: {
+    id: 'coffeeBreak', title: '休息提议',
+    text: '对手提议休息几分钟，喝杯咖啡再继续。',
+    choices: [
+      { id: 'acceptBreak', text: '接受休息，顺势建立关系', desc: '有利于修复信任，但节奏会变慢。',
+        mood: { trust: 0.1, anger: -0.06, patience: 0.08 }, memory: { coop: true }, tags: ['关系维护', '情绪调节'] },
+      { id: 'rejectBreak', text: '拒绝休息，要求继续推进', desc: '保持压力，但对方可能更反感。',
+        mood: { anger: 0.08, patience: -0.1 }, memory: { aggression: 0.7, firm: true }, tags: ['主张强度', '时间压力'] },
+      { id: 'conditionalBreak', text: '同意休息，但先确认下一步议程', desc: '兼顾关系与控制权。',
+        mood: { trust: 0.05, patience: 0.03 }, memory: { firm: true }, tags: ['条件让步', '议程控制'] },
+    ],
+  },
+
+  publicPressure: {
+    id: 'publicPressure', title: '外部压力上升',
+    text: '外部人员开始关注这场谈判，双方的公开姿态变得更重要。',
+    choices: [
+      { id: 'publicCalm', text: '公开释放冷静表态', desc: '降低外部压力，但短期进攻性下降。',
+        mood: { anger: -0.06, confidence: 0.02 }, memory: { coop: true }, tags: ['公开降温', '声誉管理'] },
+      { id: 'publicAttack', text: '借舆论压力反压对方', desc: '可能短期有效，但会增加关系破裂风险。',
+        mood: { anger: 0.15, patience: -0.1 }, memory: { aggression: 0.9 }, tags: ['公开施压', '高风险'] },
+      { id: 'movePrivate', text: '提议转入私下沟通', desc: '减少表演性对抗，回到实质条款。',
+        mood: { trust: 0.05, anger: -0.04 }, memory: { exposes: true }, tags: ['框架重构', '关系维护'] },
+    ],
+  },
+
+  deadlineThreat: {
+    id: 'deadlineThreat', title: '最后期限',
+    text: '对手突然提出最后期限：现在不接受，就没有机会了。',
+    choices: [
+      { id: 'callBluff', text: '要求对方说明期限依据', desc: '测试最后期限真假。',
+        mood: { confidence: -0.08, patience: -0.03 }, memory: { firm: true, exposes: true }, tags: ['反时间压力', '信息收集'] },
+      { id: 'rushAccept', text: '为了避免失去机会，快速推进', desc: '降低破局风险，但可能让步过快。',
+        mood: { confidence: 0.08 }, memory: { coop: true, concession: 1 }, tags: ['快速让步', '风险规避'] },
+      { id: 'stateBATNA', text: '说明你有替代方案，不接受虚假期限', desc: '用 BATNA 抵消时间压力。',
+        mood: { confidence: -0.12, anger: 0.04 }, memory: { firm: true }, tags: ['BATNA', '底线控制'] },
+    ],
+  },
+
+  marketRumor: {
+    id: 'marketRumor', title: '市场传言',
+    text: '业内传出对方资金链紧张的消息，但来源未经核实。',
+    choices: [
+      { id: 'leverageRumor', text: '借势压价', desc: '利用信息差扩大筹码，但风险是传言为假。',
+        mood: { confidence: -0.1, anger: 0.05 }, memory: { aggression: 0.6, firm: true }, tags: ['信息利用', '高风险'] },
+      { id: 'verifyFirst', text: '先低调核实', desc: '不轻信传言，避免暴露立场。',
+        mood: { confidence: -0.02 }, memory: { exposes: true }, tags: ['信息验证', '风险控制'] },
+      { id: 'ignoreRumor', text: '不理会传言，专注事实', desc: '保持谈判节奏，减少噪音。',
+        mood: { trust: 0.03 }, memory: { coop: true }, tags: ['客观标准'] },
+    ],
+  },
+};
+
+// 根据场景 + 变体 + 难度生成本局事件序列
+function generateSituationEvents(scenarioKey, variant, difficulty) {
+  const countMap = { easy: 0, medium: 1, hard: 1, extreme: 2, hell: 2 };
+  const count = countMap[difficulty] || 0;
+  if (!count) return [];
+
+  const ids = new Set();
+  if (variant && Array.isArray(variant.eventPool)) {
+    variant.eventPool.forEach((id) => ids.add(id));
+  }
+  ['silencePressure', 'coffeeBreak', 'newEvidence', 'deadlineThreat', 'publicPressure'].forEach((id) => ids.add(id));
+
+  const pool = [...ids].map((id) => SITUATION_CARDS[id]).filter(Boolean);
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+
+  return shuffled.slice(0, count).map((card, idx) => ({
+    ...card,
+    triggerAt: 0.30 + idx * 0.25,
+    triggered: false,
+    resolved: false,
+  }));
+}
+
+// 应用局势卡选项的状态变化
+function applySituationChoice(scenario, choice) {
+  const oppId = scenario.opp.id;
+  const mood = Mood.get(oppId);
+
+  if (choice.mood) {
+    Object.entries(choice.mood).forEach(([key, delta]) => {
+      if (typeof mood[key] === 'number') mood[key] = clamp(mood[key] + delta, 0, 1);
+    });
+  }
+  if (choice.memory) {
+    OpponentAI.observe(oppId, choice.memory);
+  }
+
+  scenario._experienceNotes = scenario._experienceNotes || [];
+  scenario._experienceNotes.push({ type: 'situation', title: choice.text, tags: choice.tags || [] });
+}
+
+
+/* ===== engine/counter-questions-v2.js ===== */
+// engine/counter-questions-v2.js — 对手反问机制
+// 每局有概率触发；触发时显示问题与 3 个回答选项，回答改变对手 Mood/Memory。
+
+
+const COUNTER_QUESTIONS = {
+  evidence: {
+    id: 'evidence', text: '你这个判断的依据是什么？',
+    triggerTags: ['强硬', '高风险', '锚定效应'],
+    choices: [
+      { id: 'giveData', text: '给出数据和客观标准', desc: '用事实支撑立场。',
+        mood: { confidence: -0.08, trust: 0.04 }, memory: { firm: true, exposes: true }, tags: ['客观标准', '信息支撑'] },
+      { id: 'doubleDown', text: '继续强硬，不解释', desc: '保持压迫，但可能激怒对手。',
+        mood: { anger: 0.1, patience: -0.08 }, memory: { aggression: 0.9 }, tags: ['强硬', '高风险'] },
+      { id: 'soften', text: '缓和说法，重新表述', desc: '降低冲突，但可能削弱锚定。',
+        mood: { trust: 0.06, anger: -0.05 }, memory: { coop: true }, tags: ['情绪调节', '关系维护'] },
+    ],
+  },
+
+  batnaTest: {
+    id: 'batnaTest', text: '如果我不同意，你真正的替代方案是什么？',
+    triggerTags: ['BATNA', '底线控制', '反压'],
+    choices: [
+      { id: 'clearBATNA', text: '清晰说明替代方案，但不泄露全部底牌', desc: '建立可信底线。',
+        mood: { confidence: -0.12 }, memory: { firm: true }, tags: ['BATNA', '底线控制'] },
+      { id: 'vagueBATNA', text: '模糊暗示你还有选择', desc: '保留空间，但可信度较弱。',
+        mood: { confidence: -0.04 }, memory: { firm: true }, tags: ['模糊反压'] },
+      { id: 'avoidAnswer', text: '回避问题，转移话题', desc: '可能被对手判断为底气不足。',
+        mood: { confidence: 0.08 }, memory: {}, tags: ['回避', '底线暴露'] },
+    ],
+  },
+
+  trustChallenge: {
+    id: 'trustChallenge', text: '你现在说合作，我凭什么相信你？',
+    triggerTags: ['合作', '关系维护'],
+    choices: [
+      { id: 'specificCommitment', text: '提出具体可验证承诺', desc: '用行动替代口头善意。',
+        mood: { trust: 0.12, anger: -0.04 }, memory: { coop: true }, tags: ['承诺机制', '信任修复'] },
+      { id: 'empathy', text: '先承认对方的不信任是合理的', desc: '降低防御。',
+        mood: { trust: 0.08, anger: -0.08 }, memory: { coop: true }, tags: ['战术性同理心', '情绪调节'] },
+      { id: 'pressureBack', text: '反问对方是否也愿意承担承诺', desc: '把信任问题变成双向义务。',
+        mood: { confidence: -0.05, patience: -0.03 }, memory: { firm: true }, tags: ['条件让步', '互惠'] },
+    ],
+  },
+};
+
+const PROB_BY_DIFF = { easy: 0.05, medium: 0.18, hard: 0.28, extreme: 0.38, hell: 0.48 };
+
+function shouldTriggerCounterQuestion(scenario, lastTags = []) {
+  if (scenario._questionTriggered || scenario._pendingQuestion) return null;
+
+  const difficulty = Store.get('difficulty') || 'medium';
+  const probBase = PROB_BY_DIFF[difficulty] || 0.18;
+  const bossBonus = scenario.opp && scenario.opp.boss ? 0.18 : 0;
+  const p = probBase + bossBonus;
+
+  if (Math.random() > p) return null;
+
+  const candidates = Object.values(COUNTER_QUESTIONS).filter((q) =>
+    q.triggerTags.some((t) => lastTags.includes(t)));
+  if (!candidates.length) return null;
+
+  const q = candidates[Math.floor(Math.random() * candidates.length)];
+  scenario._pendingQuestion = q;
+  scenario._questionTriggered = true;
+  if (EVENTS.OPPONENT_QUESTION_TRIGGERED) {
+    EventBus.emit(EVENTS.OPPONENT_QUESTION_TRIGGERED, { scenarioKey: scenario.scenarioKey, question: q });
+  }
+  return q;
+}
+
+// 工具：根据玩家动作粗略推断行为标签
+function inferTagsFromAction(type, value) {
+  const tags = [];
+  if (value === 'defect') tags.push('强硬', '高风险');
+  if (value === 'coop') tags.push('合作', '关系维护');
+  if (type === 'invest' && Number(value) >= 7) tags.push('合作', '高风险');
+  if (type === 'invest' && Number(value) <= 2) tags.push('强硬', '反压');
+  if (type === 'offer' && Number(value) < 50) tags.push('强硬', '锚定效应');
+  if (type === 'propose' && Number(value) >= 65) tags.push('强硬', '锚定效应');
+  if (type === 'resist-cram') tags.push('BATNA', '底线控制', '反压');
+  if (type === 'accept-cram') tags.push('合作', '关系维护');
+  return tags;
+}
+
+
+/* ===== engine/hidden-objectives-v2.js ===== */
+// engine/hidden-objectives-v2.js — 隐藏目标
+// 每局除可见分数外，另设一个隐藏质量目标；不强求一定完成。
+
+
+const HIDDEN_OBJECTIVES = {
+  restoreTrust: {
+    id: 'restoreTrust', title: '修复信任',
+    desc: '本局结束时，对手信任值不低于 55%。',
+    check: ({ opp }) => (Mood.get(opp.id).trust || 0) >= 0.55,
+    rewardHint: '信任修复成功',
+  },
+  avoidMutualDefect: {
+    id: 'avoidMutualDefect', title: '避免双输',
+    desc: '避免连续两轮出现双方都选择背叛或冲突升级。',
+    check: ({ rounds }) => {
+      let streak = 0;
+      for (const r of rounds || []) {
+        const bad = r.player === 'defect' && r.opp === 'defect';
+        streak = bad ? streak + 1 : 0;
+        if (streak >= 2) return false;
+      }
+      return true;
+    },
+    rewardHint: '避免双输螺旋',
+  },
+  avoidPriceWar: {
+    id: 'avoidPriceWar', title: '避免价格战',
+    desc: '不要用连续强硬背叛换取短期收益。',
+    check: ({ rounds }) => {
+      const hard = (rounds || []).filter((r) =>
+        r.player === 'defect' || (r.tags && r.tags.includes('强硬'))).length;
+      return hard <= 2;
+    },
+    rewardHint: '保持长期市场稳定',
+  },
+  fairButFirm: {
+    id: 'fairButFirm', title: '公平但不软弱',
+    desc: '至少一次作出公平选择，同时最终不输。',
+    check: ({ rounds, result }) => {
+      const fair = (rounds || []).some((r) =>
+        (r.myOffer >= 40 && r.myOffer <= 60) || (r.tags || []).includes('公平'));
+      return fair && result.outcome !== 'lose';
+    },
+    rewardHint: '公平与底线兼顾',
+  },
+  avoidFastConcession: {
+    id: 'avoidFastConcession', title: '控制让步节奏',
+    desc: '避免出现一次性过大让步。',
+    check: ({ rounds }) => !(rounds || []).some((r) => r.concession && r.concession >= 12),
+    rewardHint: '让步纪律良好',
+  },
+  askForEvidence: {
+    id: 'askForEvidence', title: '先问证据',
+    desc: '至少一次通过信息收集、客观标准或反问处理对方主张。',
+    check: ({ scenario }) => {
+      const notes = (scenario && scenario._experienceNotes) || [];
+      return notes.some((n) => (n.tags || []).some((t) =>
+        ['信息收集', '客观标准', '校准问题', '反时间压力', '信息支撑'].includes(t)));
+    },
+    rewardHint: '没有被表面主张牵着走',
+  },
+  avoidEscalation: {
+    id: 'avoidEscalation', title: '避免升级',
+    desc: '本局结束时，对手愤怒值低于 65%。',
+    check: ({ opp }) => (Mood.get(opp.id).anger || 0) < 0.65,
+    rewardHint: '冲突未升级',
+  },
+  packageDeal: {
+    id: 'packageDeal', title: '打包交换',
+    desc: '至少一次使用条件让步、筹码交换或议程控制。',
+    check: ({ scenario }) => {
+      const notes = (scenario && scenario._experienceNotes) || [];
+      return notes.some((n) => (n.tags || []).some((t) =>
+        ['条件让步', '筹码交换', '议程控制', '互惠'].includes(t)));
+    },
+    rewardHint: '形成多议题交换',
+  },
+};
+
+function pickHiddenObjective(scenarioKey, variant) {
+  const poolIds = variant && variant.hiddenObjectivePool
+    ? variant.hiddenObjectivePool : ['restoreTrust', 'avoidMutualDefect'];
+  const pool = poolIds.map((id) => HIDDEN_OBJECTIVES[id]).filter(Boolean);
+  if (!pool.length) return null;
+  const obj = pool[Math.floor(Math.random() * pool.length)];
+  Store.set('hiddenObjective', obj);
+  if (EVENTS.HIDDEN_OBJECTIVE_PICKED) {
+    EventBus.emit(EVENTS.HIDDEN_OBJECTIVE_PICKED, { scenarioKey, objective: obj });
+  }
+  return obj;
+}
+
+function resolveHiddenObjective(scenario, result) {
+  const obj = scenario && scenario.hiddenObjective;
+  if (!obj || typeof obj.check !== 'function') return null;
+
+  let passed = false;
+  try {
+    passed = !!obj.check({
+      scenario,
+      rounds: result.rounds || scenario.log || [],
+      result,
+      opp: scenario.opp,
+    });
+  } catch (e) { passed = false; }
+
+  if (EVENTS.HIDDEN_OBJECTIVE_RESOLVED) {
+    EventBus.emit(EVENTS.HIDDEN_OBJECTIVE_RESOLVED, { objective: obj, passed });
+  }
+
+  return { id: obj.id, title: obj.title, desc: obj.desc, passed, rewardHint: obj.rewardHint };
+}
+
+function renderHiddenObjectiveHint(obj) {
+  if (!obj) return '';
+  const diff = Store.get('difficulty');
+  if (diff === 'easy') {
+    return `<div class="hint hint-purple"><b>隐藏目标：</b>${obj.title}<br><span style="color:var(--dim);font-size:11px">${obj.desc}</span></div>`;
+  }
+  if (diff === 'medium' || diff === 'hard') {
+    return `<div class="hint hint-purple"><b>隐藏目标线索：</b>${obj.title}　<span style="color:var(--dim);font-size:10px">具体判定在复盘揭示</span></div>`;
+  }
+  return `<div class="hint hint-purple"><b>隐藏目标：</b>已启用　<span style="color:var(--dim);font-size:10px">终局复盘揭示</span></div>`;
+}
+
+
+/* ===== analytics/opponent-insight-v2.js ===== */
+// analytics/opponent-insight-v2.js — 结果页"对手真实想法"
+// 基于 Mood / Memory / Reputation / 本局 rounds 推理对手的认知。
+
+
+function buildOpponentInnerThought(opp, result) {
+  if (!opp) return '';
+
+  const mood = Mood.get(opp.id);
+  const mem = Memory.get(opp.id);
+  const rep = loadReputation(opp.id);
+  const rounds = (result && result.rounds) || [];
+  const outcome = result && result.outcome;
+
+  const thoughts = [];
+
+  if ((mood.trust || 0) < 0.35) {
+    thoughts.push('你让我很难建立信任，所以我更倾向于防御或压迫。');
+  } else if ((mood.trust || 0) > 0.65) {
+    thoughts.push('你确实让我放松了警惕，我对你的合作意愿做了正向修正。');
+  }
+
+  if ((mood.anger || 0) > 0.6) {
+    thoughts.push('你的某些动作激起了我的抵触，我不太愿意顺着你的节奏走。');
+  }
+
+  if ((mem.firmCount || 0) >= 2) {
+    thoughts.push('你几次明确守住底线后，我开始重新评估你的承压能力。');
+  }
+
+  if ((mem.exposureScore || 0) >= 2) {
+    thoughts.push('你识破了我的部分话术，我对你的判断变得保守。');
+  }
+
+  if ((rep.games || 0) >= 2) {
+    if (rep.lastOutcome === 'win') {
+      thoughts.push('你上次赢过我，所以我这局开局更警惕。');
+    } else if (rep.lastOutcome === 'lose') {
+      thoughts.push('你上次输过，我会试探你是否还会重复同样的弱点。');
+    }
+  }
+
+  const hasFastConcession = rounds.some((r) => r.concession && r.concession >= 12);
+  if (hasFastConcession) {
+    thoughts.push('你有一次让步太快，我判断你的底线可能还可以继续压。');
+  }
+
+  if (outcome === 'win') {
+    thoughts.push('这局你打穿了我的部分预期，我需要在下次调整策略。');
+  } else if (outcome === 'lose') {
+    thoughts.push('这局我抓住了你的行为模式，并持续放大你的弱点。');
+  } else if (outcome === 'coop') {
+    thoughts.push('我们走到了双方都能接受的方案，但这不代表下次还能这样。');
+  } else {
+    thoughts.push('我们都没有完全暴露底牌，结果保持在可控区间。');
+  }
+
+  return thoughts.slice(0, 4).join('<br>');
+}
+
+
 /* ===== ui/router.js ===== */
 // ui/router.js — 屏幕路由
 // 维护 screenId -> 渲染函数 的注册表；监听 nav:goto 事件切换屏幕。
@@ -2142,9 +2952,10 @@ const Router = {
 
 
 /* ===== scenarios/base-scenario.js ===== */
-// scenarios/base-scenario.js — 场景抽象基类，定义统一生命周期与事件契约
+// scenarios/base-scenario.js — 场景抽象基类
 // 子类实现 start() 与 handleAction(action)，通过 emitRender/finish 与外界通信。
-// 约束：场景不操作 DOM、不 import ui 屏幕逻辑（仅可用 components 纯字符串构造器）。
+// v2 增强：initExperience 接入场景变体 / 局势卡 / 反问 / 隐藏目标 / 开场白。
+
 
 
 const CRAM_MAP = { easy: 0, medium: 0, hard: 1, extreme: 2, hell: 3 };
@@ -2153,17 +2964,60 @@ class BaseScenario {
   constructor(opp) {
     this.opp = opp;
     this.log = [];
-    this.peeksLeft = 2;   // Phase 4：消耗式"识破对手"次数
+    this.peeksLeft = 2;
     this._peekSnap = null;
     // 蚕食机制（动态锚定 / 中途加码）
     this._cramAttempts = 0;
     this._maxCramAttempts = CRAM_MAP[Store.get('difficulty')] || 0;
     this._cramCooldown = 0;
     this._pendingCram = null;
+    // v2 体验增强
+    this.scenarioKey = null;
+    this.variant = null;
+    this.variantParams = {};
+    this.hiddenObjective = null;
+    this._situationEvents = [];
+    this._pendingSituation = null;
+    this._pendingQuestion = null;
+    this._questionTriggered = false;
+    this._experienceNotes = [];
+    this._openingLine = '';
   }
 
-  // 子类在 _render() 开头调用：决定本回合是否抛出新条件
-  // 仅 Boss / 强硬型 / 操纵型 + hard 及以上难度才会触发
+  // 子类在 start() 中调用：抽取场景变体、生成事件序列、隐藏目标、开场白
+  initExperience(scenarioKey, params = {}) {
+    this.scenarioKey = scenarioKey;
+    this.variant = pickScenarioVariantV2(scenarioKey, Store.get('difficulty'));
+    this.variantParams = params;
+    if (this.variant) applyVariantMoodBias(this.opp.id, this.variant);
+    this.hiddenObjective = pickHiddenObjective(scenarioKey, this.variant);
+    this._situationEvents = generateSituationEvents(scenarioKey, this.variant, Store.get('difficulty'));
+    this._openingLine = getOpponentOpeningLine(this.opp);
+  }
+
+  // 渲染变体上下文（替换占位符）
+  variantContext() {
+    if (!this.variant) return '';
+    return renderVariantText(this.variant.context, this.opp, this.variantParams);
+  }
+  variantHint() { return this.variant ? this.variant.hint : ''; }
+
+  // 顶部开场白 + 场景情境块
+  experienceBanner() {
+    let html = '';
+    if (this._openingLine) {
+      html += C.dialogBubble(this._openingLine, 'ai', `${this.opp.name} 开场`);
+    }
+    if (this.variant) {
+      html += C.hint(`<b>${this.variant.name}：</b>${this.variantContext()}　<span style="color:var(--dim);font-size:11px">${this.variantHint()}</span>`, 'cyan');
+    }
+    if (this.hiddenObjective) {
+      html += renderHiddenObjectiveHint(this.hiddenObjective);
+    }
+    return html;
+  }
+
+  // ─── 蚕食 ────────────────────────────────────────────────────────
   tryCram(opts = {}) {
     if (this._pendingCram) return this._pendingCram;
     if (this._cramAttempts >= this._maxCramAttempts) return null;
@@ -2175,7 +3029,6 @@ class BaseScenario {
     const totalRounds = opts.totalRounds || 5;
     const midGame = round >= 1 && round <= totalRounds - 2;
     if (!midGame) return null;
-    // 概率随尝试次数递增，但每次最多 ~60%
     const triggerChance = Math.min(0.6, (this._cramAttempts + 1) / (this._maxCramAttempts + 2));
     if (!chance(triggerChance)) return null;
     this._cramAttempts += 1;
@@ -2200,15 +3053,126 @@ class BaseScenario {
     return c;
   }
 
+  // ─── 局势卡 ──────────────────────────────────────────────────────
+  checkSituationEvent() {
+    if (this._pendingSituation) return this._pendingSituation;
+    if (!this._situationEvents || !this._situationEvents.length) return null;
+    const total = this.rounds || (this.stages ? this.stages.length : 5);
+    const now = this.round != null ? this.round : (this.stage || 0);
+    const progress = total > 0 ? now / total : 0;
+    const next = this._situationEvents.find((e) => !e.triggered && progress >= e.triggerAt);
+    if (!next) return null;
+    next.triggered = true;
+    this._pendingSituation = next;
+    if (EVENTS.EXPERIENCE_EVENT_TRIGGERED) {
+      EventBus.emit(EVENTS.EXPERIENCE_EVENT_TRIGGERED, { scenarioKey: this.scenarioKey, event: next });
+    }
+    return next;
+  }
+
+  renderSituationEvent() {
+    const ev = this._pendingSituation;
+    if (!ev) return '';
+    return C.panel(`局势卡｜${ev.title}`,
+      C.hint(ev.text, 'yellow') +
+      ev.choices.map((ch, idx) =>
+        C.actionBtn('situation', String(idx),
+          `<b>${ch.text}</b><br><span style="color:var(--dim);font-size:10px">${ch.desc || ''}</span>`)
+      ).join('')
+    );
+  }
+
+  handleSituationChoice(value) {
+    const ev = this._pendingSituation;
+    if (!ev) return false;
+    const choice = ev.choices[parseInt(value, 10)];
+    if (!choice) return false;
+    applySituationChoice(this, choice);
+    ev.resolved = true;
+    this._pendingSituation = null;
+    this.log.push({
+      round: (this.round || this.stage || 0) + 1,
+      systemEvent: true,
+      eventTitle: ev.title,
+      choiceText: choice.text,
+      tags: choice.tags || [],
+    });
+    if (EVENTS.EXPERIENCE_EVENT_RESOLVED) {
+      EventBus.emit(EVENTS.EXPERIENCE_EVENT_RESOLVED, { scenarioKey: this.scenarioKey, event: ev, choice });
+    }
+    this._render();
+    return true;
+  }
+
+  // ─── 对手反问 ────────────────────────────────────────────────────
+  renderCounterQuestion() {
+    const q = this._pendingQuestion;
+    if (!q) return '';
+    return C.panel(`${this.opp.name} 的反问`,
+      C.dialogBubble(q.text, 'ai', `${this.opp.name} 追问`) +
+      q.choices.map((ch, idx) =>
+        C.actionBtn('counter-question', String(idx),
+          `<b>${ch.text}</b><br><span style="color:var(--dim);font-size:10px">${ch.desc || ''}</span>`)
+      ).join('')
+    );
+  }
+
+  handleCounterQuestion(value) {
+    const q = this._pendingQuestion;
+    if (!q) return false;
+    const choice = q.choices[parseInt(value, 10)];
+    if (!choice) return false;
+    applySituationChoice(this, choice);
+    this._pendingQuestion = null;
+    this.log.push({
+      round: (this.round || this.stage || 0) + 1,
+      counterQuestion: true,
+      questionText: q.text,
+      answerText: choice.text,
+      tags: choice.tags || [],
+    });
+    if (EVENTS.OPPONENT_QUESTION_RESOLVED) {
+      EventBus.emit(EVENTS.OPPONENT_QUESTION_RESOLVED, { scenarioKey: this.scenarioKey, question: q, choice });
+    }
+    this._render();
+    return true;
+  }
+
+  // 子类玩家正常动作后调用：可能触发对手反问
+  maybeAskCounterQuestion(type, value) {
+    const tags = inferTagsFromAction(type, value);
+    const q = shouldTriggerCounterQuestion(this, tags);
+    if (q) { this._render(); return true; }
+    return false;
+  }
+
+  // ─── 通用动作拦截 ────────────────────────────────────────────────
+  // 子类 handleAction 在解析自身动作前调用，处理通用 v2 交互
+  interceptCommonAction(type, value) {
+    if (type === 'peek') { this.handlePeek(); return true; }
+    if (type === 'situation') {
+      if (this.handleSituationChoice(value)) return true;
+    }
+    if (type === 'counter-question') {
+      if (this.handleCounterQuestion(value)) return true;
+    }
+    return false;
+  }
+
+  // ─── 渲染：通用顶部块 ────────────────────────────────────────────
   emitRender(html) {
     EventBus.emit(EVENTS.GAME_RENDER, { html });
   }
 
+  // ─── 结束 ────────────────────────────────────────────────────────
   finish(result) {
+    result.variant = this.variant || null;
+    result.experienceNotes = this._experienceNotes || [];
+    result.hiddenObjective = resolveHiddenObjective(this, result);
     EventBus.emit(EVENTS.GAME_END, { result });
   }
 
-  // 破绽提示控件：按钮 + （已识破时）对手情绪/行为快照
+  // ─── peek ────────────────────────────────────────────────────────
   peekControls() {
     const label = this.peeksLeft > 0 ? `🔍 识破对手（剩 ${this.peeksLeft} 次）` : '🔍 识破次数已用完';
     let html = C.actionBtn('peek', '', label, 'btn-purple');
@@ -2235,7 +3199,7 @@ class BaseScenario {
         : { ...realSnap.mood };
       this._peekSnap = {
         mood,
-        realMood: { ...realSnap.mood }, // 真实情绪保留供复盘
+        realMood: { ...realSnap.mood },
         deceptive,
       };
     }
@@ -2268,13 +3232,24 @@ class PrisonersDilemma extends BaseScenario {
     return [1, 1];
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('prisoners'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) {
+        return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      }
+      if (l.counterQuestion) {
+        return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) +
+               C.dialogBubble(l.answerText, 'player', '你的回应');
+      }
       const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
-      const oText = `${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -2285,8 +3260,11 @@ class PrisonersDilemma extends BaseScenario {
         ${C.scoreBox(this.playerScore, '您的分数')}
         ${C.scoreBox(this.oppScore, `${opp.name} 分数`)}
       </div>
-      ${C.hint(`<b>场景：</b>你和 ${opp.name} 同时被捕。双方都沉默（合作）各判3年；你背叛对方沉默则你自由对方5年；双方都背叛各1年。<br><b>对手档案：</b>${opp.type} — ${opp.desc}`)}
-      ${C.panel('选择你的策略',
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择你的策略',
         C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
         C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
         this.peekControls())}
@@ -2295,7 +3273,7 @@ class PrisonersDilemma extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type !== 'choice') return;
     this._peekSnap = null;
     const prev = this.log.length ? this.log[this.log.length - 1].player : null;
@@ -2306,10 +3284,20 @@ class PrisonersDilemma extends BaseScenario {
     const [ps, os] = this._scores(value, oppChoice);
     this.playerScore += ps;
     this.oppScore += os;
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood });
-    // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
+    // 情境化台词
+    const line = pickContextualLine(this.opp, {
+      action: oppChoice, mood, memory: Memory.get(this.opp.id),
+      reputation: loadReputation(this.opp.id), round: this.round,
+      exposed: Memory.get(this.opp.id).exposureScore >= 2,
+    });
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood, line });
+    // 观察玩家本轮行为，更新记忆与情绪
     OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
+    // 可能触发对手反问（中后期更易触发）
+    if (this.round < this.rounds && this.round >= 1) {
+      if (this.maybeAskCounterQuestion('choice', value)) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }
@@ -2353,14 +3341,18 @@ class UltimatumGame extends BaseScenario {
 
   _isProposer() { return this.round % 2 === 0; }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('ultimatum'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
-      const res = l.accepted
-        ? `<span style="color:var(--green)">✓ 接受</span>`
-        : `<span style="color:var(--red)">✗ 拒绝</span>`;
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
+      const res = l.accepted ? `<span style="color:var(--green)">✓ 接受</span>` : `<span style="color:var(--red)">✗ 拒绝</span>`;
       return C.dialogBubble(`提案 我方 ${l.myOffer} / 对方 ${l.theirOffer} → ${res}`, 'system', `第${l.round}轮`);
     }).join('');
 
@@ -2369,11 +3361,18 @@ class UltimatumGame extends BaseScenario {
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
-      </div>`;
+      </div>
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}`;
 
+    if (blockNormal) {
+      this.emitRender(`${head}${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
+      return;
+    }
     if (this._isProposer()) {
       this.emitRender(`${head}
-        ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是提议者</b>，提出分配方案。接受者拒绝则双方均得 0。`)}
         ${C.panel('提出你的分配方案（给自己保留多少？）',
           C.actionBtn('propose', '70', '<b>[激进]</b> 保留 70元，给对方 30元') +
           C.actionBtn('propose', '60', '<b>[偏强]</b> 保留 60元，给对方 40元') +
@@ -2381,9 +3380,7 @@ class UltimatumGame extends BaseScenario {
           C.actionBtn('propose', '40', '<b>[让步]</b> 保留 40元，给对方 60元'))}
         ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     } else if (this.pendingOffer == null) {
-      // 接受者回合：先展示"对手思考中"，稍后生成报价
       this.emitRender(`${head}
-        ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
         ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
         ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
       setTimeout(() => {
@@ -2404,6 +3401,7 @@ class UltimatumGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
+    if (this.interceptCommonAction(type, value)) return;
     if (type === 'propose') {
       const keep = parseInt(value, 10);
       // 观察玩家提案的强硬度（自留越多越强硬/越像在剥削）
@@ -2436,6 +3434,13 @@ class UltimatumGame extends BaseScenario {
       accepted,
     });
     this.round += 1;
+    // 可能触发反问
+    if (this.round < this.rounds && this.round >= 1) {
+      const tags = isMyProposal
+        ? (myKeep >= 65 ? ['强硬', '锚定效应'] : myKeep <= 45 ? ['合作', '关系维护'] : [])
+        : (accepted ? ['合作', '关系维护'] : ['强硬', '反压']);
+      if (this.maybeAskCounterQuestion('propose', tags[0])) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }
@@ -2470,13 +3475,19 @@ class TrustGame extends BaseScenario {
     this.oppScore = 0;
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('trust'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const pText = `投入 ${l.invested} 枚`;
-      const oText = `返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -2487,8 +3498,11 @@ class TrustGame extends BaseScenario {
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
       </div>
-      ${C.hint(`<b>信任博弈：</b>您有 10 枚筹码。选择投入数额，系统 3 倍放大后交给 ${opp.name}，${opp.name} 再决定返还多少。这是一个信任测试！`)}
-      ${C.panel('选择投入金额（总共 10 枚）',
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择投入金额（总共 10 枚）',
         C.actionBtn('invest', '10', '<b>[全力信任]</b> 投入 10枚 → 对方收到 30枚') +
         C.actionBtn('invest', '7', '<b>[高度信任]</b> 投入 7枚 → 对方收到 21枚') +
         C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
@@ -2499,7 +3513,7 @@ class TrustGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type !== 'invest') return;
     this._peekSnap = null;
     const amount = parseInt(value, 10);
@@ -2511,8 +3525,16 @@ class TrustGame extends BaseScenario {
     const myNet = kept + returned - 10;
     this.playerScore += kept + returned;
     this.oppScore += tripled - returned;
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood });
+    const line = pickContextualLine(this.opp, {
+      action: amount >= 5 ? 'coop' : amount <= 2 ? 'firm' : '',
+      mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
+      exposed: Memory.get(this.opp.id).exposureScore >= 2,
+    });
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood, line });
     this.round += 1;
+    if (this.round < this.rounds && this.round >= 1) {
+      if (this.maybeAskCounterQuestion('invest', value)) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }
@@ -2555,36 +3577,47 @@ class BargainingGame extends BaseScenario {
     this.lastReason = '';
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() {
+    OpponentAI.reset(this.opp.id);
+    this.initExperience('bargaining', { start: this.oppOffer, trueVal: this.trueVal });
+    this._render();
+  }
 
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
-    // 蚕食检测：仅在中期，仅 Boss/强硬/操纵型 + hard 及以上难度触发
     this.tryCram({
-      round: this.round,
-      totalRounds: this.rounds,
-      kind: 'bargaining',
+      round: this.round, totalRounds: this.rounds, kind: 'bargaining',
       text: `「如果您接受延后付款，我可以在价格上做小幅调整——但这需要额外 2% 的风险保证金。」`,
     });
+    this.checkSituationEvent();
     const cramHtml = this.cramControls();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingCram || this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const pText = `出价 ${l.my} 元`;
-      const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}要价 ${l.opp} 元（差距 ${l.gap} 元）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`商业谈判 — 第 ${this.round + 1}/${this.rounds} 轮`)}
       ${C.roundTimeline(this.log, this.rounds, this.round)}
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
       ${C.panel('谈判状态',
         C.infoRow('商品真实价值', '<span style="color:var(--dim)">约 60 元（双方均未知）</span>') +
         C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
         C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
         C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
-      ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
+      ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : ''}
       ${cramHtml}
-      ${C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
         C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
@@ -2595,7 +3628,7 @@ class BargainingGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type === 'resist-cram') {
       this.consumeCram();
       // 拒绝蚕食 → 对手感到压力但保持高姿态
@@ -2628,13 +3661,17 @@ class BargainingGame extends BaseScenario {
       kind: 'bargain-counter', currentOppOffer: this.oppOffer, playerOffer: offer, trueVal: this.trueVal,
     });
     this.lastReason = reason;
+    const line = pickContextualLine(this.opp, {
+      action: firm ? 'firm' : (lowness > 0.5 ? 'aggressive' : ''),
+      mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
+    });
 
     if (newOpp <= offer || newOpp <= this.trueVal) {
-      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
+      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood, line });
       this._deal(Math.round((offer + this.oppOffer) / 2));
       return;
     }
-    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood, line });
     this.oppOffer = newOpp;
     this.round += 1;
 
@@ -2642,6 +3679,7 @@ class BargainingGame extends BaseScenario {
       if (this.oppOffer - offer < 15) this._deal(Math.round((offer + this.oppOffer) / 2));
       else this._deal(this.oppOffer);
     } else {
+      if (this.maybeAskCounterQuestion('offer', value)) return;
       this._render();
     }
   }
@@ -2712,24 +3750,26 @@ class CrisisNegotiation extends BaseScenario {
     ];
   }
 
-  start() { this._render(); }
+  start() { this.initExperience('crisis'); this._render(); }
 
   _render() {
     const s = this.stages[this.stage];
     const opp = this.opp;
+    this.tryCram({
+      round: this.stage, totalRounds: this.stages.length, kind: 'crisis',
+      text: `「我还有另一个问题需要一并解决——我的合作伙伴也受到了影响，他们要求单独谈判。」`,
+    });
+    this.checkSituationEvent();
+    const cramHtml = this.cramControls();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingCram || this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', l.round);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const color = l.ps >= 10 ? 'var(--green)' : l.ps >= 0 ? 'var(--yellow)' : 'var(--red)';
       return C.dialogBubble(`${l.feedback} <span style="color:${color}">${l.ps > 0 ? '+' : ''}${l.ps}分</span>`, 'system', l.stage);
     }).join('');
-
-    // 蚕食：Boss / 强硬 / 操纵型对手在中期阶段引入新条件
-    this.tryCram({
-      round: this.stage,
-      totalRounds: this.stages.length,
-      kind: 'crisis',
-      text: `「我还有另一个问题需要一并解决——我的合作伙伴也受到了影响，他们要求单独谈判。」`,
-    });
-    const cramHtml = this.cramControls();
 
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
@@ -2738,15 +3778,19 @@ class CrisisNegotiation extends BaseScenario {
         ${C.scoreBox(this.playerScore, '谈判积分')}
         ${C.scoreBox(Math.max(0, this.oppScore), '危机风险值', 'var(--red)')}
       </div>
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
       ${C.hint(s.context, 'yellow')}
-      ${C.hint(`对手档案：${opp.name} | ${opp.type} | ${opp.desc}`)}
       ${cramHtml}
-      ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
   handleAction({ type, value }) {
+    if (this.interceptCommonAction(type, value)) return;
     if (type === 'resist-cram') {
       this.consumeCram();
       // 拒绝蚕食 → 危机风险上升，但守住积分底线
@@ -2816,13 +3860,19 @@ class PublicGoodsGame extends BaseScenario {
     this.multiplier = 2.2;
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('publicgoods'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const pText = `贡献 ${l.my} 枚`;
-      const oText = `贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -2833,8 +3883,11 @@ class PublicGoodsGame extends BaseScenario {
         ${C.scoreBox(this.playerScore, '您的余额')}
         ${C.scoreBox(this.oppScore, `${opp.name} 余额`)}
       </div>
-      ${C.hint(`每轮各有 10 枚筹码，可贡献到公共池。公共池总额 ×${this.multiplier} 后平分给所有人。<br>理性自私：贡献 0（但若人人如此，公共品崩溃）。`)}
-      ${C.panel('选择贡献数量',
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择贡献数量',
         C.actionBtn('contribute', '10', '<b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益') +
         C.actionBtn('contribute', '7', '<b>[高度合作]</b> 贡献 7枚 — 偏向集体') +
         C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
@@ -2845,7 +3898,7 @@ class PublicGoodsGame extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type !== 'contribute') return;
     this._peekSnap = null;
     const amount = parseInt(value, 10);
@@ -2856,8 +3909,15 @@ class PublicGoodsGame extends BaseScenario {
     const share = Math.round(pool / 2);
     this.playerScore = this.playerScore - amount + share;
     this.oppScore = this.oppScore - oppContrib + share;
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood });
+    const line = pickContextualLine(this.opp, {
+      action: amount >= 5 ? 'coop' : amount <= 1 ? 'firm' : '',
+      mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
+    });
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood, line });
     this.round += 1;
+    if (this.round < this.rounds && this.round >= 1) {
+      if (this.maybeAskCounterQuestion('contribute', value)) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }
@@ -2927,23 +3987,25 @@ class CoalitionGame extends BaseScenario {
     ];
   }
 
-  start() { this._render(); }
+  start() { this.initExperience('coalition'); this._render(); }
 
   _render() {
     const s = this.stages[this.stage];
+    this.tryCram({
+      round: this.stage, totalRounds: this.stages.length, kind: 'coalition',
+      text: `「实际上还有第三方利益相关者，他们的要求也必须被考虑。」`,
+    });
+    this.checkSituationEvent();
+    const cramHtml = this.cramControls();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingCram || this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', l.round);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${this.opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const color = l.ps >= 15 ? 'var(--green)' : l.ps >= 5 ? 'var(--yellow)' : 'var(--red)';
       return C.dialogBubble(`${l.feedback}（<span style="color:${color}">+${l.ps}分</span>）`, 'system', l.stage);
     }).join('');
-
-    // 蚕食：中期阶段引入新利益相关者
-    this.tryCram({
-      round: this.stage,
-      totalRounds: this.stages.length,
-      kind: 'coalition',
-      text: `「实际上还有第三方利益相关者，他们的要求也必须被考虑。」`,
-    });
-    const cramHtml = this.cramControls();
 
     this.emitRender(`
       ${C.gameHeader(`联盟谈判 — ${s.title}`)}
@@ -2953,14 +4015,19 @@ class CoalitionGame extends BaseScenario {
         ${C.scoreBox(this.allies, '当前盟友数', 'var(--green)')}
         ${C.scoreBox(`${this.stage + 1}/4`, '阶段进度', 'var(--yellow)')}
       </div>
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(this.opp)}
       ${C.hint(s.context)}
       ${cramHtml}
-      ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
   handleAction({ type, value }) {
+    if (this.interceptCommonAction(type, value)) return;
     if (type === 'resist-cram') {
       this.consumeCram();
       // 拒绝纳入第三方 → 失去 1 个盟友机会
@@ -3468,6 +4535,33 @@ renderWelcome.afterRender = function () {
 // ui/screens/main-menu.js — 主菜单
 
 
+function getTodaySuggestion(player) {
+  if (!player || !player.sessions || player.sessions.length < 3) {
+    return '建议从「场景实战训练」开始，先完成 3 局基础样本。';
+  }
+  const recent = player.sessions.slice(-5);
+  const loses = recent.filter((s) => s.outcome === 'lose');
+  if (loses.length >= 3) {
+    return '最近失利偏多，建议先切回中级难度复盘弱项，再挑战高难。';
+  }
+  const last = recent[recent.length - 1];
+  if (last && last.opponent) {
+    return `建议继续挑战 ${last.opponent}，观察其跨局记忆变化。`;
+  }
+  return '建议进入快速训练，积累不同对手样本。';
+}
+
+function getReputationAlerts() {
+  return OPPONENTS.map((opp) => {
+    const rep = loadReputation(opp.id);
+    if (!rep || rep.games < 2) return null;
+    if (rep.lastOutcome === 'win') return `${opp.name} 正在警惕你：上局你赢过他。`;
+    if (rep.coopRate > 0.7) return `${opp.name} 认为你偏合作，可能会测试你的底线。`;
+    if (rep.aggressionRate > 0.7) return `${opp.name} 认为你偏强硬，可能开局防御。`;
+    return null;
+  }).filter(Boolean).slice(0, 3);
+}
+
 const MENU = [
   ['①', '场景实战训练', '选择博弈场景，与AI对手对决', 'nav', SCREENS.SCENARIO_SELECT],
   ['②', '快速训练模式', '随机场景与随机对手，快速提升', 'quick', null],
@@ -3522,6 +4616,19 @@ function renderMainMenu() {
     </div>
     ${bossHint}
     ${newUserPath}
+    ${p.total >= 1 ? `
+      <div class="panel" style="padding:8px 12px">
+        <div class="panel-title" style="font-size:11px">今日训练建议</div>
+        <div style="font-size:11px;color:var(--cyan);padding:2px 0">${getTodaySuggestion(p)}</div>
+      </div>` : ''}
+    ${(() => {
+      const alerts = getReputationAlerts();
+      if (!alerts.length) return '';
+      return `<div class="panel" style="padding:8px 12px">
+        <div class="panel-title" style="font-size:11px">对手记忆提醒</div>
+        ${alerts.map((t) => `<div style="font-size:11px;color:var(--purple);padding:2px 0">· ${t}</div>`).join('')}
+      </div>`;
+    })()}
     <div id="main-menu-items">${items}</div>
   `;
 }
@@ -3547,13 +4654,18 @@ renderMainMenu.afterRender = function () {
 
 
 function renderScenarioSelect() {
-  const cards = Object.entries(SCENARIO_META).map(([key, s]) => `
+  const diff = Store.get('difficulty') || 'medium';
+  const cards = Object.entries(SCENARIO_META).map(([key, s]) => {
+    const variantHint = previewVariantName(key, diff);
+    return `
     <div class="card" data-key="${key}">
       <h3>${s.name}</h3>
       <div class="diff ${DIFF_CLASS[s.diff]}">${DIFF_LABEL[s.diff]}</div>
       ${C.tag(s.domain)}
       <p style="margin-top:8px">${s.desc}</p>
-    </div>`).join('');
+      ${variantHint ? `<div style="font-size:10px;color:var(--yellow);margin-top:6px">本局可能情境：${variantHint}</div>` : ''}
+    </div>`;
+  }).join('');
 
   return `
     <div class="flex-between">
@@ -3856,6 +4968,31 @@ function renderResult() {
   }
   const { result, opp, scenarioName, tips, tells, replay } = data;
 
+  // v2 体验增强结果块
+  let v2Blocks = '';
+  if (result.variant) {
+    v2Blocks += C.panel('本局情境',
+      C.infoRow('情境名称', result.variant.name) +
+      C.infoRow('胜利指标', (result.variant.successMetric || []).join(' / ')));
+  }
+  if (result.hiddenObjective) {
+    const h = result.hiddenObjective;
+    v2Blocks += C.panel('隐藏目标',
+      C.hint(`${h.passed ? '✅ 完成' : '❌ 未完成'}｜${h.title}<br><span style="color:var(--dim);font-size:11px">${h.desc}</span><br>${h.rewardHint ? '<span style="font-size:10px;color:var(--yellow)">' + h.rewardHint + '</span>' : ''}`,
+        h.passed ? 'green' : 'yellow'));
+  }
+  if (opp) {
+    const finalLine = buildOpponentFinalComment(opp, result.outcome);
+    if (finalLine) {
+      v2Blocks += C.panel('对手终局评价',
+        C.dialogBubble(finalLine, 'ai', `${opp.name} 说`));
+    }
+    const inner = buildOpponentInnerThought(opp, result);
+    if (inner) {
+      v2Blocks += C.panel('对手真实想法', C.hint(inner, opp.boss ? 'red' : 'purple'));
+    }
+  }
+
   const tipsPanel = opp ? C.panel(`应对 ${opp.type} 的专项技巧`,
     tips.map((t) => C.hint(`• ${t}`)).join('') +
     `<div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>`) : '';
@@ -3941,6 +5078,7 @@ function renderResult() {
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
     ${C.panel('复盘分析', result.summary || '')}
+    ${v2Blocks}
     ${replayPanel}
     ${tipsPanel}
     ${bossReviewPanel}

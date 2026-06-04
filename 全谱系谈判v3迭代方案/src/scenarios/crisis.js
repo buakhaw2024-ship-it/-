@@ -46,24 +46,26 @@ export class CrisisNegotiation extends BaseScenario {
     ];
   }
 
-  start() { this._render(); }
+  start() { this.initExperience('crisis'); this._render(); }
 
   _render() {
     const s = this.stages[this.stage];
     const opp = this.opp;
+    this.tryCram({
+      round: this.stage, totalRounds: this.stages.length, kind: 'crisis',
+      text: `「我还有另一个问题需要一并解决——我的合作伙伴也受到了影响，他们要求单独谈判。」`,
+    });
+    this.checkSituationEvent();
+    const cramHtml = this.cramControls();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingCram || this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', l.round);
+      if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const color = l.ps >= 10 ? 'var(--green)' : l.ps >= 0 ? 'var(--yellow)' : 'var(--red)';
       return C.dialogBubble(`${l.feedback} <span style="color:${color}">${l.ps > 0 ? '+' : ''}${l.ps}分</span>`, 'system', l.stage);
     }).join('');
-
-    // 蚕食：Boss / 强硬 / 操纵型对手在中期阶段引入新条件
-    this.tryCram({
-      round: this.stage,
-      totalRounds: this.stages.length,
-      kind: 'crisis',
-      text: `「我还有另一个问题需要一并解决——我的合作伙伴也受到了影响，他们要求单独谈判。」`,
-    });
-    const cramHtml = this.cramControls();
 
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
@@ -72,15 +74,19 @@ export class CrisisNegotiation extends BaseScenario {
         ${C.scoreBox(this.playerScore, '谈判积分')}
         ${C.scoreBox(Math.max(0, this.oppScore), '危机风险值', 'var(--red)')}
       </div>
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
       ${C.hint(s.context, 'yellow')}
-      ${C.hint(`对手档案：${opp.name} | ${opp.type} | ${opp.desc}`)}
       ${cramHtml}
-      ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
   handleAction({ type, value }) {
+    if (this.interceptCommonAction(type, value)) return;
     if (type === 'resist-cram') {
       this.consumeCram();
       // 拒绝蚕食 → 危机风险上升，但守住积分底线

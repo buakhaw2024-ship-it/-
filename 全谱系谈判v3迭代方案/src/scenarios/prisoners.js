@@ -3,6 +3,9 @@
 
 import { BaseScenario } from './base-scenario.js';
 import { OpponentAI } from '../engine/opponent-ai.js';
+import { loadReputation } from '../engine/reputation.js';
+import { Memory } from '../engine/memory.js';
+import { pickContextualLine } from '../data/opponent-lines-v2.js';
 import { C } from '../ui/components.js';
 
 export class PrisonersDilemma extends BaseScenario {
@@ -21,13 +24,24 @@ export class PrisonersDilemma extends BaseScenario {
     return [1, 1];
   }
 
-  start() { OpponentAI.reset(this.opp.id); this._render(); }
+  start() { OpponentAI.reset(this.opp.id); this.initExperience('prisoners'); this._render(); }
 
   _render() {
     const opp = this.opp;
+    this.checkSituationEvent();
+    const situationHtml = this.renderSituationEvent();
+    const questionHtml = this.renderCounterQuestion();
+    const blockNormal = !!(this._pendingSituation || this._pendingQuestion);
     const logHtml = this.log.map((l) => {
+      if (l.systemEvent) {
+        return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
+      }
+      if (l.counterQuestion) {
+        return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) +
+               C.dialogBubble(l.answerText, 'player', '你的回应');
+      }
       const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
-      const oText = `${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})${l.reason ? ' — ' + l.reason : ''}`;
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -38,8 +52,11 @@ export class PrisonersDilemma extends BaseScenario {
         ${C.scoreBox(this.playerScore, '您的分数')}
         ${C.scoreBox(this.oppScore, `${opp.name} 分数`)}
       </div>
-      ${C.hint(`<b>场景：</b>你和 ${opp.name} 同时被捕。双方都沉默（合作）各判3年；你背叛对方沉默则你自由对方5年；双方都背叛各1年。<br><b>对手档案：</b>${opp.type} — ${opp.desc}`)}
-      ${C.panel('选择你的策略',
+      ${this.experienceBanner()}
+      ${C.relationshipPanel(opp)}
+      ${situationHtml}
+      ${questionHtml}
+      ${blockNormal ? '' : C.panel('选择你的策略',
         C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
         C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
         this.peekControls())}
@@ -48,7 +65,7 @@ export class PrisonersDilemma extends BaseScenario {
   }
 
   handleAction({ type, value }) {
-    if (type === 'peek') { this.handlePeek(); return; }
+    if (this.interceptCommonAction(type, value)) return;
     if (type !== 'choice') return;
     this._peekSnap = null;
     const prev = this.log.length ? this.log[this.log.length - 1].player : null;
@@ -59,10 +76,20 @@ export class PrisonersDilemma extends BaseScenario {
     const [ps, os] = this._scores(value, oppChoice);
     this.playerScore += ps;
     this.oppScore += os;
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood });
-    // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
+    // 情境化台词
+    const line = pickContextualLine(this.opp, {
+      action: oppChoice, mood, memory: Memory.get(this.opp.id),
+      reputation: loadReputation(this.opp.id), round: this.round,
+      exposed: Memory.get(this.opp.id).exposureScore >= 2,
+    });
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood, line });
+    // 观察玩家本轮行为，更新记忆与情绪
     OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
+    // 可能触发对手反问（中后期更易触发）
+    if (this.round < this.rounds && this.round >= 1) {
+      if (this.maybeAskCounterQuestion('choice', value)) return;
+    }
     if (this.round < this.rounds) this._render();
     else this._finish();
   }

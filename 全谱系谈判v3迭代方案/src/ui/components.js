@@ -3,6 +3,10 @@
 // 由 game-view 的事件委托翻译成 player:action 事件。
 
 import { avatarSvg } from './avatars.js';
+import { Mood } from '../engine/mood.js';
+import { loadReputation } from '../engine/reputation.js';
+import { Store } from '../core/store.js';
+import { clamp } from '../engine/util.js';
 
 export const C = {
   // 对手头像 emoji 映射（保留为 fallback / 角色徽章场景）
@@ -120,6 +124,30 @@ export const C = {
       return `<div class="tl-dot ${cls}" title="第${i + 1}轮"></div>`;
     }).join('');
     return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮 <button class="info-tip-btn" data-itip="rounds" title="回合说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
+  },
+
+  // 关系温度计：显式展示对手 Mood + 跨局记忆，高难度提示伪装
+  relationshipPanel(opp) {
+    if (!opp) return '';
+    const mood = Mood.get(opp.id);
+    const rep = loadReputation(opp.id);
+    const diff = Store.get('difficulty') || 'medium';
+    const pct = (n) => Math.round(clamp(n || 0, 0, 1) * 100);
+    const memText = rep.games >= 2
+      ? `已交手 ${rep.games} 次 · 上局：${rep.lastOutcome || '—'} · 历史合作率 ${Math.round((rep.coopRate || 0.5) * 100)}%`
+      : '首次或低样本交手 · 对手尚未完全建档';
+    const warn = (diff === 'hell' || diff === 'extreme')
+      ? '<div style="font-size:10px;color:var(--red);margin-top:4px">⚠ 高难度下，对手可能伪装情绪，状态仅供参考。</div>'
+      : (diff === 'hard' ? '<div style="font-size:10px;color:var(--dim);margin-top:4px">状态估计存在误差。</div>' : '');
+    return `<div class="panel relationship-panel" style="padding:10px 12px">
+      <div class="panel-title">对手状态监测</div>
+      ${this.bar('信任', (mood.trust || 0), 'bar-green')}
+      ${this.bar('愤怒', (mood.anger || 0), 'bar-red')}
+      ${this.bar('耐心', (mood.patience || 0), 'bar-yellow')}
+      ${this.bar('自信', (mood.confidence || 0), 'bar-purple')}
+      <div style="font-size:10px;color:var(--dim);margin-top:6px">${memText}</div>
+      ${warn}
+    </div>`;
   },
 
   // 阶段进度条（用于危机/联盟等多阶段场景）

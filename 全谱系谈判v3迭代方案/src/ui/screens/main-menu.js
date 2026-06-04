@@ -6,6 +6,36 @@ import { Store } from '../../core/store.js';
 import { getRank, isGrandMaster, canUnlockBoss } from '../../data/ranks.js';
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
 import { getCollection, CARD_POOL } from '../cards.js';
+import { OPPONENTS } from '../../data/opponents.js';
+import { loadReputation } from '../../engine/reputation.js';
+import { C } from '../components.js';
+
+function getTodaySuggestion(player) {
+  if (!player || !player.sessions || player.sessions.length < 3) {
+    return '建议从「场景实战训练」开始，先完成 3 局基础样本。';
+  }
+  const recent = player.sessions.slice(-5);
+  const loses = recent.filter((s) => s.outcome === 'lose');
+  if (loses.length >= 3) {
+    return '最近失利偏多，建议先切回中级难度复盘弱项，再挑战高难。';
+  }
+  const last = recent[recent.length - 1];
+  if (last && last.opponent) {
+    return `建议继续挑战 ${last.opponent}，观察其跨局记忆变化。`;
+  }
+  return '建议进入快速训练，积累不同对手样本。';
+}
+
+function getReputationAlerts() {
+  return OPPONENTS.map((opp) => {
+    const rep = loadReputation(opp.id);
+    if (!rep || rep.games < 2) return null;
+    if (rep.lastOutcome === 'win') return `${opp.name} 正在警惕你：上局你赢过他。`;
+    if (rep.coopRate > 0.7) return `${opp.name} 认为你偏合作，可能会测试你的底线。`;
+    if (rep.aggressionRate > 0.7) return `${opp.name} 认为你偏强硬，可能开局防御。`;
+    return null;
+  }).filter(Boolean).slice(0, 3);
+}
 
 const MENU = [
   ['①', '场景实战训练', '选择博弈场景，与AI对手对决', 'nav', SCREENS.SCENARIO_SELECT],
@@ -61,6 +91,19 @@ export function renderMainMenu() {
     </div>
     ${bossHint}
     ${newUserPath}
+    ${p.total >= 1 ? `
+      <div class="panel" style="padding:8px 12px">
+        <div class="panel-title" style="font-size:11px">今日训练建议</div>
+        <div style="font-size:11px;color:var(--cyan);padding:2px 0">${getTodaySuggestion(p)}</div>
+      </div>` : ''}
+    ${(() => {
+      const alerts = getReputationAlerts();
+      if (!alerts.length) return '';
+      return `<div class="panel" style="padding:8px 12px">
+        <div class="panel-title" style="font-size:11px">对手记忆提醒</div>
+        ${alerts.map((t) => `<div style="font-size:11px;color:var(--purple);padding:2px 0">· ${t}</div>`).join('')}
+      </div>`;
+    })()}
     <div id="main-menu-items">${items}</div>
   `;
 }

@@ -1361,6 +1361,7 @@ function freshBehaviorStats() {
     wins: 0, hardGames: 0, hardWins: 0,
     tftGames: 0, tftWins: 0,
     correctReads: 0, readOpps: 0,
+    fairDeals: 0, dealOpps: 0,
     opponentsSeen: [],
   };
 }
@@ -1470,6 +1471,11 @@ function accumulate(player, kind, rounds, result, opp) {
       if (r.my - prev <= 3) s.impulseAvoid += 1;
       if (r.my < 42) s.assertiveMoves += 1;
     });
+    // fairDeal：成交价落在均衡区间 [50, 60] = 公平交易
+    if (typeof result.dealPrice === 'number') {
+      s.dealOpps += 1;
+      if (result.dealPrice >= 50 && result.dealPrice <= 60) s.fairDeals += 1;
+    }
   } else if (kind === 'ultimatum') {
     rounds.forEach((r, i) => {
       s.totalMoves += 1; s.fairOpps += 1;
@@ -1480,6 +1486,9 @@ function accumulate(player, kind, rounds, result, opp) {
       if (i % 2 === 0) {
         s.readOpps += 1;
         if (r.accepted) s.correctReads += 1;
+        // fairDeal：我方提议在 [45, 55] 且被接受 = 公平交易
+        s.dealOpps += 1;
+        if (r.accepted && r.myOffer >= 45 && r.myOffer <= 55) s.fairDeals += 1;
       }
     });
   } else if (kind === 'crisis' || kind === 'coalition') {
@@ -2112,7 +2121,7 @@ class BargainingGame extends BaseScenario {
     this.oppScore = Math.max(0, price - 40);
     const outcome = price <= 55 ? 'win' : price <= 65 ? 'draw' : 'lose';
     this.finish({
-      kind: 'bargaining', rounds: this.log,
+      kind: 'bargaining', rounds: this.log, dealPrice: price,
       playerScore: this.playerScore, oppScore: this.oppScore, outcome,
       summary:
         C.infoRow('成交价格', `${price} 元`) +

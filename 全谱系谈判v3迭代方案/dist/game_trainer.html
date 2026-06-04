@@ -297,26 +297,45 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 
 /* 开盒模态 */
 .box-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-.box-modal{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:28px 24px;max-width:480px;width:94%;text-align:center;box-shadow:0 0 60px rgba(0,212,255,.15)}
-.box-modal-title{color:var(--cyan);font-size:15px;font-weight:bold;letter-spacing:3px;margin-bottom:18px}
-.box-cards-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.box-modal{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:28px 24px;max-width:420px;width:94%;text-align:center;box-shadow:0 0 60px rgba(0,212,255,.15)}
+.box-modal-title{color:var(--cyan);font-size:15px;font-weight:bold;letter-spacing:3px;margin-bottom:4px}
 
-/* 单张卡片 */
-@keyframes card-flip-in{0%{transform:rotateY(180deg) scale(.8);opacity:0}60%{transform:rotateY(-10deg) scale(1.08)}100%{transform:rotateY(0deg) scale(1);opacity:1}}
-@keyframes card-glow-pulse{0%,100%{box-shadow:0 0 12px var(--card-glow,rgba(0,212,255,.3))}50%{box-shadow:0 0 26px var(--card-glow,rgba(0,212,255,.5)),0 0 8px var(--card-glow,rgba(0,212,255,.3))}}
-.box-card{width:110px;perspective:600px;cursor:default}
-.box-card-inner{position:relative;width:100%;border-radius:6px;transition:transform .6s}
-.box-card-hidden .box-card-front{display:none}
-.box-card-hidden .box-card-back{display:flex;align-items:center;justify-content:center;height:150px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:28px;color:var(--dim)}
-.box-card-reveal .box-card-back{display:none}
-.box-card-reveal .box-card-front{display:block;animation:card-flip-in .55s cubic-bezier(.34,1.56,.64,1),card-glow-pulse 2s ease-in-out infinite 0.6s}
-.box-card-front{background:var(--card-bg,rgba(0,212,255,.08));border:2px solid var(--card-color,var(--cyan));border-radius:6px;padding:10px 8px;text-align:center;box-shadow:0 0 14px var(--card-glow,rgba(0,212,255,.3))}
-.box-card-rarity{font-size:9px;font-weight:bold;color:var(--card-color,var(--cyan));letter-spacing:2px;margin-bottom:6px}
-.box-card-avatar{height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
-.box-card-svg{width:48px;height:48px;border-radius:50%;overflow:hidden}
+/* ── 礼盒造型（纯 CSS） ────────────────────────────────────────── */
+@keyframes box-shake{0%,100%{transform:translateX(0) rotate(0)}18%{transform:translateX(-6px) rotate(-2deg)}36%{transform:translateX(6px) rotate(2deg)}54%{transform:translateX(-4px) rotate(-1deg)}72%{transform:translateX(4px) rotate(1deg)}}
+@keyframes box-hint-blink{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes lid-fly{0%{transform:translateY(0) rotate(0);opacity:1}30%{transform:translateY(-30px) rotate(-18deg);opacity:1}100%{transform:translateY(-120px) translateX(40px) rotate(-55deg);opacity:0}}
+@keyframes particle-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(calc(var(--dx)*65px),calc(var(--dy)*65px)) scale(0);opacity:0}}
+@keyframes box-body-flash{0%{box-shadow:0 0 0 var(--card-glow,rgba(0,212,255,.3))}40%{box-shadow:0 0 40px var(--card-glow,rgba(0,212,255,.8))}100%{box-shadow:0 0 12px var(--card-glow,rgba(0,212,255,.3))}}
+@keyframes card-flip-in{0%{transform:rotateY(180deg) scale(.8);opacity:0}60%{transform:rotateY(-8deg) scale(1.06)}100%{transform:rotateY(0) scale(1);opacity:1}}
+@keyframes card-glow-pulse{0%,100%{box-shadow:0 0 12px var(--card-glow,rgba(0,212,255,.3))}50%{box-shadow:0 0 28px var(--card-glow,rgba(0,212,255,.5))}}
+
+.gift-box-wrap{position:relative;display:inline-block;cursor:pointer;margin:8px auto;user-select:none}
+.gift-box-wrap:hover .gift-box-body{filter:brightness(1.15)}
+.gift-box-lid{position:relative;width:130px;height:38px;background:linear-gradient(135deg,var(--card-color,var(--cyan)),rgba(0,0,0,.5));border-radius:4px 4px 0 0;margin:0 auto;border:2px solid var(--card-color,var(--cyan));box-shadow:0 0 10px var(--card-glow,rgba(0,212,255,.4))}
+.gift-box-ribbon-h{position:absolute;top:50%;left:0;right:0;height:6px;background:rgba(255,255,255,.25);transform:translateY(-50%)}
+.gift-box-ribbon-knot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;color:rgba(255,255,255,.8);line-height:1}
+.gift-box-body{width:120px;height:110px;background:linear-gradient(160deg,var(--bg3) 0%,var(--bg2) 100%);border:2px solid var(--card-color,var(--cyan));border-top:none;border-radius:0 0 6px 6px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 14px var(--card-glow,rgba(0,212,255,.3))}
+.gift-box-ribbon-v{position:absolute;left:50%;top:0;bottom:0;width:6px;background:rgba(255,255,255,.15);transform:translateX(-50%)}
+.gift-box-rarity-label{font-size:11px;font-weight:bold;letter-spacing:2px;margin-top:8px}
+.gift-box-hint{font-size:10px;color:var(--dim);margin-top:6px;animation:box-hint-blink 1.4s ease-in-out infinite;letter-spacing:1px}
+.gift-box-particles{position:absolute;top:50%;left:50%;pointer-events:none}
+.box-particle{position:absolute;width:8px;height:8px;border-radius:50%;top:-4px;left:-4px;opacity:0}
+
+.gift-box-wrap.box-shaking .gift-box-lid,.gift-box-wrap.box-shaking .gift-box-body{animation:box-shake .38s ease}
+.gift-box-wrap.box-exploding #bm-lid{animation:lid-fly .7s cubic-bezier(.25,.46,.45,.94) forwards}
+.gift-box-wrap.box-exploding .gift-box-body{animation:box-body-flash .7s ease forwards}
+.gift-box-wrap.box-exploding .box-particle{animation:particle-fly .65s ease-out forwards}
+.gift-box-wrap.box-exploding .gift-box-hint{display:none}
+
+/* 卡片（结果展示） */
+.box-card-front{background:var(--card-bg,rgba(0,212,255,.08));border:2px solid var(--card-color,var(--cyan));border-radius:8px;padding:16px 14px;text-align:center;box-shadow:0 0 14px var(--card-glow,rgba(0,212,255,.3));display:inline-block;min-width:130px;max-width:200px}
+.box-card-reveal-anim{animation:card-flip-in .55s cubic-bezier(.34,1.56,.64,1),card-glow-pulse 2s ease-in-out infinite .6s}
+.box-card-rarity{font-size:9px;font-weight:bold;color:var(--card-color,var(--cyan));letter-spacing:2px;margin-bottom:8px}
+.box-card-avatar{height:64px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.box-card-svg{width:56px;height:56px;border-radius:50%;overflow:hidden}
 .box-card-svg svg{width:100%;height:100%;display:block}
-.box-card-name{color:var(--white);font-size:11px;font-weight:bold;margin-bottom:4px;line-height:1.3}
-.box-card-flavor{color:var(--dim);font-size:9px;line-height:1.4}
+.box-card-name{color:var(--white);font-size:13px;font-weight:bold;margin-bottom:6px;line-height:1.3}
+.box-card-flavor{color:var(--dim);font-size:10px;line-height:1.5}
 
 /* 集卡册 */
 .album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
@@ -2787,47 +2806,106 @@ function unlockCards(player, newCards) {
   savePlayer(player);
 }
 
-// ─── 开盒动画 HTML ────────────────────────────────────────────────────────────
+// ─── 稀有度优先抽卡：从已解锁新卡中取最高稀有度之一 ────────────────────────
+const RARITY_RANK = { SP: 4, SSR: 3, SR: 2, R: 1 };
+const RARITY_NAMES = { R: '普通卡', SR: '稀有卡', SSR: '超稀有卡', SP: '特别版 SP' };
+const RARITY_EXCLAIM = { R: '获得 R 普通卡', SR: '◆ SR 稀有卡！', SSR: '⭐ SSR 超稀有！', SP: '🔥 SP 特别版！极为稀有！' };
+
+function pickDrawCard(cards) {
+  const best = Math.max(...cards.map((c) => RARITY_RANK[c.rarity] || 1));
+  const top = cards.filter((c) => (RARITY_RANK[c.rarity] || 1) === best);
+  return top[Math.floor(Math.random() * top.length)];
+}
+
+// ─── 盲盒开盒动画 ────────────────────────────────────────────────────────────
+// 机制：多卡解锁时仅展示稀有度最高的一张（其余静默写入集卡册）。
+// 流程：点击盒子 → 震动 → 爆盖 + 粒子 → 卡片翻转 → 收下按钮出现
 function renderBoxOpenModal(newCards, onClose) {
   if (!newCards || !newCards.length) { onClose && onClose(); return; }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'box-modal-overlay';
+  const card = pickDrawCard(newCards);
+  const rc = RARITY_CFG[card.rarity] || RARITY_CFG.R;
+  const hiddenCount = newCards.length - 1;
 
-  const cardsHtml = newCards.map((c, i) => {
-    const rc = RARITY_CFG[c.rarity] || RARITY_CFG.R;
-    return `<div class="box-card box-card-hidden" data-idx="${i}"
-                 style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}">
-      <div class="box-card-inner">
-        <div class="box-card-front">
-          <div class="box-card-rarity">${rc.label}</div>
-          <div class="box-card-avatar">${buildCardAvatar(c.opp)}</div>
-          <div class="box-card-name">${c.name}</div>
-          <div class="box-card-flavor">${c.flavor}</div>
-        </div>
-        <div class="box-card-back">?</div>
-      </div>
-    </div>`;
+  // 8 方向粒子
+  const particles = [0,45,90,135,180,225,270,315].map((a) => {
+    const r = a * Math.PI / 180;
+    return `<div class="box-particle" style="--dx:${Math.cos(r).toFixed(2)};--dy:${Math.sin(r).toFixed(2)};background:${rc.color}"></div>`;
   }).join('');
 
+  const overlay = document.createElement('div');
+  overlay.className = 'box-modal-overlay';
   overlay.innerHTML = `
     <div class="box-modal">
-      <div class="box-modal-title">✨ 获得新卡片！</div>
-      <div class="box-cards-row">${cardsHtml}</div>
-      <button class="btn btn-cyan box-modal-close" style="margin-top:18px;min-width:140px">收下，继续 ▶</button>
+      <div class="box-modal-title" id="bm-title">🎁 对局奖励来了！</div>
+      <div id="bm-sub" style="color:var(--dim);font-size:11px;margin-bottom:18px">
+        ${hiddenCount > 0 ? `本局解锁 ${newCards.length} 张，抽出最稀有一张` : '点击盲盒开启'}
+      </div>
+
+      <!-- 盲盒 -->
+      <div class="gift-box-wrap" id="bm-box" style="--card-color:${rc.color};--card-glow:${rc.glow}">
+        <div class="gift-box-particles" id="bm-particles">${particles}</div>
+        <div class="gift-box-lid" id="bm-lid">
+          <div class="gift-box-ribbon-h"></div>
+          <div class="gift-box-ribbon-knot">✦</div>
+        </div>
+        <div class="gift-box-body">
+          <div class="gift-box-ribbon-v"></div>
+          <div class="gift-box-rarity-label" style="color:${rc.color}">${RARITY_NAMES[card.rarity] || card.rarity}</div>
+        </div>
+        <div class="gift-box-hint">点击开盒</div>
+      </div>
+
+      <!-- 卡片（初始隐藏）-->
+      <div id="bm-card" style="display:none">
+        <div class="box-card-front" style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}">
+          <div class="box-card-rarity">${rc.label}</div>
+          <div class="box-card-avatar">${buildCardAvatar(card.opp)}</div>
+          <div class="box-card-name">${card.name}</div>
+          <div class="box-card-flavor">${card.flavor}</div>
+        </div>
+      </div>
+
+      <button class="btn btn-cyan box-modal-close" id="bm-close"
+              style="display:none;margin-top:18px;min-width:140px">收下，继续 ▶</button>
     </div>`;
   document.body.appendChild(overlay);
 
-  // 逐张翻牌动画
-  const cardEls = overlay.querySelectorAll('.box-card');
-  cardEls.forEach((el, i) => {
+  const boxEl   = overlay.querySelector('#bm-box');
+  const lidEl   = overlay.querySelector('#bm-lid');
+  const partsEl = overlay.querySelector('#bm-particles');
+  const cardEl  = overlay.querySelector('#bm-card');
+  const closeBtn = overlay.querySelector('#bm-close');
+  const titleEl = overlay.querySelector('#bm-title');
+  const subEl   = overlay.querySelector('#bm-sub');
+  let opened = false;
+
+  boxEl.addEventListener('click', () => {
+    if (opened) return;
+    opened = true;
+    boxEl.classList.add('box-shaking');
+
     setTimeout(() => {
-      el.classList.remove('box-card-hidden');
-      el.classList.add('box-card-reveal');
-    }, 400 + i * 600);
+      boxEl.classList.remove('box-shaking');
+      lidEl.classList.add('box-lid-fly');
+      partsEl.classList.add('box-particles-burst');
+      titleEl.textContent = '✨ 新卡片获得！';
+      subEl.textContent = RARITY_EXCLAIM[card.rarity] || '';
+
+      setTimeout(() => {
+        boxEl.style.transition = 'opacity .25s';
+        boxEl.style.opacity = '0';
+        setTimeout(() => {
+          boxEl.style.display = 'none';
+          cardEl.style.display = 'block';
+          cardEl.querySelector('.box-card-front').classList.add('box-card-reveal-anim');
+          closeBtn.style.display = 'inline-block';
+        }, 260);
+      }, 600);
+    }, 380);
   });
 
-  overlay.querySelector('.box-modal-close').addEventListener('click', () => {
+  closeBtn.addEventListener('click', () => {
     document.body.removeChild(overlay);
     onClose && onClose();
   });

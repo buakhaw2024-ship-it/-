@@ -80,47 +80,106 @@ export function unlockCards(player, newCards) {
   savePlayer(player);
 }
 
-// ─── 开盒动画 HTML ────────────────────────────────────────────────────────────
+// ─── 稀有度优先抽卡：从已解锁新卡中取最高稀有度之一 ────────────────────────
+const RARITY_RANK = { SP: 4, SSR: 3, SR: 2, R: 1 };
+const RARITY_NAMES = { R: '普通卡', SR: '稀有卡', SSR: '超稀有卡', SP: '特别版 SP' };
+const RARITY_EXCLAIM = { R: '获得 R 普通卡', SR: '◆ SR 稀有卡！', SSR: '⭐ SSR 超稀有！', SP: '🔥 SP 特别版！极为稀有！' };
+
+function pickDrawCard(cards) {
+  const best = Math.max(...cards.map((c) => RARITY_RANK[c.rarity] || 1));
+  const top = cards.filter((c) => (RARITY_RANK[c.rarity] || 1) === best);
+  return top[Math.floor(Math.random() * top.length)];
+}
+
+// ─── 盲盒开盒动画 ────────────────────────────────────────────────────────────
+// 机制：多卡解锁时仅展示稀有度最高的一张（其余静默写入集卡册）。
+// 流程：点击盒子 → 震动 → 爆盖 + 粒子 → 卡片翻转 → 收下按钮出现
 export function renderBoxOpenModal(newCards, onClose) {
   if (!newCards || !newCards.length) { onClose && onClose(); return; }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'box-modal-overlay';
+  const card = pickDrawCard(newCards);
+  const rc = RARITY_CFG[card.rarity] || RARITY_CFG.R;
+  const hiddenCount = newCards.length - 1;
 
-  const cardsHtml = newCards.map((c, i) => {
-    const rc = RARITY_CFG[c.rarity] || RARITY_CFG.R;
-    return `<div class="box-card box-card-hidden" data-idx="${i}"
-                 style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}">
-      <div class="box-card-inner">
-        <div class="box-card-front">
-          <div class="box-card-rarity">${rc.label}</div>
-          <div class="box-card-avatar">${buildCardAvatar(c.opp)}</div>
-          <div class="box-card-name">${c.name}</div>
-          <div class="box-card-flavor">${c.flavor}</div>
-        </div>
-        <div class="box-card-back">?</div>
-      </div>
-    </div>`;
+  // 8 方向粒子
+  const particles = [0,45,90,135,180,225,270,315].map((a) => {
+    const r = a * Math.PI / 180;
+    return `<div class="box-particle" style="--dx:${Math.cos(r).toFixed(2)};--dy:${Math.sin(r).toFixed(2)};background:${rc.color}"></div>`;
   }).join('');
 
+  const overlay = document.createElement('div');
+  overlay.className = 'box-modal-overlay';
   overlay.innerHTML = `
     <div class="box-modal">
-      <div class="box-modal-title">✨ 获得新卡片！</div>
-      <div class="box-cards-row">${cardsHtml}</div>
-      <button class="btn btn-cyan box-modal-close" style="margin-top:18px;min-width:140px">收下，继续 ▶</button>
+      <div class="box-modal-title" id="bm-title">🎁 对局奖励来了！</div>
+      <div id="bm-sub" style="color:var(--dim);font-size:11px;margin-bottom:18px">
+        ${hiddenCount > 0 ? `本局解锁 ${newCards.length} 张，抽出最稀有一张` : '点击盲盒开启'}
+      </div>
+
+      <!-- 盲盒 -->
+      <div class="gift-box-wrap" id="bm-box" style="--card-color:${rc.color};--card-glow:${rc.glow}">
+        <div class="gift-box-particles" id="bm-particles">${particles}</div>
+        <div class="gift-box-lid" id="bm-lid">
+          <div class="gift-box-ribbon-h"></div>
+          <div class="gift-box-ribbon-knot">✦</div>
+        </div>
+        <div class="gift-box-body">
+          <div class="gift-box-ribbon-v"></div>
+          <div class="gift-box-rarity-label" style="color:${rc.color}">${RARITY_NAMES[card.rarity] || card.rarity}</div>
+        </div>
+        <div class="gift-box-hint">点击开盒</div>
+      </div>
+
+      <!-- 卡片（初始隐藏）-->
+      <div id="bm-card" style="display:none">
+        <div class="box-card-front" style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}">
+          <div class="box-card-rarity">${rc.label}</div>
+          <div class="box-card-avatar">${buildCardAvatar(card.opp)}</div>
+          <div class="box-card-name">${card.name}</div>
+          <div class="box-card-flavor">${card.flavor}</div>
+        </div>
+      </div>
+
+      <button class="btn btn-cyan box-modal-close" id="bm-close"
+              style="display:none;margin-top:18px;min-width:140px">收下，继续 ▶</button>
     </div>`;
   document.body.appendChild(overlay);
 
-  // 逐张翻牌动画
-  const cardEls = overlay.querySelectorAll('.box-card');
-  cardEls.forEach((el, i) => {
+  const boxEl   = overlay.querySelector('#bm-box');
+  const lidEl   = overlay.querySelector('#bm-lid');
+  const partsEl = overlay.querySelector('#bm-particles');
+  const cardEl  = overlay.querySelector('#bm-card');
+  const closeBtn = overlay.querySelector('#bm-close');
+  const titleEl = overlay.querySelector('#bm-title');
+  const subEl   = overlay.querySelector('#bm-sub');
+  let opened = false;
+
+  boxEl.addEventListener('click', () => {
+    if (opened) return;
+    opened = true;
+    boxEl.classList.add('box-shaking');
+
     setTimeout(() => {
-      el.classList.remove('box-card-hidden');
-      el.classList.add('box-card-reveal');
-    }, 400 + i * 600);
+      boxEl.classList.remove('box-shaking');
+      lidEl.classList.add('box-lid-fly');
+      partsEl.classList.add('box-particles-burst');
+      titleEl.textContent = '✨ 新卡片获得！';
+      subEl.textContent = RARITY_EXCLAIM[card.rarity] || '';
+
+      setTimeout(() => {
+        boxEl.style.transition = 'opacity .25s';
+        boxEl.style.opacity = '0';
+        setTimeout(() => {
+          boxEl.style.display = 'none';
+          cardEl.style.display = 'block';
+          cardEl.querySelector('.box-card-front').classList.add('box-card-reveal-anim');
+          closeBtn.style.display = 'inline-block';
+        }, 260);
+      }, 600);
+    }, 380);
   });
 
-  overlay.querySelector('.box-modal-close').addEventListener('click', () => {
+  closeBtn.addEventListener('click', () => {
     document.body.removeChild(overlay);
     onClose && onClose();
   });

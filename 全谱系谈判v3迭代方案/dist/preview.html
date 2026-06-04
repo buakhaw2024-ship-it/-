@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谈判桌 UI 预览</title>
+<style>:root {
+  --bg: #0a0e1a;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --border: #2a3a5a;
+  --cyan: #00d4ff;
+  --green: #00ff9f;
+  --yellow: #ffd700;
+  --red: #ff4f6a;
+  --purple: #c084fc;
+  --dim: #4a6080;
+  --text: #c8d8f0;
+  --white: #e8f0ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100vh;font-size:14px}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.screen{display:none}
+.screen.active{display:block}
+
+/* Header */
+.header{text-align:center;padding:20px 0 12px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header h1{font-size:22px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 20px var(--cyan)}
+.header .sub{color:var(--dim);font-size:11px;margin-top:4px;letter-spacing:2px}
+
+/* Panels */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px}
+.panel-title{color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+
+/* Buttons */
+.btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:8px 20px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:2px;transition:all .2s;letter-spacing:1px}
+.btn:hover{background:rgba(0,212,255,.1);box-shadow:0 0 10px rgba(0,212,255,.3)}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:rgba(0,255,159,.1);box-shadow:0 0 10px rgba(0,255,159,.3)}
+.btn-yellow{border-color:var(--yellow);color:var(--yellow)}
+.btn-yellow:hover{background:rgba(255,215,0,.1)}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:rgba(255,79,106,.1)}
+.btn-purple{border-color:var(--purple);color:var(--purple)}
+.btn-purple:hover{background:rgba(192,132,252,.1)}
+.btn-full{width:100%;display:block;text-align:left;margin-bottom:6px;padding:10px 14px}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* Menu */
+.menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:2px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.menu-item:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.menu-num{color:var(--cyan);font-size:16px;width:28px;text-align:center;font-weight:bold}
+.menu-text{flex:1}
+.menu-text b{color:var(--white);display:block;font-size:14px}
+.menu-text span{color:var(--dim);font-size:11px}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* Cards */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px;cursor:pointer;transition:all .2s}
+.card:hover{border-color:var(--cyan);transform:translateY(-1px)}
+.card h3{color:var(--cyan);font-size:13px;margin-bottom:6px}
+.card .diff{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.diff-easy{background:rgba(0,255,159,.15);color:var(--green);border:1px solid rgba(0,255,159,.3)}
+.diff-med{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid rgba(255,215,0,.3)}
+.diff-hard{background:rgba(255,79,106,.15);color:var(--red);border:1px solid rgba(255,79,106,.3)}
+.card p{color:var(--dim);font-size:11px;line-height:1.5}
+
+/* Opponent card */
+.opp-card{border:1px solid var(--border);border-radius:3px;padding:10px;cursor:pointer;transition:all .2s;background:var(--bg3)}
+.opp-card:hover{border-color:var(--cyan)}
+.opp-card.selected{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.opp-name{color:var(--white);font-size:13px;font-weight:bold}
+.opp-type{color:var(--purple);font-size:11px;margin:2px 0}
+.opp-desc{color:var(--dim);font-size:11px}
+
+/* Progress bar */
+.bar-wrap{margin:6px 0}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px}
+.bar-label span:first-child{color:var(--text)}
+.bar-label span:last-child{color:var(--cyan)}
+.bar-bg{background:var(--border);border-radius:2px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.bar-cyan{background:linear-gradient(90deg,#0066aa,var(--cyan))}
+.bar-green{background:linear-gradient(90deg,#006644,var(--green))}
+.bar-yellow{background:linear-gradient(90deg,#886600,var(--yellow))}
+.bar-red{background:linear-gradient(90deg,#880022,var(--red))}
+.bar-purple{background:linear-gradient(90deg,#440088,var(--purple))}
+
+/* Score display */
+.score-box{text-align:center;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:3px}
+.score-num{font-size:32px;font-weight:bold;color:var(--cyan)}
+.score-lbl{color:var(--dim);font-size:11px;margin-top:2px}
+
+/* Outcome badge */
+.outcome{display:inline-block;padding:4px 14px;border-radius:2px;font-size:12px;font-weight:bold;letter-spacing:1px}
+.outcome-win{background:rgba(0,255,159,.15);color:var(--green);border:1px solid var(--green)}
+.outcome-lose{background:rgba(255,79,106,.15);color:var(--red);border:1px solid var(--red)}
+.outcome-draw{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid var(--yellow)}
+.outcome-coop{background:rgba(0,212,255,.15);color:var(--cyan);border:1px solid var(--cyan)}
+
+/* Choice buttons for scenarios */
+.choice-btn{width:100%;text-align:left;padding:12px 16px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:3px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .2s;line-height:1.5}
+.choice-btn:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.choice-btn b{color:var(--cyan)}
+
+/* Info rows */
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(42,58,90,.5);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--dim)}
+.info-val{color:var(--white)}
+
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;margin:2px;border:1px solid}
+.tag-cyan{border-color:var(--cyan);color:var(--cyan)}
+.tag-green{border-color:var(--green);color:var(--green)}
+.tag-yellow{border-color:var(--yellow);color:var(--yellow)}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 16px;cursor:pointer;color:var(--dim);font-size:12px;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab:hover{color:var(--text)}
+
+/* Input */
+.input-wrap{margin:12px 0}
+.input-wrap label{display:block;color:var(--dim);font-size:11px;margin-bottom:4px;letter-spacing:1px}
+.inp{background:var(--bg3);border:1px solid var(--border);color:var(--white);padding:8px 12px;font-family:inherit;font-size:14px;width:100%;border-radius:2px}
+.inp:focus{outline:none;border-color:var(--cyan)}
+
+/* Alert/hint */
+.hint{padding:10px 14px;border-radius:2px;margin:8px 0;font-size:12px;line-height:1.6}
+.hint-cyan{background:rgba(0,212,255,.08);border-left:3px solid var(--cyan);color:var(--text)}
+.hint-green{background:rgba(0,255,159,.08);border-left:3px solid var(--green);color:var(--text)}
+.hint-yellow{background:rgba(255,215,0,.08);border-left:3px solid var(--yellow);color:var(--text)}
+.hint-red{background:rgba(255,79,106,.08);border-left:3px solid var(--red);color:var(--text)}
+.hint-purple{background:rgba(192,132,252,.08);border-left:3px solid var(--purple);color:var(--text)}
+
+/* Round log */
+.log{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:3px;padding:8px;background:var(--bg)}
+.log-entry{font-size:11px;padding:4px 0;border-bottom:1px solid rgba(42,58,90,.3);color:var(--dim)}
+.log-entry:last-child{border-bottom:none}
+.log-entry .lbl{color:var(--text)}
+
+/* Master theory */
+.master-card{padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-bottom:10px}
+.master-name{color:var(--yellow);font-size:14px;font-weight:bold;margin-bottom:4px}
+.master-title{color:var(--dim);font-size:11px;margin-bottom:10px}
+.tactic{padding:8px 10px;background:var(--bg2);border-left:3px solid var(--cyan);margin-bottom:6px;border-radius:0 2px 2px 0}
+.tactic-name{color:var(--cyan);font-size:12px;font-weight:bold}
+.tactic-desc{color:var(--dim);font-size:11px;margin-top:2px;line-height:1.5}
+
+/* Responsive */
+@media(max-width:600px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .header h1{font-size:16px}
+}
+
+/* Welcome screen */
+.welcome-logo{text-align:center;padding:40px 0 20px}
+.logo-art{color:var(--cyan);font-size:13px;line-height:1.4;text-shadow:0 0 15px rgba(0,212,255,.5)}
+.stat-mini{display:inline-block;padding:6px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;font-size:12px;margin:4px}
+.stat-mini span{color:var(--cyan);font-weight:bold}
+.back-btn{color:var(--dim);cursor:pointer;font-size:12px;padding:4px 8px;border:1px solid var(--border);background:transparent;font-family:inherit;border-radius:2px}
+.back-btn:hover{color:var(--text);border-color:var(--text)}
+.flex-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
+/* Boss card + difficulty UI */
+.boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
+
+/* ── Negotiation table chrome ────────────────────────────────────────── */
+.nego-chrome{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;position:relative;overflow:hidden}
+.nego-chrome::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,212,255,.03),transparent 60%);pointer-events:none}
+.nego-avatar-section{text-align:center;min-width:76px}
+.nego-avatar-ring{width:58px;height:58px;border-radius:50%;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,var(--bg3) 60%,rgba(0,212,255,.08));box-shadow:0 0 16px rgba(0,212,255,.4),inset 0 0 10px rgba(0,212,255,.1);margin:0 auto 5px;animation:avatar-glow 3s ease-in-out infinite}
+.nego-avatar-ring.boss-ring{border-color:var(--yellow);box-shadow:0 0 20px rgba(255,215,0,.55),inset 0 0 10px rgba(255,215,0,.12);animation:boss-glow 2.5s ease-in-out infinite}
+.nego-avatar-emoji{font-size:27px;line-height:1;display:block}
+.nego-avatar-name{color:var(--white);font-size:11px;font-weight:bold;margin-top:2px;letter-spacing:.5px}
+.nego-avatar-type{color:var(--purple);font-size:9px;margin-top:1px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px}
+.nego-temp-section{flex:1;min-width:0}
+.nego-temp-label{color:var(--dim);font-size:10px;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.nego-temp-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--red) 0%,var(--yellow) 50%,var(--green) 100%);position:relative;border:1px solid rgba(255,255,255,.06);box-shadow:0 0 8px rgba(0,0,0,.5)}
+.nego-temp-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:var(--white);border:2px solid var(--bg2);box-shadow:0 0 8px rgba(0,0,0,.7);transition:left .9s cubic-bezier(.25,.46,.45,.94)}
+.nego-temp-meta{color:var(--dim);font-size:10px;margin-top:5px;text-align:right}
+@keyframes avatar-glow{0%,100%{box-shadow:0 0 16px rgba(0,212,255,.4),inset 0 0 10px rgba(0,212,255,.1)}50%{box-shadow:0 0 26px rgba(0,212,255,.65),inset 0 0 14px rgba(0,212,255,.2)}}
+@keyframes boss-glow{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.55),inset 0 0 10px rgba(255,215,0,.12)}50%{box-shadow:0 0 32px rgba(255,215,0,.8),inset 0 0 18px rgba(255,215,0,.22)}}
+
+/* ── Dialogue bubbles ─────────────────────────────────────────────── */
+.bubble-log{margin:10px 0}
+.bubble-row{display:flex;margin:5px 0}
+.bubble-row-ai{justify-content:flex-start;padding-right:18%}
+.bubble-row-player{justify-content:flex-end;padding-left:18%}
+.bubble{padding:7px 11px;border-radius:8px;font-size:12px;line-height:1.5;max-width:100%}
+.bubble-ai{background:var(--bg3);border:1px solid var(--border);border-top-left-radius:2px;color:var(--text)}
+.bubble-player{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.22);border-top-right-radius:2px;color:var(--text);text-align:right}
+.bubble-system{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:3px;color:var(--text);font-size:11px;width:100%;padding:6px 10px}
+.bubble-label{font-size:9px;letter-spacing:.5px;margin-bottom:3px;font-weight:bold}
+.bubble-ai .bubble-label{color:var(--purple)}
+.bubble-player .bubble-label{color:var(--cyan);text-align:right}
+.bubble-system .bubble-label{color:var(--yellow);margin-bottom:2px}
+
+/* ── Round timeline ───────────────────────────────────────────────── */
+.round-timeline{display:flex;align-items:center;gap:10px;padding:6px 0 10px;border-bottom:1px solid rgba(42,58,90,.4);margin-bottom:10px}
+.tl-label{color:var(--dim);font-size:10px;letter-spacing:1px;min-width:55px;white-space:nowrap}
+.tl-dots{display:flex;gap:7px;align-items:center}
+.tl-dot{width:11px;height:11px;border-radius:50%;border:1px solid var(--border);transition:all .3s}
+.tl-done{background:var(--dim);border-color:var(--dim)}
+.tl-current{background:var(--cyan);border-color:var(--cyan);animation:pulse-dot 1.2s ease-in-out infinite}
+.tl-pending{background:transparent;border-color:var(--border)}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.5)}50%{box-shadow:0 0 0 5px rgba(0,212,255,0)}}
+
+/* ── Bubble slide-in (last bubble only, on each re-render) ────────── */
+.bubble-log { max-height: 260px; overflow-y: auto; }
+.bubble-row:last-child { animation: bubble-in .22s ease-out; }
+@keyframes bubble-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Opponent avatar in selection cards ───────────────────────────── */
+.opp-card-avatar { text-align:center; margin-bottom:6px; }
+
+.preview-note{color:var(--dim);font-size:11px;margin-bottom:10px}
+</style></head>
+<body><div class="container">
+<div class="header"><h1>◆ 谈判桌 UI 预览 ◆</h1><div class="sub">PHASE 7 · 可视化谈判桌组件静态预览（样例数据）</div></div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">① 谈判桌外壳：对手头像 + 关系温度条（三种温度/情绪/Boss）</h2><div class="preview-note">滑块位置 = 信任−愤怒映射；Boss 头像为金色光环。在浏览器中光环有呼吸动画。</div>
+   <div class="nego-chrome">
+    <div class="nego-avatar-section">
+      <div class="nego-avatar-ring"><span class="nego-avatar-emoji">🧮</span></div>
+      <div class="nego-avatar-name">理性博弈者</div>
+      <div class="nego-avatar-type">理性算计型</div>
+    </div>
+    <div class="nego-temp-section">
+      <div class="nego-temp-label">⟺ 关系温度</div>
+      <div class="nego-temp-track"><div class="nego-temp-marker" style="left:81%"></div></div>
+      <div class="nego-temp-meta">🤝  信任 72% · 愤怒 10%</div>
+    </div>
+  </div>
+   <div class="nego-chrome">
+    <div class="nego-avatar-section">
+      <div class="nego-avatar-ring"><span class="nego-avatar-emoji">🦅</span></div>
+      <div class="nego-avatar-name">强硬鹰派</div>
+      <div class="nego-avatar-type">高压强硬型</div>
+    </div>
+    <div class="nego-temp-section">
+      <div class="nego-temp-label">⟺ 关系温度</div>
+      <div class="nego-temp-track"><div class="nego-temp-marker" style="left:28%"></div></div>
+      <div class="nego-temp-meta">😤  信任 20% · 愤怒 64%</div>
+    </div>
+  </div>
+   <div class="nego-chrome">
+    <div class="nego-avatar-section">
+      <div class="nego-avatar-ring boss-ring"><span class="nego-avatar-emoji">👑</span></div>
+      <div class="nego-avatar-name">极限交易者</div>
+      <div class="nego-avatar-type">极限交易型</div>
+    </div>
+    <div class="nego-temp-section">
+      <div class="nego-temp-label">⟺ 关系温度</div>
+      <div class="nego-temp-track"><div class="nego-temp-marker" style="left:50%"></div></div>
+      <div class="nego-temp-meta">⏰  信任 40% · 愤怒 40%</div>
+    </div>
+  </div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">② 回合时间线 / 阶段进度</h2><div class="preview-note">青色脉冲点=当前回合（浏览器中有脉冲动画），暗灰=已完成，空心=待开始。</div>
+   <div class="round-timeline"><div class="tl-label">第3/5轮</div><div class="tl-dots"><div class="tl-dot tl-done" title="第1轮"></div><div class="tl-dot tl-done" title="第2轮"></div><div class="tl-dot tl-current" title="第3轮"></div><div class="tl-dot tl-pending" title="第4轮"></div><div class="tl-dot tl-pending" title="第5轮"></div></div></div>
+   <div class="round-timeline"><div class="tl-label">阶段2/4</div><div class="tl-dots"><div class="tl-dot tl-done" title="第1阶段"></div><div class="tl-dot tl-current" title="第2阶段"></div><div class="tl-dot tl-pending" title="第3阶段"></div><div class="tl-dot tl-pending" title="第4阶段"></div></div></div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">③ 对话气泡：玩家（右·青）/ 对手（左·暗·含情绪 emoji）</h2><div class="preview-note">最新一条在浏览器中会有淡入滑动动画；气泡区超高时自动滚动。</div>
+   <div class="bubble-log"><div class="bubble-row bubble-row-player">
+      <div class="bubble bubble-player">
+        <div class="bubble-label">第1轮</div>
+        <div class="bubble-text">选择合作</div>
+      </div>
+    </div><div class="bubble-row bubble-row-ai">
+      <div class="bubble bubble-ai">
+        <div class="bubble-label">理性博弈者 🤝</div>
+        <div class="bubble-text">合作 (+3 vs +3) — 你示好，我暂且回应</div>
+      </div>
+    </div><div class="bubble-row bubble-row-player">
+      <div class="bubble bubble-player">
+        <div class="bubble-label">第2轮</div>
+        <div class="bubble-text">选择背叛</div>
+      </div>
+    </div><div class="bubble-row bubble-row-ai">
+      <div class="bubble bubble-ai">
+        <div class="bubble-label">理性博弈者 😤</div>
+        <div class="bubble-text">背叛 (+1 vs +1) — 你变脸，我立刻报复</div>
+      </div>
+    </div><div class="bubble-row bubble-row-player">
+      <div class="bubble bubble-player">
+        <div class="bubble-label">第3轮</div>
+        <div class="bubble-text">选择合作</div>
+      </div>
+    </div><div class="bubble-row bubble-row-ai">
+      <div class="bubble bubble-ai">
+        <div class="bubble-label">理性博弈者 😠</div>
+        <div class="bubble-text">背叛 (+0 vs +5) — 信任已破，继续收割</div>
+      </div>
+    </div></div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">④ 系统气泡（最后通牒 / 多阶段场景）</h2><div class="bubble-log"><div class="bubble-row"><div class="bubble bubble-system"><div class="bubble-label">第1轮</div><div class="bubble-text">提案 我方 60 / 对方 40 → <span style="color:var(--green)">✓ 接受</span></div></div></div><div class="bubble-row"><div class="bubble bubble-system"><div class="bubble-label">第2轮</div><div class="bubble-text">提案 我方 70 / 对方 30 → <span style="color:var(--red)">✗ 拒绝</span></div></div></div></div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑤ 对手选择卡片（带头像，难度分级信息）</h2><div class="grid2">
+     <div class="opp-card">
+    <div class="opp-card-avatar"><div class="nego-avatar-ring" style="width:38px;height:38px">
+      <span class="nego-avatar-emoji" style="font-size:17px">🧮</span>
+    </div></div>
+    
+    <div class="opp-name" style="text-align:center">理性博弈者</div>
+    <div class="opp-type" style="text-align:center">理性算计型 / 利益最大化</div>
+    <div class="opp-desc" style="margin:4px 0">样例描述文本：该对手的行为风格与谈判倾向。</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">弱点：过度依赖计算，易被非理性扰动</div>
+  </div>
+     <div class="opp-card">
+    <div class="opp-card-avatar"><div class="nego-avatar-ring" style="width:38px;height:38px">
+      <span class="nego-avatar-emoji" style="font-size:17px">🦅</span>
+    </div></div>
+    
+    <div class="opp-name" style="text-align:center">强硬鹰派</div>
+    <div class="opp-type" style="text-align:center">高压强硬型 / 锚定施压</div>
+    <div class="opp-desc" style="margin:4px 0">样例描述文本：该对手的行为风格与谈判倾向。</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">行为信号：开局高锚定 / 极少让步</div>
+  </div>
+     <div class="opp-card boss-card">
+    <div class="opp-card-avatar"><div class="nego-avatar-ring boss-ring" style="width:38px;height:38px">
+      <span class="nego-avatar-emoji" style="font-size:17px">👑</span>
+    </div></div>
+    <div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>
+    <div class="opp-name" style="text-align:center">极限交易者</div>
+    <div class="opp-type" style="text-align:center">极限交易型 / 高压锚定型</div>
+    <div class="opp-desc" style="margin:4px 0">样例描述文本：该对手的行为风格与谈判倾向。</div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">未知对手 — 请通过行为判断其类型</div>
+  </div>
+   </div>
+
+<h2 style="color:var(--cyan);font-size:14px;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:28px 0 12px">⑥ 结果屏头像头部</h2><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 14px">
+     <div class="nego-avatar-ring boss-ring" style="width:40px;height:40px">
+      <span class="nego-avatar-emoji" style="font-size:18px">👑</span>
+    </div>
+     <div style="text-align:left">
+       <div style="color:var(--white);font-size:13px;font-weight:bold">极限交易者</div>
+       <div style="color:var(--purple);font-size:10px">极限交易型 / 高压锚定型</div>
+     </div>
+   </div>
+
+<div style="text-align:center;color:var(--dim);font-size:10px;margin:30px 0 10px">
+  此预览由 build_preview.mjs 用真实组件 + 真实样式生成 · 与 dist/game_trainer.html 视觉一致
+</div>
+</div></body></html>

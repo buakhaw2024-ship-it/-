@@ -1,0 +1,2997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全谱系博弈实战演练系统 v3</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --border: #2a3a5a;
+  --cyan: #00d4ff;
+  --green: #00ff9f;
+  --yellow: #ffd700;
+  --red: #ff4f6a;
+  --purple: #c084fc;
+  --dim: #4a6080;
+  --text: #c8d8f0;
+  --white: #e8f0ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100vh;font-size:14px}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.screen{display:none}
+.screen.active{display:block}
+
+/* Header */
+.header{text-align:center;padding:20px 0 12px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.header h1{font-size:22px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 20px var(--cyan)}
+.header .sub{color:var(--dim);font-size:11px;margin-top:4px;letter-spacing:2px}
+
+/* Panels */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px}
+.panel-title{color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+
+/* Buttons */
+.btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:8px 20px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:2px;transition:all .2s;letter-spacing:1px}
+.btn:hover{background:rgba(0,212,255,.1);box-shadow:0 0 10px rgba(0,212,255,.3)}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:rgba(0,255,159,.1);box-shadow:0 0 10px rgba(0,255,159,.3)}
+.btn-yellow{border-color:var(--yellow);color:var(--yellow)}
+.btn-yellow:hover{background:rgba(255,215,0,.1)}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:rgba(255,79,106,.1)}
+.btn-purple{border-color:var(--purple);color:var(--purple)}
+.btn-purple:hover{background:rgba(192,132,252,.1)}
+.btn-full{width:100%;display:block;text-align:left;margin-bottom:6px;padding:10px 14px}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* Menu */
+.menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:2px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.menu-item:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.menu-num{color:var(--cyan);font-size:16px;width:28px;text-align:center;font-weight:bold}
+.menu-text{flex:1}
+.menu-text b{color:var(--white);display:block;font-size:14px}
+.menu-text span{color:var(--dim);font-size:11px}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* Cards */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px;cursor:pointer;transition:all .2s}
+.card:hover{border-color:var(--cyan);transform:translateY(-1px)}
+.card h3{color:var(--cyan);font-size:13px;margin-bottom:6px}
+.card .diff{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.diff-easy{background:rgba(0,255,159,.15);color:var(--green);border:1px solid rgba(0,255,159,.3)}
+.diff-med{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid rgba(255,215,0,.3)}
+.diff-hard{background:rgba(255,79,106,.15);color:var(--red);border:1px solid rgba(255,79,106,.3)}
+.card p{color:var(--dim);font-size:11px;line-height:1.5}
+
+/* Opponent card */
+.opp-card{border:1px solid var(--border);border-radius:3px;padding:10px;cursor:pointer;transition:all .2s;background:var(--bg3)}
+.opp-card:hover{border-color:var(--cyan)}
+.opp-card.selected{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.opp-name{color:var(--white);font-size:13px;font-weight:bold}
+.opp-type{color:var(--purple);font-size:11px;margin:2px 0}
+.opp-desc{color:var(--dim);font-size:11px}
+
+/* Progress bar */
+.bar-wrap{margin:6px 0}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px}
+.bar-label span:first-child{color:var(--text)}
+.bar-label span:last-child{color:var(--cyan)}
+.bar-bg{background:var(--border);border-radius:2px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.bar-cyan{background:linear-gradient(90deg,#0066aa,var(--cyan))}
+.bar-green{background:linear-gradient(90deg,#006644,var(--green))}
+.bar-yellow{background:linear-gradient(90deg,#886600,var(--yellow))}
+.bar-red{background:linear-gradient(90deg,#880022,var(--red))}
+.bar-purple{background:linear-gradient(90deg,#440088,var(--purple))}
+
+/* Score display */
+.score-box{text-align:center;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:3px}
+.score-num{font-size:32px;font-weight:bold;color:var(--cyan)}
+.score-lbl{color:var(--dim);font-size:11px;margin-top:2px}
+
+/* Outcome badge */
+.outcome{display:inline-block;padding:4px 14px;border-radius:2px;font-size:12px;font-weight:bold;letter-spacing:1px}
+.outcome-win{background:rgba(0,255,159,.15);color:var(--green);border:1px solid var(--green)}
+.outcome-lose{background:rgba(255,79,106,.15);color:var(--red);border:1px solid var(--red)}
+.outcome-draw{background:rgba(255,215,0,.15);color:var(--yellow);border:1px solid var(--yellow)}
+.outcome-coop{background:rgba(0,212,255,.15);color:var(--cyan);border:1px solid var(--cyan)}
+
+/* Choice buttons for scenarios */
+.choice-btn{width:100%;text-align:left;padding:12px 16px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:3px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .2s;line-height:1.5}
+.choice-btn:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.choice-btn b{color:var(--cyan)}
+
+/* Info rows */
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(42,58,90,.5);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--dim)}
+.info-val{color:var(--white)}
+
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;margin:2px;border:1px solid}
+.tag-cyan{border-color:var(--cyan);color:var(--cyan)}
+.tag-green{border-color:var(--green);color:var(--green)}
+.tag-yellow{border-color:var(--yellow);color:var(--yellow)}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 16px;cursor:pointer;color:var(--dim);font-size:12px;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab:hover{color:var(--text)}
+
+/* Input */
+.input-wrap{margin:12px 0}
+.input-wrap label{display:block;color:var(--dim);font-size:11px;margin-bottom:4px;letter-spacing:1px}
+.inp{background:var(--bg3);border:1px solid var(--border);color:var(--white);padding:8px 12px;font-family:inherit;font-size:14px;width:100%;border-radius:2px}
+.inp:focus{outline:none;border-color:var(--cyan)}
+
+/* Alert/hint */
+.hint{padding:10px 14px;border-radius:2px;margin:8px 0;font-size:12px;line-height:1.6}
+.hint-cyan{background:rgba(0,212,255,.08);border-left:3px solid var(--cyan);color:var(--text)}
+.hint-green{background:rgba(0,255,159,.08);border-left:3px solid var(--green);color:var(--text)}
+.hint-yellow{background:rgba(255,215,0,.08);border-left:3px solid var(--yellow);color:var(--text)}
+.hint-red{background:rgba(255,79,106,.08);border-left:3px solid var(--red);color:var(--text)}
+.hint-purple{background:rgba(192,132,252,.08);border-left:3px solid var(--purple);color:var(--text)}
+
+/* Round log */
+.log{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:3px;padding:8px;background:var(--bg)}
+.log-entry{font-size:11px;padding:4px 0;border-bottom:1px solid rgba(42,58,90,.3);color:var(--dim)}
+.log-entry:last-child{border-bottom:none}
+.log-entry .lbl{color:var(--text)}
+
+/* Master theory */
+.master-card{padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-bottom:10px}
+.master-name{color:var(--yellow);font-size:14px;font-weight:bold;margin-bottom:4px}
+.master-title{color:var(--dim);font-size:11px;margin-bottom:10px}
+.tactic{padding:8px 10px;background:var(--bg2);border-left:3px solid var(--cyan);margin-bottom:6px;border-radius:0 2px 2px 0}
+.tactic-name{color:var(--cyan);font-size:12px;font-weight:bold}
+.tactic-desc{color:var(--dim);font-size:11px;margin-top:2px;line-height:1.5}
+
+/* Responsive */
+@media(max-width:600px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .header h1{font-size:16px}
+}
+
+/* Welcome screen */
+.welcome-logo{text-align:center;padding:40px 0 20px}
+.logo-art{color:var(--cyan);font-size:13px;line-height:1.4;text-shadow:0 0 15px rgba(0,212,255,.5)}
+.stat-mini{display:inline-block;padding:6px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;font-size:12px;margin:4px}
+.stat-mini span{color:var(--cyan);font-weight:bold}
+.back-btn{color:var(--dim);cursor:pointer;font-size:12px;padding:4px 8px;border:1px solid var(--border);background:transparent;font-family:inherit;border-radius:2px}
+.back-btn:hover{color:var(--text);border-color:var(--text)}
+.flex-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
+/* Boss card + difficulty UI */
+.boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
+
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="app"></div>
+</div>
+<script>
+"use strict";
+(function () {
+/* ===== core/event-bus.js ===== */
+// core/event-bus.js — 事件总线
+// 所有模块通过它通信，模块之间不直接调用彼此的行为函数。
+// 开发态：ES Module 导出 EventBus；分发态：build.js 剥离 export 后并入同一作用域。
+
+const EventBus = (() => {
+  const listeners = new Map(); // event -> Set<handler>
+
+  function on(event, handler) {
+    if (!listeners.has(event)) listeners.set(event, new Set());
+    listeners.get(event).add(handler);
+    return () => off(event, handler); // 返回取消订阅函数
+  }
+
+  function once(event, handler) {
+    const wrapper = (payload) => {
+      off(event, wrapper);
+      handler(payload);
+    };
+    return on(event, wrapper);
+  }
+
+  function off(event, handler) {
+    const set = listeners.get(event);
+    if (set) set.delete(handler);
+  }
+
+  function emit(event, payload) {
+    const set = listeners.get(event);
+    if (!set) return;
+    // 复制一份，避免 handler 内部增删订阅导致迭代异常
+    [...set].forEach((handler) => {
+      try {
+        handler(payload);
+      } catch (err) {
+        console.error(`[EventBus] handler error on "${event}":`, err);
+      }
+    });
+  }
+
+  return { on, once, off, emit };
+})();
+
+
+/* ===== core/events.js ===== */
+// core/events.js — 事件名常量（唯一事实来源）
+// 所有 emit/on 都引用这里的常量，避免裸字符串拼写错误。
+
+const EVENTS = {
+  // 导航
+  NAV_GOTO: 'nav:goto',           // payload: { screen, params }
+
+  // 对局生命周期
+  GAME_START: 'game:start',       // payload: { scenarioKey, opponentId }
+  GAME_RENDER: 'game:render',     // payload: { html } 或 { viewModel }
+  PLAYER_ACTION: 'player:action', // payload: { type, value }
+  AI_DECIDED: 'ai:decided',       // payload: { move, mood, reason }
+  ROUND_END: 'round:end',         // payload: { roundLog }
+  GAME_END: 'game:end',           // payload: { result }
+
+  // 分析
+  ANALYTICS_SCORED: 'analytics:scored', // payload: { replay, score }
+  PROFILE_UPDATED: 'profile:updated',   // payload: { profile }
+
+  // 全局状态
+  STORE_CHANGED: 'store:changed', // payload: { key, value }
+};
+
+// 屏幕标识（router 使用）
+const SCREENS = {
+  WELCOME: 'welcome',
+  MAIN: 'main',
+  SCENARIO_SELECT: 'scenario-select',
+  OPPONENT_SELECT: 'opponent-select',
+  GAME: 'game',
+  RESULT: 'result',
+  STRATEGY: 'strategy',
+  PSYCHOLOGY: 'psychology',
+  DASHBOARD: 'dashboard',
+};
+
+
+/* ===== core/store.js ===== */
+// core/store.js — 最小全局状态容器
+// 单一数据源；set 时通过事件总线广播 store:changed，UI 据此重渲染。
+
+
+const _state = {
+  player: null,        // 当前玩家档案（analytics/player-data 填充）
+  scenarioKey: null,   // 当前选中的场景
+  opponentId: null,    // 当前选中的对手
+  currentScreen: null, // 当前屏幕
+  profile: null,       // 心理画像向量
+  difficulty: 'medium',// 难度：easy/medium/hard/extreme（影响真实博弈机制）
+};
+
+const Store = {
+  get(key) {
+    return key === undefined ? { ..._state } : _state[key];
+  },
+
+  set(key, value) {
+    _state[key] = value;
+    EventBus.emit(EVENTS.STORE_CHANGED, { key, value });
+  },
+
+  // 一次性更新多个字段（仅广播一次每个 key）
+  patch(partial) {
+    Object.entries(partial).forEach(([key, value]) => {
+      _state[key] = value;
+      EventBus.emit(EVENTS.STORE_CHANGED, { key, value });
+    });
+  },
+};
+
+
+/* ===== data/opponents.js ===== */
+// data/opponents.js — 6 对手定义 + 行为信号 + 应对技巧（从 v2.0 平移）
+// 纯数据，可被任何模块 import。Phase 3 的 engine 会读取这里的性格参数。
+
+const OPPONENTS = [
+  { id:'rational',     name:'陈逻辑', type:'理性分析型', desc:'数据驱动，精确计算每步得失',   weakness:'对情感诉求反应迟钝',     risk:0.3, coop:0.5, fair:0.5, assert:0.6 },
+  { id:'emotional',    name:'林敏感', type:'情感驱动型', desc:'重视关系，情绪波动影响决策',   weakness:'容易被激将或情感操控',   risk:0.5, coop:0.7, fair:0.8, assert:0.4 },
+  { id:'aggressive',   name:'钢铁王', type:'强硬鹰派型', desc:'强硬立场，极力压缩对方空间',   weakness:'合理反压时容易妥协',     risk:0.7, coop:0.2, fair:0.3, assert:0.9 },
+  { id:'cooperative',  name:'和谐李', type:'合作共赢型', desc:'寻求双赢，注重长期关系维护',   weakness:'过于善意容易被利用',     risk:0.4, coop:0.9, fair:0.8, assert:0.5 },
+  { id:'manipulative', name:'影子张', type:'操纵控制型', desc:'善用心理战术，隐藏真实意图',   weakness:'被识破后失去优势',       risk:0.6, coop:0.3, fair:0.2, assert:0.8 },
+  { id:'riskAverse',   name:'稳健吴', type:'风险规避型', desc:'保守稳健，避免不确定结果',     weakness:'在压力下倾向过度让步',   risk:0.2, coop:0.6, fair:0.6, assert:0.4 },
+];
+
+// 隐藏 Boss：极限交易型 / 高压锚定型。仅在「宗师级 + 终局挑战难度」下解锁。
+// 抽象其公开化、交易化、高压化、锚定化、不可预测化的谈判风格——非政治评论。
+const TRUMP_BOSS = {
+  id:'trumpBoss', name:'极限交易者', type:'极限交易型 / 高压锚定型',
+  desc:'极端开价、公开施压、几乎不让步，把每一步都包装成胜负叙事',
+  weakness:'对方亮出可信BATNA、坚守客观标准并拒绝胜负叙事时，其锚定开始失效',
+  risk:0.8, coop:0.15, fair:0.15, assert:0.98, boss:true,
+};
+
+const PERSONALITY_TELLS = {
+  rational:     ['总是要求数据支持','反复确认细节','表情克制中性'],
+  emotional:    ['声音起伏明显','频繁提及"感受"','肢体语言丰富'],
+  aggressive:   ['打断对方发言','设置最后期限','明确表达不满'],
+  cooperative:  ['主动提出让步','寻找共同利益','保持开放态度'],
+  manipulative: ['突然改变话题','制造紧迫感','模糊关键条款'],
+  riskAverse:   ['多次确认安全性','偏好保守方案','回避极端选项'],
+  trumpBoss:    ['开局抛出极端条件','频繁使用胜负二元叙事','制造公开与时间压力','突然改变议题或报价'],
+};
+
+const OPPONENT_TIPS = {
+  rational:     ['使用数据和逻辑支持你的立场','避免情绪化表达，保持客观','提出具体量化方案，比感性诉求更有效','利用其信息盲点设计信息不对称'],
+  emotional:    ['建立情感连接，表达关切和理解','避免纯粹逻辑压制，先处理情绪','用关系和信任作为谈判筹码','注意情绪波动，寻找情绪低谷时推进协议'],
+  aggressive:   ['不要被强硬姿态吓倒，保持冷静','用你的BATNA建立真实底气','要求其提供主张的依据','合理反压：明确表示也有替代选项'],
+  cooperative:  ['诚实合作，建立长期信任','提出双赢方案，强调共同利益','避免利用其善意过度索取','记录协议细节，防止善意被误解'],
+  manipulative: ['保持高度警觉，识别话术变化','要求书面确认所有关键条款','直接说出你识别到的操控手法','减慢节奏，不受人工紧迫感驱使'],
+  riskAverse:   ['用数据和案例证明方案的安全性','提供保障条款和退出选项','强调不行动的风险大于行动','循序渐进，不要一次推进太多变化'],
+  trumpBoss:    ['不要急于回应极端锚定，先质疑其依据和可执行性','明确你的BATNA，让对方知道你不是被迫成交','把议题拆小，避免被带入宏大胜负叙事','所有让步必须绑定对方的实质承诺','不要被公开压力和时间压力牵引，主动放慢节奏','用客观标准、书面条件和退出选项压缩其操控空间'],
+};
+
+function getOpponent(id) {
+  if (id === TRUMP_BOSS.id) return TRUMP_BOSS;
+  return OPPONENTS.find((o) => o.id === id);
+}
+
+function randomOpponent() {
+  return OPPONENTS[Math.floor(Math.random() * OPPONENTS.length)];
+}
+
+function getOpponentTips(id) {
+  return OPPONENT_TIPS[id] || ['保持冷静，灵活应对','关注对方真实利益','适时使用沉默策略'];
+}
+
+
+/* ===== data/scenarios.meta.js ===== */
+// data/scenarios.meta.js — 7 场景元数据（名称/难度/领域/描述）
+// 不含场景逻辑类；类的绑定在 scenarios/registry.js。
+
+const SCENARIO_META = {
+  prisoners:   { name:'囚徒困境',     diff:'easy', domain:'经典博弈', desc:'经典非零和博弈，合作还是背叛？' },
+  ultimatum:   { name:'最后通牒博弈', diff:'easy', domain:'分配博弈', desc:'分配者提议，接受者决定接受或拒绝' },
+  trust:       { name:'信任博弈',     diff:'med',  domain:'信任博弈', desc:'信任与回馈的两阶段测试' },
+  bargaining:  { name:'商业谈判博弈', diff:'med',  domain:'谈判博弈', desc:'多轮价格谈判，争取最佳成交' },
+  crisis:      { name:'危机谈判',     diff:'hard', domain:'危机处置', desc:'四阶段危机处置，需要高超的沟通策略' },
+  publicgoods: { name:'公共品博弈',   diff:'med',  domain:'合作博弈', desc:'公共项目贡献决策，团队与个人利益的博弈' },
+  coalition:   { name:'联盟谈判',     diff:'hard', domain:'多方博弈', desc:'多方利益协调，建立稳定联盟' },
+};
+
+const DIFF_LABEL = { easy:'入门', med:'进阶', hard:'高阶' };
+const DIFF_CLASS = { easy:'diff-easy', med:'diff-med', hard:'diff-hard' };
+
+
+/* ===== data/masters.js ===== */
+// data/masters.js — 六大谈判宗师理论库（从 v2.0 平移，57 条策略/原则）
+
+const MASTERS = {
+  dawson: {
+    name: '罗杰·道森', title: '《优势谈判》',
+    intro: '15大谈判策略，覆盖开局、中局、终局三大阶段，是谈判实战的权威教程。',
+    tactics: [
+      { stage:'开局', name:'狮子大开口', desc:'要价远高于预期，留出让步空间，设立高锚点。' },
+      { stage:'开局', name:'虚假权威', desc:'"我需要请示上级"——保留缓冲空间，让对方对最终拍板人无处施压。' },
+      { stage:'开局', name:'不情愿买家/卖家', desc:'表现出勉强姿态，让对方感到他们在争取你的参与。' },
+      { stage:'开局', name:'钳子策略', desc:'"你能做得更好"——简单一句话压缩对方空间，且不先出价。' },
+      { stage:'中局', name:'请示上级', desc:'声称无权做最终决定，避免单方面让步压力。' },
+      { stage:'中局', name:'消解僵局', desc:'换人、换地点、换议题，打破卡壳局面。' },
+      { stage:'中局', name:'让步节奏管理', desc:'让步幅度递减（大→中→小），暗示接近极限。' },
+      { stage:'中局', name:'回收策略', desc:'表现出重新考虑的态度，引发对方反应，测试底线。' },
+      { stage:'中局', name:'时间压力', desc:'接近截止期限时，谈判双方都更愿意妥协，善用时限。' },
+      { stage:'终局', name:'蚕食策略', desc:'协议接近完成时提出小额追加要求，对方为维护大局往往让步。' },
+      { stage:'终局', name:'打包策略', desc:'将多个议题打包，用不重要项目换取重要利益。' },
+      { stage:'终局', name:'黑脸白脸', desc:'团队中一人强硬、一人温和，制造心理压力与慰藉。' },
+      { stage:'终局', name:'定位让步', desc:'最后关键让步放小，显示已到底线，给对方"赢"的感觉。' },
+      { stage:'终局', name:'书面记录', desc:'任何口头承诺立即书面化，防止事后反悔。' },
+      { stage:'原则', name:'永不平分差异', desc:'平分差异看似公平，实则对先出价高者不利，要主动再让步以引导对方自愿中间价。' },
+    ],
+  },
+  fisher: {
+    name: '罗杰·费希尔 & 威廉·尤里', title: '《谈判力》',
+    intro: '哈佛谈判项目成果：基于利益的原则性谈判四步法，被全球无数谈判者奉为圣经。',
+    tactics: [
+      { stage:'原则1', name:'对人温和，对事强硬', desc:'把人与问题分开。不让情绪和关系阻碍实质利益的实现。' },
+      { stage:'原则2', name:'聚焦利益，非立场', desc:'"为什么你要这个？"背后的利益才是真正的谈判空间所在。' },
+      { stage:'原则3', name:'创造多种选项', desc:'在决定前先脑力激荡，扩大可能性空间，而非只争论单一方案。' },
+      { stage:'原则4', name:'坚持客观标准', desc:'以市场价、行业惯例、法律标准作为依据，避免意志对抗。' },
+      { stage:'工具', name:'BATNA', desc:'最佳替代方案——知道自己的退出点，才有真正的谈判筹码。' },
+      { stage:'工具', name:'ZOPA', desc:'协议潜在区间——双方BATNA之间的重叠区域，是达成交易的空间。' },
+      { stage:'工具', name:'谈判一元论', desc:'避免把立场当成底线，而是灵活在利益层面寻找满足双方的方案。' },
+    ],
+  },
+  voss: {
+    name: '克里斯·沃斯', title: '《掌控谈话》',
+    intro: 'FBI首席人质谈判专家的实战技巧，以战术性同理心取代对抗，创造突破性结果。',
+    tactics: [
+      { stage:'核心', name:'战术性同理心', desc:'命名对方情绪，建立连接，化解防御。理解不等于认同。' },
+      { stage:'技术', name:'镜像 (Mirror)', desc:'重复对方最后2-3词，触发进一步阐述，获取信息。' },
+      { stage:'技术', name:'贴标签 (Label)', desc:'"看起来您..."——承认情绪存在，降低其强度。' },
+      { stage:'技术', name:'"不"的力量', desc:'让对方说"不"使其有掌控感，反而推动谈判前进。' },
+      { stage:'技术', name:'校准问题', desc:'"我怎么做才能帮助您？"——让对方思考，引导合作。' },
+      { stage:'技术', name:'"就是这样"验证', desc:'当对方说"就是这样"时，说明你完全理解了他们。' },
+      { stage:'技术', name:'截止期限', desc:'人为截止期限往往是虚假的，识别并测试其真实性。' },
+      { stage:'技术', name:'黑天鹅信息', desc:'找出改变游戏规则的隐藏信息，通常藏在对方的"疯狂"行为中。' },
+      { stage:'技术', name:'锚定极端值', desc:'先发制人锚定极端价格，再做"公平"的让步。' },
+      { stage:'技术', name:'弯腰报价法', desc:'逐步递减的让步（如3000→500→250），暗示接近底线。' },
+    ],
+  },
+  cohen: {
+    name: '赫布·科恩', title: '《谈判无处不在》',
+    intro: '权力、时间、信息三角模型，认为世界就是一张巨大的谈判桌，万事皆可谈。',
+    tactics: [
+      { stage:'三要素', name:'权力 (Power)', desc:'感知到的权力比真实权力更重要。自信、准备、替代方案都是权力来源。' },
+      { stage:'三要素', name:'时间 (Time)', desc:'接近截止期限的一方压力更大。隐藏真实期限，了解对方期限。' },
+      { stage:'三要素', name:'信息 (Information)', desc:'你知道的越多，谈判越有利。提问、倾听、观察、研究。' },
+      { stage:'风格', name:'苏联式谈判', desc:'极端立场、不妥协、人身攻击、逐步蚕食——识别并防御此类风格。' },
+      { stage:'风格', name:'双赢谈判', desc:'关注关系和长期利益，通过创造价值而非分割价值达成协议。' },
+      { stage:'策略', name:'投资心理', desc:'让对方在谈判过程中投入越来越多，增加他们退出的心理成本。' },
+    ],
+  },
+  diamond: {
+    name: '斯图尔特·戴蒙德', title: '《Getting More》',
+    intro: '沃顿商学院谈判教授，强调人比流程更重要，情感和感知是谈判的核心战场。',
+    tactics: [
+      { stage:'原则', name:'目标第一', desc:'每次谈判开始前明确：我真正想要什么？不要为争论而争论。' },
+      { stage:'原则', name:'关注对方的脑', desc:'谈判发生在对方的大脑中，你的工作是了解并影响他们的感知。' },
+      { stage:'原则', name:'情感先行', desc:'人先感受，后理性思考。先处理情绪，再谈实质。' },
+      { stage:'原则', name:'每个人都不同', desc:'放弃"标准"做法，针对每个人的个性、需求和价值观定制策略。' },
+      { stage:'工具', name:'找到决策者', desc:'和真正能做决定的人谈，不要浪费时间在无权者身上。' },
+      { stage:'工具', name:'画面感', desc:'帮对方构想合作成功后的具体情景，情感化的愿景比数据更有说服力。' },
+      { stage:'工具', name:'增量主义', desc:'大目标拆成小步骤，每一步建立信任，积累谈判成果。' },
+      { stage:'工具', name:'等价交换', desc:'找到对方高估、你低成本的东西，用你低估、对方高价值的东西交换。' },
+    ],
+  },
+  shell: {
+    name: '理查德·谢尔', title: '《为优势而谈判》',
+    intro: '沃顿商学院教授，五种谈判风格框架，强调知己知彼、因地制宜的适应性策略。',
+    tactics: [
+      { stage:'五种风格', name:'竞争型', desc:'高关注结果，低关注关系。适用：一次性交易，强势立场。风险：损害关系。' },
+      { stage:'五种风格', name:'合作型', desc:'高关注结果，高关注关系。适用：长期合作，复杂多议题。需要创造力。' },
+      { stage:'五种风格', name:'妥协型', desc:'中等关注两者。适用：时间紧迫，力量均等。风险：双方都未获最优。' },
+      { stage:'五种风格', name:'回避型', desc:'低关注两者。适用：问题不重要，等待时机。风险：问题积累。' },
+      { stage:'五种风格', name:'迁就型', desc:'低关注结果，高关注关系。适用：你错了，需修复关系。风险：被利用。' },
+      { stage:'六步骤', name:'准备阶段', desc:'明确你的目标、BATNA和对方可能的BATNA；研究对方风格和利益。' },
+      { stage:'六步骤', name:'交流阶段', desc:'倾听超过说话，找出对方真实需求，建立信任基础。' },
+      { stage:'六步骤', name:'开场阶段', desc:'决定先出价还是让对方先出价；设立有利锚点。' },
+      { stage:'六步骤', name:'框架阶段', desc:'用对方重视的标准和价值观来定位你的方案。' },
+      { stage:'六步骤', name:'价值创造', desc:'寻找可以同时满足双方利益的交换和打包方案。' },
+      { stage:'六步骤', name:'收盘阶段', desc:'确认每一个细节；使用书面形式固化协议。' },
+    ],
+  },
+};
+
+
+/* ===== data/strategies.js ===== */
+// data/strategies.js — 策略卡 / 沟通技术 / 心理防御（从 v2.0 平移）
+
+const STRATEGY_CARDS = [
+  { name:'以牙还牙 (Tit-for-Tat)', tags:['经典','稳健'], desc:'第一轮合作，此后模仿对方上一轮行为。简单、稳健、可预期，在重复博弈中表现卓越。', use:'重复博弈，对抗多类型对手' },
+  { name:'锚定效应', tags:['谈判','心理'], desc:'率先提出极端报价，让对方基于此调整，而非基于真实价值。先出价者掌握参照框架。', use:'价格谈判，分配博弈' },
+  { name:'BATNA最佳替代方案', tags:['策略','必备'], desc:'知道自己的退出选项，才能在谈判中保持底气。永远不要在没有BATNA的情况下进行重要谈判。', use:'所有谈判场景' },
+  { name:'框架重构', tags:['心理','高级'], desc:'将损失框架重构为收益框架。"您将损失10万"改为"您可以保留90万"，改变对方的认知基准。', use:'说服，反驳，化解僵局' },
+  { name:'积极倾听', tags:['沟通','基础'], desc:'用重复、总结、提问让对方感受到被理解。70%倾听，30%表达。关注言外之意。', use:'建立信任，获取信息' },
+  { name:'互惠原则', tags:['心理','社交'], desc:'先给予小利，触发对方回报义务感。小礼物开启大谈判。人类天生厌恶欠债感。', use:'破冰，建立合作基础' },
+  { name:'策略性沉默', tags:['心理','高级'], desc:'提出要求后保持沉默。焦虑的一方往往先开口，在压力下做出让步。沉默是强大的武器。', use:'谈判关键节点，等待对方让步' },
+  { name:'条件让步', tags:['谈判','策略'], desc:'"如果您能...，我可以考虑..."——将每次让步与对方行动绑定，避免单方面退让，维持筹码。', use:'价格谈判，条件博弈' },
+  { name:'纳什均衡识别', tags:['博弈论','分析'], desc:'识别双方都不愿单方面偏离的稳定策略组合。理解纳什均衡有助于预测对手行为并优化自身策略。', use:'分析博弈格局' },
+  { name:'整合性谈判', tags:['谈判','双赢'], desc:'寻找背后利益，非立场对抗。"为什么你要这个？"可能揭示双方都满意的创意解决方案。', use:'复杂谈判，多议题场景' },
+];
+
+const COMM_TECHNIQUES = [
+  { name:'镜像技术', desc:'重复对方最后2-3个词，触发对方继续阐述，获取更多信息。' },
+  { name:'战术性同理心', desc:'"我理解您为什么会有这样的感受..."——承认情绪，建立连接，化解防御。' },
+  { name:'校准问题', desc:'用"如何/什么"类开放式问题，让对方思考解决方案而非抗拒。' },
+  { name:'贴标签', desc:'命名对方的情绪状态："看起来您对这个结果感到失望"——降低防御性。' },
+  { name:'"不"的保护', desc:'让对方说"不"，他们会感到掌控感，从而更愿意继续谈判。' },
+  { name:'锚定愿景', desc:'描述合作成功后的美好前景，让对方想象双赢结局。' },
+];
+
+const DEFENSE_TACTICS = [
+  { name:'识别好警察/坏警察', desc:'认出此策略后，直接说出来："我注意到你们采用了好坏角色分工"——策略失效。' },
+  { name:'反时间压力', desc:'人为的截止期限通常是假的。"我需要确认这个期限是真实的"——测试真实性。' },
+  { name:'应对蚕食', desc:'协议接近达成时的额外要求——"一切都已谈妥，让步不再免费"。' },
+  { name:'破解虚假权威', desc:'"让我和有最终决定权的人直接对话"——绕过无法拍板的中间人。' },
+  { name:'拆解极端锚定', desc:'极端报价时不直接谈判，先质疑其依据的标准和假设。' },
+  { name:'应对最后关头施压', desc:'在程序终止时提出的要求——"我需要重新评估整个协议"。' },
+];
+
+
+/* ===== data/ranks.js ===== */
+// data/ranks.js — 军衔阈值 + 心理类型定义（从 v2.0 平移）
+
+function getRank(total, wins) {
+  const wr = total > 0 ? wins / total : 0;
+  if (total === 0) return '新兵';
+  if (total < 5) return '学员';
+  if (total < 10) return wr > 0.6 ? '谈判官' : '学员进阶';
+  if (total < 20) return wr > 0.7 ? '策略师' : '谈判官';
+  if (total < 30) return wr > 0.75 ? '博弈大师' : '策略师';
+  return wr > 0.8 ? '宗师级' : '博弈大师';
+}
+
+// Trump Boss 解锁条件：宗师级 + 终局挑战难度
+function isGrandMaster(player) {
+  if (!player) return false;
+  return getRank(player.total, player.wins) === '宗师级';
+}
+
+function canUnlockBoss(player, difficulty) {
+  return isGrandMaster(player) && difficulty === 'extreme';
+}
+
+// 8 维心理向量的展示定义
+const PSYCH_DIMENSIONS = [
+  { key:'cooperation_rate', label:'合作倾向', color:'bar-green' },
+  { key:'risk',             label:'风险承受', color:'bar-yellow' },
+  { key:'fairness',         label:'公平敏感', color:'bar-cyan' },
+  { key:'depth',            label:'策略深度', color:'bar-purple' },
+  { key:'emotion',          label:'情绪调节', color:'bar-cyan' },
+  { key:'assert',           label:'主张强度', color:'bar-red' },
+  { key:'adapt',            label:'适应灵活', color:'bar-green' },
+  { key:'trust',            label:'信任倾向', color:'bar-yellow' },
+];
+
+
+/* ===== engine/util.js ===== */
+// engine/util.js — 决策引擎通用工具
+
+const clamp = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+
+// 指数滑动平均：近期行为权重更高
+const ema = (prev, val, a = 0.4) => prev * (1 - a) + val * a;
+
+const rnd = (a = 0, b = 1) => a + Math.random() * (b - a);
+
+const chance = (p) => Math.random() < p;
+
+
+/* ===== engine/difficulty.js ===== */
+// engine/difficulty.js — 难度系统：把难度映射为对手机制修正系数
+// 难度真正影响博弈机制（对手慷慨度 / 强硬度 / 接受阈值），而非仅展示。
+// Trump Boss 豁免（其行为已校准到极限），由 opponent-ai 调用时判断。
+
+
+const DIFFICULTIES = [
+  { key: 'easy',    label: '初级' },
+  { key: 'medium',  label: '中级' },
+  { key: 'hard',    label: '高级' },
+  { key: 'extreme', label: '终局挑战' },
+];
+
+function getDifficultyLabel(d) {
+  const found = DIFFICULTIES.find((x) => x.key === d);
+  return found ? found.label : '中级';
+}
+
+// 返回三个修正系数：
+//  coopFactor  —— 乘在对手"慷慨度"（返还/贡献/让步）上，>1 对玩家更友好
+//  toughFactor —— 乘在对手"强硬度"（锚定/自留）上，>1 更难
+//  acceptShift —— 加在最后通牒接受倾向上，正值=更容易接受
+function getDifficultyMod(d) {
+  const diff = d || (typeof Store !== 'undefined' ? Store.get('difficulty') : 'medium') || 'medium';
+  const TABLE = {
+    easy:    { coopFactor: 1.30, toughFactor: 0.82, acceptShift: 8 },
+    medium:  { coopFactor: 1.00, toughFactor: 1.00, acceptShift: 0 },
+    hard:    { coopFactor: 0.78, toughFactor: 1.18, acceptShift: -6 },
+    extreme: { coopFactor: 0.62, toughFactor: 1.35, acceptShift: -12 },
+  };
+  return TABLE[diff] || TABLE.medium;
+}
+
+// 把难度修正应用到对手已决策的 move 上。纯函数（pd / ultimatum-respond 含随机微调）。
+// kind 决定 move 的语义；ctx 提供所需上下文（tripled / currentOppOffer / trueVal）。
+function applyDifficulty(kind, move, ctx, mod) {
+  const { coopFactor, toughFactor, acceptShift } = mod;
+  switch (kind) {
+    case 'pd':
+      if (move === 'defect' && coopFactor > 1 && Math.random() < (coopFactor - 1)) return 'coop';
+      if (move === 'coop' && coopFactor < 1 && Math.random() < (1 - coopFactor)) return 'defect';
+      return move;
+    case 'trust-return': {
+      const cap = ctx && ctx.tripled != null ? ctx.tripled : move;
+      return Math.max(0, Math.min(cap, Math.round(move * coopFactor)));
+    }
+    case 'pg-contribute':
+      return Math.max(0, Math.min(10, Math.round(move * coopFactor)));
+    case 'bargain-counter': {
+      if (!ctx || ctx.currentOppOffer == null) return move;
+      const concession = ctx.currentOppOffer - move;       // 对手本轮让步幅度
+      const scaled = concession * coopFactor;               // 难度越高让步越小
+      const floor = ctx.trueVal != null ? ctx.trueVal : move;
+      return Math.max(floor, Math.round(ctx.currentOppOffer - scaled));
+    }
+    case 'ultimatum-propose':
+      return Math.max(20, Math.min(80, Math.round(50 + (move - 50) * toughFactor)));
+    case 'ultimatum-respond': {
+      if (typeof move !== 'boolean') return move;
+      if (!move && acceptShift > 0 && Math.random() < acceptShift / 40) return true;
+      if (move && acceptShift < 0 && Math.random() < -acceptShift / 40) return false;
+      return move;
+    }
+    default:
+      return move;
+  }
+}
+
+
+/* ===== engine/memory.js ===== */
+// engine/memory.js — 跨回合记忆：对手对"当前玩家"的累计认知
+// 单局内有效，每局开始 reset。用指数滑动平均使近期行为权重更高。
+
+
+const _mem = new Map();
+
+function fresh() {
+  return {
+    rounds: 0,
+    coop: 0,            // 玩家合作次数
+    defect: 0,          // 玩家背叛次数
+    coopRate: 0.5,      // 滑动合作率
+    betrayalStreak: 0,  // 当前连续背叛
+    aggression: 0.5,    // 玩家激进度（极端施压频率）
+    avgConcession: 0,   // 谈判平均让步幅度
+    investFraction: 0.5,// 信任博弈投入比例
+    firmCount: 0,       // 玩家强硬/防御次数
+    exposureScore: 0,   // 操纵者被识破累计分
+  };
+}
+
+const Memory = {
+  reset(id) { _mem.set(id, fresh()); },
+
+  get(id) {
+    if (!_mem.has(id)) _mem.set(id, fresh());
+    return _mem.get(id);
+  },
+
+  // 观察玩家一次行为，更新认知。signal 字段均可选。
+  observe(id, sig = {}) {
+    const m = this.get(id);
+    m.rounds += 1;
+    if (sig.coop === true) { m.coop += 1; m.coopRate = ema(m.coopRate, 1); m.betrayalStreak = 0; }
+    if (sig.coop === false) { m.defect += 1; m.coopRate = ema(m.coopRate, 0); m.betrayalStreak += 1; }
+    if (sig.aggression != null) m.aggression = ema(m.aggression, sig.aggression);
+    if (sig.concession != null) m.avgConcession = ema(m.avgConcession, sig.concession);
+    if (sig.investFraction != null) m.investFraction = ema(m.investFraction, sig.investFraction);
+    if (sig.firm) m.firmCount += 1;
+    if (sig.exposes) m.exposureScore += 1;
+    return m;
+  },
+};
+
+
+/* ===== engine/mood.js ===== */
+// engine/mood.js — 情绪/信任状态机：每个对手维护内部情绪，随回合演化
+// 情绪反过来调节决策（如 anger 高触发报复，confidence 低触发妥协）。
+
+
+const _mood = new Map();
+
+function fresh(persona) {
+  return {
+    trust: 0.5,
+    anger: 0,
+    patience: 1,
+    confidence: persona ? clamp(0.35 + persona.assert * 0.35) : 0.5,
+  };
+}
+
+const Mood = {
+  reset(id, persona) { _mood.set(id, fresh(persona)); },
+
+  get(id) {
+    if (!_mood.has(id)) _mood.set(id, fresh());
+    return _mood.get(id);
+  },
+
+  // 根据玩家行为演化情绪
+  react(id, sig = {}, persona = {}) {
+    const d = this.get(id);
+    if (sig.coop === true) {
+      d.trust = clamp(d.trust + 0.10);
+      d.anger = clamp(d.anger - 0.05);
+    }
+    if (sig.coop === false) {
+      d.trust = clamp(d.trust - 0.15);
+      const gain = (persona.id === 'aggressive' || persona.id === 'emotional') ? 0.28 : 0.18;
+      d.anger = clamp(d.anger + gain);
+    }
+    if (sig.aggression != null && sig.aggression > 0.6) {
+      d.patience = clamp(d.patience - 0.20);
+      d.confidence = clamp(d.confidence - (persona.id === 'aggressive' ? 0.15 : 0.08));
+    }
+    if (sig.firm) {
+      d.confidence = clamp(d.confidence - (persona.id === 'aggressive' ? 0.12 : 0.05));
+    }
+    d.patience = clamp(d.patience - 0.05); // 回合推进，耐心自然损耗
+    return d;
+  },
+};
+
+
+/* ===== engine/strategies/rational.js ===== */
+// engine/strategies/rational.js — 陈逻辑·理性分析型
+// 核心：收益最大化 + 严格以牙还牙；强记忆驱动，弱情绪。破绽：完全可预测。
+
+
+function rational(ctx, persona, mem, mood) {
+  switch (ctx.kind) {
+    case 'pd': {
+      if (ctx.round === 0) return { move: 'coop', reason: '首轮释放善意，建立可预期的互惠' };
+      return ctx.playerLastMove === 'defect'
+        ? { move: 'defect', reason: '以牙还牙：你上轮背叛，我镜像回应' }
+        : { move: 'coop', reason: '以牙还牙：你上轮合作，我维持互惠' };
+    }
+    case 'trust-return': {
+      const frac = clamp(0.40 + 0.25 * mood.trust);
+      return { move: Math.round(ctx.tripled * frac), reason: `按信任度理性返还约 ${Math.round(frac * 100)}%` };
+    }
+    case 'bargain-counter': {
+      const red = 5 * (1 - mem.aggression * 0.5) + (chance(0.5) ? 1 : 0);
+      const off = Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red));
+      return { move: off, reason: '按期望值小幅让步，你越强硬我让得越少' };
+    }
+    case 'pg-contribute': {
+      const c = ctx.playerLastContrib == null ? 5 : Math.round(ctx.playerLastContrib * 0.9);
+      return { move: clamp(c, 0, 10), reason: '条件合作：贡献与你上轮基本对齐' };
+    }
+    case 'ultimatum-propose':
+      return { move: 57, reason: '锚定接近理性均衡的 57' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 25, reason: share >= 25 ? '理性接受：有正收益就拿' : '拒绝：收益过低不值得' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/emotional.js ===== */
+// engine/strategies/emotional.js — 林敏感·情感驱动型
+// 核心：决策被 mood 主导，波动大。破绽：易被同理心安抚，也易被激怒。
+
+
+function emotional(ctx, persona, mem, mood) {
+  switch (ctx.kind) {
+    case 'pd': {
+      if (mood.anger > 0.5) return { move: 'defect', reason: `情绪主导：怒值 ${mood.anger.toFixed(2)}，报复性背叛` };
+      if (mood.trust > 0.6) return { move: 'coop', reason: `关系良好：信任 ${mood.trust.toFixed(2)}，慷慨合作` };
+      return ctx.playerLastMove === 'defect'
+        ? { move: 'defect', reason: '受上轮伤害，回敬背叛' }
+        : { move: 'coop', reason: '情绪平稳，倾向合作' };
+    }
+    case 'trust-return': {
+      const frac = clamp(0.30 + 0.40 * mood.trust - 0.25 * mood.anger);
+      return { move: Math.round(ctx.tripled * frac), reason: mood.anger > 0.4 ? '带着情绪，返还偏少' : '感到被信任，慷慨回馈' };
+    }
+    case 'bargain-counter': {
+      const red = mood.trust > 0.55 ? 10 : mood.anger > 0.4 ? 2 : 6;
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: mood.trust > 0.55 ? '关系融洽，主动大让步' : mood.anger > 0.4 ? '情绪抵触，几乎不让' : '按心情小让',
+      };
+    }
+    case 'pg-contribute': {
+      const c = mood.trust > 0.55 ? 8 : mood.anger > 0.4 ? 2 : 5;
+      return { move: c, reason: '贡献随情绪起伏' };
+    }
+    case 'ultimatum-propose':
+      return { move: mood.anger > 0.4 ? 60 : 50, reason: mood.anger > 0.4 ? '带气提案，多留给自己' : '倾向公平五五分' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      const floor = mood.anger > 0.4 ? 50 : 40;
+      return { move: share >= floor, reason: share >= floor ? '情绪可接受，同意' : `觉得不公平${mood.anger > 0.4 ? '又在气头上' : ''}，拒绝` };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/aggressive.js ===== */
+// engine/strategies/aggressive.js — 钢铁王·强硬鹰派型
+// 核心：高开价、小让步、施压。破绽：合理反压使 confidence 跌破阈值后被迫妥协。
+
+
+function aggressive(ctx, persona, mem, mood) {
+  const cracked = mood.confidence < 0.35; // 被合理反压压垮
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (cracked && ctx.round > 0) return { move: 'coop', reason: '气势被你压住，转向合作' };
+      return chance(0.78)
+        ? { move: 'defect', reason: '鹰派本能：施压背叛' }
+        : { move: 'coop', reason: '偶尔试探性合作' };
+    }
+    case 'trust-return': {
+      const frac = cracked ? 0.35 : 0.15;
+      return { move: Math.round(ctx.tripled * frac), reason: cracked ? '底气受挫，略作返还' : '强硬：返还极少' };
+    }
+    case 'bargain-counter': {
+      const red = cracked ? 12 : 3 + (chance(0.5) ? 2 : 0); // 破绽：confidence 低 → 大幅让步
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: cracked ? '被合理反压，被迫大幅妥协' : '寸土必争，几乎不让',
+      };
+    }
+    case 'pg-contribute':
+      return { move: cracked ? 5 : 2, reason: cracked ? '有所收敛' : '搭便车，贡献极低' };
+    case 'ultimatum-propose':
+      return { move: cracked ? 58 : 70, reason: cracked ? '气焰收敛' : '狮子大开口，自留七成' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      const need = cracked ? 35 : 45;
+      return { move: share >= need, reason: share >= need ? '勉强接受' : '嫌少，拒绝施压' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/cooperative.js ===== */
+// engine/strategies/cooperative.js — 和谐李·合作共赢型
+// 核心：高合作、主动让步。v3 新增"被骗觉醒"：被连续背叛后转宽容版 TfT，避免成为人形提款机。
+
+
+function cooperative(ctx, persona, mem, mood) {
+  const awakened = mem.betrayalStreak >= 2; // 善意被反复利用后觉醒
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (awakened) return { move: 'defect', reason: `善意被连续 ${mem.betrayalStreak} 次背叛消耗，宽容版TfT反击` };
+      return chance(0.85)
+        ? { move: 'coop', reason: '寻求双赢，主动合作' }
+        : { move: 'defect', reason: '偶发防御' };
+    }
+    case 'trust-return': {
+      const frac = awakened ? 0.30 : 0.60;
+      return { move: Math.round(ctx.tripled * frac), reason: awakened ? '信任受损，返还转保守' : '高度信任，慷慨回馈六成' };
+    }
+    case 'bargain-counter': {
+      const red = awakened ? 6 : 11 + (chance(0.5) ? 2 : 0);
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: awakened ? '谨慎让步' : '追求成交，大幅让步',
+      };
+    }
+    case 'pg-contribute':
+      return { move: awakened ? 4 : 8, reason: awakened ? '减少贡献以自保' : '带头贡献，造福集体' };
+    case 'ultimatum-propose':
+      return { move: awakened ? 52 : 46, reason: awakened ? '略偏自保' : '偏向对方的公平分配' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 30, reason: share >= 30 ? '宽容接受，维系关系' : '实在过低，婉拒' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/manipulative.js ===== */
+// engine/strategies/manipulative.js — 影子张·操纵控制型
+// 核心：钓鱼、忽大忽小、放长线背刺。破绽：被识破（exposureScore≥2）后操纵收益归零，转常规策略。
+
+
+function manipulative(ctx, persona, mem, mood) {
+  const exposed = mem.exposureScore >= 2;
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (exposed) {
+        return ctx.playerLastMove === 'defect'
+          ? { move: 'defect', reason: '已被识破，改打常规以牙还牙' }
+          : { move: 'coop', reason: '伪装失效，转常规互惠' };
+      }
+      return ctx.round < 2
+        ? { move: 'coop', reason: '放长线：先合作骗取信任' }
+        : { move: 'defect', reason: '收网：背刺获利' };
+    }
+    case 'trust-return': {
+      if (exposed) return { move: Math.round(ctx.tripled * 0.4), reason: '被识破，按常规返还' };
+      const early = mem.rounds < 2;
+      return {
+        move: Math.round(ctx.tripled * (early ? 0.5 : 0.1)),
+        reason: early ? '钓鱼：高返还诱你加码' : '收割：大幅克扣',
+      };
+    }
+    case 'bargain-counter': {
+      if (exposed) return { move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - 6)), reason: '被识破，稳定让步' };
+      const red = chance(0.5) ? 9 : 2;
+      return { move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)), reason: '忽大忽小，制造认知混乱' };
+    }
+    case 'pg-contribute':
+      return { move: exposed ? 5 : (chance(0.4) ? 8 : 2), reason: exposed ? '转为常规贡献' : '贡献飘忽，迷惑对手' };
+    case 'ultimatum-propose':
+      return { move: exposed ? 57 : 65, reason: exposed ? '转常规提案' : '高自留，包装话术' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 35, reason: share >= 35 ? '接受' : '拒绝以施压' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/risk-averse.js ===== */
+// engine/strategies/risk-averse.js — 稳健吴·风险规避型
+// 核心：偏好确定性、回避极端、接受"足够好"。破绽：压力下（耐心耗尽/对手强硬）过度让步。
+
+
+function riskAverse(ctx, persona, mem, mood) {
+  const pressured = mood.patience < 0.4 || mem.aggression > 0.6; // 压力下过度让步
+
+  switch (ctx.kind) {
+    case 'pd':
+      return chance(0.70)
+        ? { move: 'coop', reason: '规避双输风险，倾向稳定合作' }
+        : { move: 'defect', reason: '谨慎自保' };
+    case 'trust-return':
+      return { move: Math.round(ctx.tripled * 0.4), reason: '稳健返还，留有余地' };
+    case 'bargain-counter': {
+      const red = pressured ? 11 : 6 + (chance(0.5) ? 3 : 0);
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: pressured ? '压力之下过度让步（破绽）' : '稳健小步让',
+      };
+    }
+    case 'pg-contribute':
+      return { move: 5, reason: '中庸贡献，避免极端' };
+    case 'ultimatum-propose':
+      return { move: 55, reason: '求稳，留略多但不贪' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      return { move: share >= 25, reason: share >= 25 ? '接受以规避零收益风险' : '过低，拒绝' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/strategies/trump-boss.js ===== */
+// engine/strategies/trump-boss.js — 极限交易者·高压锚定型（隐藏 Boss）
+// 抽象「极端开价 / 公开施压 / 极少让步 / 锚定 / 不可预测」的谈判风格。
+// 跨回合自适应：你越无条件合作，它越索取；你亮 BATNA / 强硬，它才略微松动。
+// 难度豁免：本策略输出即极限值，opponent-ai 不再叠加难度修正。
+
+
+function trumpBoss(ctx, persona, mem, mood) {
+  const resisted = mem.firmCount > 0 || mem.aggression > 0.6; // 玩家亮 BATNA / 强硬反压
+  const overlySoft = mem.coop >= 2 && mem.firmCount === 0;     // 玩家持续无条件合作
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (ctx.round === 0) return { move: chance(0.9) ? 'defect' : 'coop', reason: '开局极限施压：先背叛立威' };
+      if (resisted) return { move: chance(0.5) ? 'defect' : 'coop', reason: '遇到可信反压，转为试探' };
+      if (overlySoft) return { move: chance(0.95) ? 'defect' : 'coop', reason: '你越软我越索取' };
+      return { move: chance(0.85) ? 'defect' : 'coop', reason: '高压交易本能：倾向背叛' };
+    }
+    case 'trust-return':
+      return { move: Math.round(ctx.tripled * 0.08), reason: '极限榨取，几乎不返还' };
+    case 'bargain-counter': {
+      if (ctx.round === 0) return { move: 95, reason: '极端锚定开价 95' };
+      let red;
+      if (resisted) red = 4 + (chance(0.5) ? 2 : 0);          // 被反压才肯多让一点
+      else if (overlySoft) red = 1 + (chance(0.5) ? 1 : 0);   // 你软我几乎不动
+      else red = 3 + (chance(0.5) ? 2 : 0);
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: resisted ? '迫于你的底气略作让步' : '寸土不让的高压让步',
+      };
+    }
+    case 'pg-contribute':
+      return { move: chance(0.5) ? 0 : 1, reason: '搭便车到底：让别人买单' };
+    case 'ultimatum-propose':
+      return { move: resisted ? 78 : 84, reason: resisted ? '稍稍收敛但仍极端' : '极端报价：自留绝大部分' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      const need = resisted ? 42 : 50; // 极高接受门槛
+      return { move: share >= need, reason: share >= need ? '勉强收下' : '不够多，拒绝并继续加压' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
+/* ===== engine/opponent-ai.js ===== */
+// engine/opponent-ai.js — AI 决策引擎统一入口
+// 装配性格(静态) + 记忆(动态认知) + 情绪(状态机) + 性格专属策略。
+// 不操作 DOM；仅通过返回值与 ai:decided 事件对外通信。
+
+
+
+const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse, trumpBoss };
+
+const OpponentAI = {
+  // 每局开始重置该对手的记忆与情绪
+  reset(opponentId) {
+    const persona = getOpponent(opponentId);
+    Memory.reset(opponentId);
+    Mood.reset(opponentId, persona);
+  },
+
+  // 观察玩家一次行为：更新记忆 + 演化情绪（在对手做出反应前调用）
+  observe(opponentId, signal) {
+    const persona = getOpponent(opponentId);
+    Memory.observe(opponentId, signal);
+    Mood.react(opponentId, signal, persona);
+  },
+
+  // 做出决策：ctx.kind 决定决策类型，返回 { move, reason, mood }
+  decide(opponentId, ctx) {
+    const persona = getOpponent(opponentId);
+    const mem = Memory.get(opponentId);
+    const mood = Mood.get(opponentId);
+    const fn = STRATEGIES[opponentId] || STRATEGIES.rational;
+
+    let { move, reason } = fn(ctx, persona, mem, mood);
+    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。Boss 已是极限值，豁免。
+    if (opponentId !== 'trumpBoss') {
+      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod());
+    }
+    const snapshot = { ...mood };
+
+    EventBus.emit(EVENTS.AI_DECIDED, { opponentId, move, reason, mood: snapshot, kind: ctx.kind });
+    return { move, reason, mood: snapshot };
+  },
+
+  // 供复盘读取
+  snapshot(opponentId) {
+    return { memory: { ...Memory.get(opponentId) }, mood: { ...Mood.get(opponentId) } };
+  },
+};
+
+
+/* ===== ui/components.js ===== */
+// ui/components.js — 纯 HTML 片段构造器（无 DOM 操作，仅返回字符串）
+// 被 screens 与 scenarios 复用。游戏内交互元素统一带 data-game-action / data-value，
+// 由 game-view 的事件委托翻译成 player:action 事件。
+
+const C = {
+  panel(title, body) {
+    return `<div class="panel"><div class="panel-title">${title}</div>${body}</div>`;
+  },
+
+  hint(text, kind = 'cyan') {
+    return `<div class="hint hint-${kind}">${text}</div>`;
+  },
+
+  scoreBox(num, label, color) {
+    const style = color ? ` style="color:${color}"` : '';
+    return `<div class="score-box"><div class="score-num"${style}>${num}</div><div class="score-lbl">${label}</div></div>`;
+  },
+
+  bar(label, val, colorClass = 'bar-cyan') {
+    const pct = Math.round(Math.min(1, Math.max(0, val)) * 100);
+    return `<div class="bar-wrap">
+      <div class="bar-label"><span>${label}</span><span>${pct}%</span></div>
+      <div class="bar-bg"><div class="bar-fill ${colorClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  },
+
+  infoRow(key, val) {
+    return `<div class="info-row"><span class="info-key">${key}</span><span class="info-val">${val}</span></div>`;
+  },
+
+  tag(text, cls = 'tag-cyan') {
+    return `<span class="tag ${cls}">${text}</span>`;
+  },
+
+  outcomeBadge(outcome) {
+    const map = {
+      win:  ['outcome-win', '胜利'],
+      lose: ['outcome-lose', '败北'],
+      draw: ['outcome-draw', '平局'],
+      coop: ['outcome-coop', '合作双赢'],
+    };
+    const [cls, label] = map[outcome] || ['outcome-draw', outcome];
+    return `<span class="outcome ${cls}">${label}</span>`;
+  },
+
+  // 对局内的页眉（含退出按钮）
+  gameHeader(title) {
+    return `<div class="flex-between">
+      <div class="section-title">${title}</div>
+      <button class="back-btn" data-game-action="exit">✕ 退出</button>
+    </div>`;
+  },
+
+  // 对局内的动作按钮：点击经委托发出 player:action {type:action, value}
+  actionBtn(action, value, html, extraClass = '') {
+    return `<button class="choice-btn ${extraClass}" data-game-action="${action}" data-value="${value}">${html}</button>`;
+  },
+
+  // 回合日志容器
+  logBox(title, entriesHtml) {
+    if (!entriesHtml) return '';
+    return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
+  },
+
+  // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
+  moodSparkline(series) {
+    if (!series || !series.length) return '';
+    const W = 280, H = 48, n = series.length;
+    const x = (i) => (n > 1 ? (i / (n - 1)) * (W - 8) + 4 : W / 2);
+    const y = (v) => (H - 4) - v * (H - 8);
+    const line = (key, color) => {
+      const pts = series.map((m, i) => `${x(i).toFixed(0)},${y(m[key] || 0).toFixed(0)}`).join(' ');
+      const dots = series.map((m, i) => `<circle cx="${x(i).toFixed(0)}" cy="${y(m[key] || 0).toFixed(0)}" r="2" fill="${color}"/>`).join('');
+      return `<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts}"/>${dots}`;
+    };
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="background:var(--bg);border:1px solid var(--border);border-radius:3px">
+      ${line('trust', 'var(--cyan)')}${line('anger', 'var(--red)')}
+    </svg>
+    <div style="font-size:10px;color:var(--dim);margin-top:2px">— 信任(青) ／ — 愤怒(红)　对手情绪随回合演化</div>`;
+  },
+};
+
+
+/* ===== analytics/player-data.js ===== */
+// analytics/player-data.js — 玩家档案 + LocalStorage 持久化
+// 兼容 v2.0 存档：key = gts_player_<name>，字段 {name,sessions,total,wins,draws,losses}
+
+const KEY_PREFIX = 'gts_player_';
+
+// 行为统计累加器（Phase 4：心理画像基于真实决策序列计算）
+function freshBehaviorStats() {
+  return {
+    games: 0,
+    coopMoves: 0, totalMoves: 0,
+    riskyMoves: 0, assertiveMoves: 0,
+    fairActs: 0, fairOpps: 0,
+    trustInvested: 0, trustMax: 0,
+    impulseAvoid: 0, impulseTotal: 0,
+    wins: 0, hardGames: 0, hardWins: 0,
+    tftGames: 0, tftWins: 0,
+    correctReads: 0, readOpps: 0,
+    opponentsSeen: [],
+  };
+}
+
+function loadPlayer(name) {
+  try {
+    const saved = localStorage.getItem(KEY_PREFIX + name);
+    if (saved) {
+      const p = JSON.parse(saved);
+      // 向后兼容：补齐 v3 可能新增的字段
+      p.sessions = p.sessions || [];
+      p.behaviorStats = { ...freshBehaviorStats(), ...(p.behaviorStats || {}) };
+      return p;
+    }
+  } catch (e) {
+    console.warn('[player-data] 读取存档失败，新建档案', e);
+  }
+  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats() };
+}
+
+function savePlayer(player) {
+  if (!player) return;
+  try {
+    localStorage.setItem(KEY_PREFIX + player.name, JSON.stringify(player));
+  } catch (e) {
+    console.warn('[player-data] 保存存档失败', e);
+  }
+}
+
+// 追加一局记录并持久化；返回更新后的 player
+function addSession(player, rec) {
+  player.sessions.push(rec);
+  player.total += 1;
+  if (rec.outcome === 'win') player.wins += 1;
+  else if (rec.outcome === 'draw' || rec.outcome === 'coop') player.draws += 1;
+  else player.losses += 1;
+  savePlayer(player);
+  return player;
+}
+
+
+/* ===== analytics/psych-analyzer.js ===== */
+// analytics/psych-analyzer.js — 8 维心理画像引擎（Phase 4 重构）
+// 不再用固定 +0.08 线性累加，而是从真实决策序列累计行为统计，按比例计算 8 维向量。
+// 统计累加在 player.behaviorStats（随存档持久化）。
+
+const HARD_OPPONENTS = ['aggressive', 'manipulative'];
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const safe = (a, b, d = 0.5) => (b > 0 ? clamp01(a / b) : d);
+
+// 从一局的回合日志提取行为信号，累加进 player.behaviorStats
+function accumulate(player, kind, rounds, result, opp) {
+  const s = player.behaviorStats;
+  s.games += 1;
+  if (opp && !s.opponentsSeen.includes(opp.id)) s.opponentsSeen.push(opp.id);
+  if (result.outcome === 'win') s.wins += 1;
+  if (opp && HARD_OPPONENTS.includes(opp.id)) {
+    s.hardGames += 1;
+    if (result.outcome === 'win') s.hardWins += 1;
+  }
+  if (!rounds || !rounds.length) return player;
+
+  if (kind === 'prisoners') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      if (r.player === 'coop') { s.coopMoves += 1; s.impulseAvoid += 1; }
+      else { s.riskyMoves += 1; s.assertiveMoves += 1; }
+      // correctReads：本回合动作与对手动作一致 = 预判命中
+      s.readOpps += 1;
+      if (r.player === r.opp) s.correctReads += 1;
+    });
+    // tftWins：第1轮合作 + 之后每轮镜像对手上一轮 = TFT 风格
+    const isTFT = rounds.length > 0
+      && rounds[0].player === 'coop'
+      && rounds.every((r, i) => i === 0 || r.player === rounds[i - 1].opp);
+    if (isTFT) {
+      s.tftGames += 1;
+      if (result.outcome === 'win') s.tftWins += 1;
+    }
+  } else if (kind === 'trust') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      s.trustInvested += r.invested; s.trustMax += 10;
+      if (r.invested >= 5) s.coopMoves += 1;
+      if (r.invested >= 10) s.riskyMoves += 1;
+      if (r.invested === 0) s.assertiveMoves += 1;
+      if (r.myNet >= 0) s.impulseAvoid += 1;
+      // correctReads：投资后净收益为正 = 正确读出对手可信度
+      if (r.invested > 0) {
+        s.readOpps += 1;
+        if (r.myNet > 0) s.correctReads += 1;
+      }
+    });
+  } else if (kind === 'publicgoods') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      s.trustInvested += r.my; s.trustMax += 10;
+      if (r.my >= 5) { s.coopMoves += 1; s.impulseAvoid += 1; }
+      if (r.my <= 1) s.assertiveMoves += 1;
+      if (r.my === 0) s.riskyMoves += 1;
+    });
+  } else if (kind === 'bargaining') {
+    rounds.forEach((r, i) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      const prev = i > 0 ? rounds[i - 1].my : r.my;
+      if (r.my - prev <= 3) s.impulseAvoid += 1;
+      if (r.my < 42) s.assertiveMoves += 1;
+    });
+  } else if (kind === 'ultimatum') {
+    rounds.forEach((r, i) => {
+      s.totalMoves += 1; s.fairOpps += 1;
+      if (r.accepted && r.myOffer >= 40 && r.myOffer <= 62) s.fairActs += 1;
+      else if (r.accepted) s.fairActs += 0.5;
+      if (r.myOffer > 62) s.assertiveMoves += 1;
+      // correctReads：玩家作为提议者（0-indexed 偶数轮）的报价被接受 = 读准对方阈值
+      if (i % 2 === 0) {
+        s.readOpps += 1;
+        if (r.accepted) s.correctReads += 1;
+      }
+    });
+  } else if (kind === 'crisis' || kind === 'coalition') {
+    rounds.forEach((r) => {
+      s.totalMoves += 1; s.impulseTotal += 1;
+      if (r.ps > 0) s.impulseAvoid += 1;
+    });
+  }
+  return player;
+}
+
+// 由行为统计计算 8 维心理向量
+function computeProfile(player) {
+  const s = (player && player.behaviorStats) || {};
+  const winRate = safe(s.wins, s.games);
+  const hardWinRate = safe(s.hardWins, s.hardGames, 0.4);
+  return {
+    cooperation_rate: safe(s.coopMoves, s.totalMoves),
+    risk: safe(s.riskyMoves, s.totalMoves),
+    fairness: safe(s.fairActs, s.fairOpps),
+    depth: clamp01(0.3 + 0.3 * winRate + 0.4 * hardWinRate),
+    emotion: safe(s.impulseAvoid, s.impulseTotal),
+    assert: safe(s.assertiveMoves, s.totalMoves),
+    adapt: clamp01(0.6 * Math.min(1, (s.opponentsSeen ? s.opponentsSeen.length : 0) / 6) + 0.4 * Math.min(1, (s.games || 0) / 8)),
+    trust: safe(s.trustInvested, s.trustMax),
+  };
+}
+
+function getProfileType(p) {
+  const profiles = [
+    { name:'战略家', cond:() => p.depth > 0.6 && p.assert > 0.5, desc:'冷静理智，善于全局规划和长远布局',
+      advice:['适当增加情感投入以建立更强的谈判关系','尝试更多合作性策略','注意不要过于机械化'] },
+    { name:'调解者', cond:() => p.cooperation_rate > 0.7 && p.fairness > 0.6, desc:'天生的关系维护者，擅长化解冲突',
+      advice:['学会在合适时机坚守底线','避免为维持和谐而过度妥协','增强BATNA意识'] },
+    { name:'竞争者', cond:() => p.assert > 0.6 && p.risk > 0.5, desc:'目标明确，勇于争取最大利益',
+      advice:['关注对方利益，寻找双赢机会','长期关系比单次收益更有价值','练习主动倾听'] },
+    { name:'外交家', cond:() => p.adapt > 0.6 && p.emotion > 0.6, desc:'灵活适应，善于在不同情境切换策略',
+      advice:['在核心利益上保持一致性','增强策略深度分析能力','建立清晰的底线意识'] },
+    { name:'分析师', cond:() => p.depth > 0.5 && p.risk < 0.4, desc:'谨慎周密，偏好有据可查的决策路径',
+      advice:['适当增加行动果断性','在信息不完整时学会做出判断','尝试更多创新性解决方案'] },
+    { name:'实用主义者', cond:() => true, desc:'务实灵活，根据情境选择最优策略',
+      advice:['深化某一领域的专项谈判技能','建立系统性的谈判框架','记录每次谈判的经验教训'] },
+  ];
+  return profiles.find((pp) => pp.cond()) || profiles[profiles.length - 1];
+}
+
+function hasEnoughData(totalSessions) {
+  return totalSessions >= 2;
+}
+
+// 基于 v3 全比例模型的短板检测（阈值针对真实决策比例校准，非 0.5 基线）
+function detectWeakPoints(profile) {
+  if (!profile) return [];
+  const weak = [];
+  if ((profile.assert || 0) < 0.30)                                   weak.push('主张强度不足');
+  if ((profile.depth || 0) < 0.45)                                    weak.push('策略深度不足');
+  if ((profile.adapt || 0) < 0.40)                                    weak.push('策略适配不足');
+  if ((profile.risk || 0) < 0.20)                                     weak.push('风险承受偏低');
+  if ((profile.emotion || 0) < 0.35)                                  weak.push('情绪调节不足');
+  if ((profile.fairness || 0) > 0.75 && (profile.assert || 0) < 0.30) weak.push('公平敏感偏高，可能过度让步');
+  return weak;
+}
+
+// 兼容旧入口名（recorder 调用）
+const PsychAnalyzer = { accumulate, computeProfile, getProfileType, hasEnoughData };
+
+
+/* ===== analytics/replay.js ===== */
+// analytics/replay.js — 逐回合复盘评分（Phase 4）
+// 输入：场景 kind + 回合日志 + 结果 + 对手；输出：逐回合 0-100 评分 + 转折点 + 改进建议 + 对手情绪序列。
+
+
+const clampScore = (x, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, x));
+
+function scorePrisoners(rounds) {
+  return rounds.map((r) => {
+    let score, comment;
+    if (r.player === 'coop' && r.opp === 'coop') { score = 85; comment = '互利合作，稳健可持续'; }
+    else if (r.player === 'defect' && r.opp === 'coop') { score = 66; comment = '占得便宜，但易招致后续报复'; }
+    else if (r.player === 'coop' && r.opp === 'defect') { score = 40; comment = '被对方利用，吃亏'; }
+    else { score = 32; comment = '双输僵局，零和内耗'; }
+    return { label: `第${r.round}轮`, score, comment, mood: r.mood };
+  });
+}
+
+function scoreTrust(rounds) {
+  return rounds.map((r) => {
+    const score = clampScore(50 + r.myNet * 4);
+    const comment = r.myNet > 3 ? '信任获得正回报' : r.myNet >= 0 ? '基本持平' : '信任被辜负，受损';
+    return { label: `第${r.round}轮(投${r.invested})`, score, comment, mood: r.mood };
+  });
+}
+
+function scorePublicGoods(rounds) {
+  return rounds.map((r) => {
+    const gain = r.share - r.my;
+    const score = clampScore(50 + gain * 6);
+    const comment = r.my >= 5 && r.opp >= 5 ? '集体共赢' : r.my === 0 ? '搭便车，短期获利但侵蚀信任' : '谨慎参与';
+    return { label: `第${r.round}轮(贡${r.my})`, score, comment, mood: r.mood };
+  });
+}
+
+function scoreBargaining(rounds, result) {
+  const per = rounds.map((r, i) => {
+    const prev = i > 0 ? rounds[i - 1].my : r.my;
+    const conc = r.my - prev;
+    const score = clampScore(88 - conc * 3);
+    const comment = conc <= 3 ? '小步施压，纪律良好' : conc >= 12 ? '让步过快，丢失筹码' : '让步适中';
+    return { label: `第${r.round}轮(出${r.my})`, score, comment, mood: r.mood };
+  });
+  // 追加成交评分
+  const price = 100 - result.playerScore;
+  per.push({
+    label: `成交(${price}元)`,
+    score: clampScore(price <= 55 ? 92 : price <= 65 ? 70 : 45),
+    comment: price <= 55 ? '远低于真实价值，出色' : price <= 65 ? '接近真实价值' : '偏高，议价不足',
+  });
+  return per;
+}
+
+function scoreUltimatum(rounds) {
+  return rounds.map((r) => {
+    let score, comment;
+    if (!r.accepted) { score = 30; comment = '提案被否，双方归零'; }
+    else if (r.myOffer >= 40 && r.myOffer <= 62) { score = 85; comment = '分配合理，顺利达成'; }
+    else if (r.myOffer > 62) { score = 60; comment = '自留偏多，侥幸通过'; }
+    else { score = 70; comment = '偏让利，关系友好'; }
+    return { label: `第${r.round}轮`, score, comment };
+  });
+}
+
+function scoreStaged(rounds) {
+  return rounds.map((r, i) => {
+    const max = r.maxPs || 20;
+    const score = clampScore(Math.round((r.ps / max) * 100));
+    const comment = r.ps >= max * 0.8 ? '上佳选择' : r.ps > 0 ? '有效推进' : '适得其反，激化局面';
+    return { label: r.stage || `第${i + 1}阶段`, score, comment };
+  });
+}
+
+const SCORERS = {
+  prisoners: scorePrisoners,
+  trust: scoreTrust,
+  publicgoods: scorePublicGoods,
+  bargaining: scoreBargaining,
+  ultimatum: scoreUltimatum,
+  crisis: scoreStaged,
+  coalition: scoreStaged,
+};
+
+function buildReplay(kind, rounds, opp, result) {
+  const scorer = SCORERS[kind];
+  if (!scorer || !rounds || !rounds.length) {
+    return { perRound: [], avgScore: null, turning: null, advice: opp ? getOpponentTips(opp.id).slice(0, 2) : [], moodSeries: null };
+  }
+  const perRound = scorer(rounds, result);
+  const avgScore = Math.round(perRound.reduce((s, r) => s + r.score, 0) / perRound.length);
+
+  // 转折点：最低分回合（若整体优秀则取最佳一手）
+  let turning = null;
+  if (perRound.length) {
+    const worst = perRound.reduce((a, b) => (b.score < a.score ? b : a));
+    const best = perRound.reduce((a, b) => (b.score > a.score ? b : a));
+    turning = worst.score < 55
+      ? { type: 'bad', text: `${worst.label}是本局关键失误（${worst.score}分）：${worst.comment}` }
+      : { type: 'good', text: `${best.label}是本局最佳一手（${best.score}分）：${best.comment}` };
+  }
+
+  // 对手情绪序列（仅决策类场景携带 mood）
+  const moods = perRound.filter((r) => r.mood).map((r) => r.mood);
+  const moodSeries = moods.length ? moods : null;
+
+  // 改进建议：表现 + 对手专项
+  const advice = [];
+  if (avgScore >= 75) advice.push('整体决策质量高，可尝试更高难度对手或更激进的目标。');
+  else if (avgScore >= 55) advice.push('决策稳健但有提升空间，关注转折点回合的更优解。');
+  else advice.push('多个回合失分明显，建议复盘转折点，调整对该类对手的策略。');
+  if (opp) advice.push(...getOpponentTips(opp.id).slice(0, 2));
+
+  return { perRound, avgScore, turning, advice, moodSeries };
+}
+
+
+/* ===== ui/router.js ===== */
+// ui/router.js — 屏幕路由
+// 维护 screenId -> 渲染函数 的注册表；监听 nav:goto 事件切换屏幕。
+// router 只负责"把哪个屏幕画到 #app"，不含任何业务逻辑。
+
+
+const _screens = new Map(); // screenId -> render(params) => htmlString
+
+const Router = {
+  // 注册一个屏幕的渲染函数
+  register(screenId, renderFn) {
+    _screens.set(screenId, renderFn);
+  },
+
+  // 初始化：绑定 nav:goto 监听，渲染首屏
+  init(rootEl, initialScreen, initialParams = {}) {
+    EventBus.on(EVENTS.NAV_GOTO, ({ screen, params }) => {
+      this._render(rootEl, screen, params || {});
+    });
+    this._render(rootEl, initialScreen, initialParams);
+  },
+
+  _render(rootEl, screenId, params) {
+    const renderFn = _screens.get(screenId);
+    if (!renderFn) {
+      rootEl.innerHTML = `<div class="hint hint-red">未注册的屏幕：${screenId}</div>`;
+      console.error(`[Router] no screen registered for "${screenId}"`);
+      return;
+    }
+    rootEl.innerHTML = renderFn(params);
+    Store.set('currentScreen', screenId);
+    // 渲染后回调（用于绑定事件、聚焦输入等）
+    if (typeof renderFn.afterRender === 'function') {
+      renderFn.afterRender(params);
+    }
+    window.scrollTo(0, 0);
+  },
+};
+
+
+/* ===== scenarios/base-scenario.js ===== */
+// scenarios/base-scenario.js — 场景抽象基类，定义统一生命周期与事件契约
+// 子类实现 start() 与 handleAction(action)，通过 emitRender/finish 与外界通信。
+// 约束：场景不操作 DOM、不 import ui 屏幕逻辑（仅可用 components 纯字符串构造器）。
+
+
+class BaseScenario {
+  constructor(opp) {
+    this.opp = opp;
+    this.log = [];
+    this.peeksLeft = 2;   // Phase 4：消耗式"识破对手"次数
+    this._peekSnap = null;
+  }
+
+  emitRender(html) {
+    EventBus.emit(EVENTS.GAME_RENDER, { html });
+  }
+
+  finish(result) {
+    EventBus.emit(EVENTS.GAME_END, { result });
+  }
+
+  // 破绽提示控件：按钮 + （已识破时）对手情绪/行为快照
+  peekControls() {
+    const label = this.peeksLeft > 0 ? `🔍 识破对手（剩 ${this.peeksLeft} 次）` : '🔍 识破次数已用完';
+    let html = C.actionBtn('peek', '', label, 'btn-purple');
+    if (this._peekSnap) {
+      const m = this._peekSnap.mood;
+      const pct = (x) => Math.round(x * 100);
+      const tells = (PERSONALITY_TELLS[this.opp.id] || []).join(' / ');
+      html += C.hint(
+        `<b>读心快照：</b>信任 ${pct(m.trust)}% · 愤怒 ${pct(m.anger)}% · 耐心 ${pct(m.patience)}% · 自信 ${pct(m.confidence)}%<br><span style="color:var(--dim)">行为信号：${tells}</span>`,
+        'purple');
+    }
+    return html;
+  }
+
+  handlePeek() {
+    if (this.peeksLeft > 0 && !this._peekSnap) {
+      this.peeksLeft -= 1;
+      this._peekSnap = OpponentAI.snapshot(this.opp.id);
+    }
+    this._render();
+  }
+
+  start() { throw new Error('start() not implemented'); }
+  handleAction(_action) { throw new Error('handleAction() not implemented'); }
+}
+
+
+/* ===== scenarios/prisoners.js ===== */
+// scenarios/prisoners.js — 囚徒困境
+// Phase 3：AI 决策改由 engine 驱动（TfT/报复/觉醒等由记忆+情绪决定）。
+
+
+class PrisonersDilemma extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.rounds = 5;
+    this.round = 0;
+    this.playerScore = 0;
+    this.oppScore = 0;
+  }
+
+  _scores(p, o) {
+    if (p === 'coop' && o === 'coop') return [3, 3];
+    if (p === 'coop' && o === 'defect') return [0, 5];
+    if (p === 'defect' && o === 'coop') return [5, 0];
+    return [1, 1];
+  }
+
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
+
+  _render() {
+    const opp = this.opp;
+    const logHtml = this.log.map((l) =>
+      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | +${l.pScore} vs +${l.oScore}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
+    ).join('');
+
+    this.emitRender(`
+      ${C.gameHeader(`囚徒困境 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      <div class="grid2" style="margin:12px 0">
+        ${C.scoreBox(this.playerScore, '您的分数')}
+        ${C.scoreBox(this.oppScore, `${opp.name} 分数`)}
+      </div>
+      ${C.hint(`<b>场景：</b>你和 ${opp.name} 同时被捕。双方都沉默（合作）各判3年；你背叛对方沉默则你自由对方5年；双方都背叛各1年。<br><b>对手档案：</b>${opp.type} — ${opp.desc}`)}
+      ${C.panel('选择你的策略',
+        C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
+        C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
+        this.peekControls())}
+      ${C.logBox('对局记录', logHtml)}
+    `);
+  }
+
+  handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
+    if (type !== 'choice') return;
+    this._peekSnap = null;
+    const prev = this.log.length ? this.log[this.log.length - 1].player : null;
+    // 对手基于"此前回合"的记忆/情绪做决策（同时出招，看不到本轮）
+    const { move: oppChoice, reason, mood } = OpponentAI.decide(this.opp.id, {
+      kind: 'pd', round: this.round, playerLastMove: prev,
+    });
+    const [ps, os] = this._scores(value, oppChoice);
+    this.playerScore += ps;
+    this.oppScore += os;
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood });
+    // 观察玩家本轮行为，更新记忆与情绪（影响后续回合）
+    OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
+    this.round += 1;
+    if (this.round < this.rounds) this._render();
+    else this._finish();
+  }
+
+  _finish() {
+    const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
+    const coop = this.log.filter((l) => l.player === 'coop').length;
+    const lastReason = this.log.length ? this.log[this.log.length - 1].reason : '';
+    this.finish({
+      kind: 'prisoners', rounds: this.log,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:
+        C.infoRow('总轮数', `${this.rounds} 轮`) +
+        C.infoRow('您的合作率', `${Math.round(coop / this.rounds * 100)}%`) +
+        C.infoRow('对手', `${this.opp.name} (${this.opp.type})`) +
+        C.infoRow('对手末轮心态', lastReason || '—') +
+        C.infoRow('分析', coop >= 4 ? '高度合作策略，建立了信任' : coop >= 2 ? '混合策略，较为灵活' : '激进背叛策略，短期收益可能较高但破坏信任'),
+    });
+  }
+}
+
+
+/* ===== scenarios/ultimatum.js ===== */
+// scenarios/ultimatum.js — 最后通牒博弈（从 v2.0 平移）
+// 玩家与对手轮流当提议者；接受者拒绝则双方得 0。
+
+
+const TOTAL = 100;
+
+class UltimatumGame extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.rounds = 3;
+    this.round = 0;
+    this.playerScore = 0;
+    this.oppScore = 0;
+    this.pendingOffer = null; // 对手当提议者时的报价（其保留额）
+  }
+
+  _isProposer() { return this.round % 2 === 0; }
+
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
+
+  _render() {
+    const opp = this.opp;
+    const logHtml = this.log.map((l) =>
+      `<div class="log-entry">[第${l.round}轮] 提案: 我${l.myOffer}/对方${l.theirOffer} → ${l.accepted ? '<span style="color:var(--green)">接受</span>' : '<span style="color:var(--red)">拒绝</span>'}</div>`
+    ).join('');
+
+    const head = `${C.gameHeader(`最后通牒博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      <div class="grid2" style="margin:12px 0">
+        ${C.scoreBox(this.playerScore, '您的总分')}
+        ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
+      </div>`;
+
+    if (this._isProposer()) {
+      this.emitRender(`${head}
+        ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是提议者</b>，提出分配方案。接受者拒绝则双方均得 0。`)}
+        ${C.panel('提出你的分配方案（给自己保留多少？）',
+          C.actionBtn('propose', '70', '<b>[激进]</b> 保留 70元，给对方 30元') +
+          C.actionBtn('propose', '60', '<b>[偏强]</b> 保留 60元，给对方 40元') +
+          C.actionBtn('propose', '50', '<b>[公平]</b> 保留 50元，给对方 50元') +
+          C.actionBtn('propose', '40', '<b>[让步]</b> 保留 40元，给对方 60元'))}
+        ${C.logBox('历史记录', logHtml)}`);
+    } else if (this.pendingOffer == null) {
+      // 接受者回合：先展示"对手思考中"，稍后生成报价
+      this.emitRender(`${head}
+        ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
+        ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
+        ${C.logBox('历史记录', logHtml)}`);
+      setTimeout(() => {
+        const { move } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-propose', round: this.round });
+        this.pendingOffer = move;
+        this._render();
+      }, 1000);
+    } else {
+      const keep = this.pendingOffer;
+      const give = TOTAL - keep;
+      this.emitRender(`${head}
+        ${C.hint(`${opp.name} 提议：<b style="color:var(--cyan)">给您 ${give} 元，自己保留 ${keep} 元</b>。`)}
+        ${C.panel('您的决定',
+          C.actionBtn('respond', 'accept', '<b>[接受]</b> 接受方案，各得所得') +
+          C.actionBtn('respond', 'reject', '<b>[拒绝]</b> 拒绝方案，双方得 0'))}
+        ${C.logBox('历史记录', logHtml)}`);
+    }
+  }
+
+  handleAction({ type, value }) {
+    if (type === 'propose') {
+      const keep = parseInt(value, 10);
+      // 观察玩家提案的强硬度（自留越多越强硬/越像在剥削）
+      OpponentAI.observe(this.opp.id, { aggression: clamp((keep - 50) / 50, 0, 1), firm: keep >= 65, coop: keep <= 50, exposes: keep >= 70 });
+      const { move: accepted } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-respond', playerKeep: keep });
+      this._settle(keep, accepted, true);
+    } else if (type === 'respond') {
+      const keep = this.pendingOffer;
+      this._settle(keep, value === 'accept', false);
+      this.pendingOffer = null;
+    }
+  }
+
+  _settle(myKeep, accepted, isMyProposal) {
+    const theirShare = TOTAL - myKeep;
+    let myGain, oppGain;
+    if (isMyProposal) {
+      myGain = accepted ? myKeep : 0;
+      oppGain = accepted ? theirShare : 0;
+    } else {
+      myGain = accepted ? theirShare : 0;
+      oppGain = accepted ? myKeep : 0;
+    }
+    this.playerScore += myGain;
+    this.oppScore += oppGain;
+    this.log.push({
+      round: this.round + 1,
+      myOffer: isMyProposal ? myKeep : theirShare,
+      theirOffer: isMyProposal ? theirShare : myKeep,
+      accepted,
+    });
+    this.round += 1;
+    if (this.round < this.rounds) this._render();
+    else this._finish();
+  }
+
+  _finish() {
+    const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
+    const acc = Math.round(this.log.filter((l) => l.accepted).length / this.log.length * 100);
+    this.finish({
+      kind: 'ultimatum', rounds: this.log,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:
+        C.infoRow('接受率', `${acc}%`) +
+        C.infoRow('最优策略', '作为提议者锚定 55-60，接受者接受 >30% 的方案'),
+    });
+  }
+}
+
+
+/* ===== scenarios/trust.js ===== */
+// scenarios/trust.js — 信任博弈
+// Phase 3：返还由 engine 决定；操纵型"钓鱼→收割"、对手情绪随你的投入演化。
+
+
+class TrustGame extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.rounds = 3;
+    this.round = 0;
+    this.playerScore = 0;
+    this.oppScore = 0;
+  }
+
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
+
+  _render() {
+    const opp = this.opp;
+    const logHtml = this.log.map((l) =>
+      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
+    ).join('');
+
+    this.emitRender(`
+      ${C.gameHeader(`信任博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      <div class="grid2" style="margin:12px 0">
+        ${C.scoreBox(this.playerScore, '您的总分')}
+        ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
+      </div>
+      ${C.hint(`<b>信任博弈：</b>您有 10 枚筹码。选择投入数额，系统 3 倍放大后交给 ${opp.name}，${opp.name} 再决定返还多少。这是一个信任测试！`)}
+      ${C.panel('选择投入金额（总共 10 枚）',
+        C.actionBtn('invest', '10', '<b>[全力信任]</b> 投入 10枚 → 对方收到 30枚') +
+        C.actionBtn('invest', '7', '<b>[高度信任]</b> 投入 7枚 → 对方收到 21枚') +
+        C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
+        C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码') +
+        this.peekControls())}
+      ${C.logBox('信任记录', logHtml)}
+    `);
+  }
+
+  handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
+    if (type !== 'invest') return;
+    this._peekSnap = null;
+    const amount = parseInt(value, 10);
+    const tripled = amount * 3;
+    // 先观察玩家的信任姿态（影响情绪/记忆，低投入会触发操纵者"被识破"计分）
+    OpponentAI.observe(this.opp.id, { coop: amount >= 5, investFraction: amount / 10, firm: amount <= 2, exposes: amount <= 2 });
+    const { move: returned, reason, mood } = OpponentAI.decide(this.opp.id, { kind: 'trust-return', tripled, invest: amount, round: this.round });
+    const kept = 10 - amount;
+    const myNet = kept + returned - 10;
+    this.playerScore += kept + returned;
+    this.oppScore += tripled - returned;
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood });
+    this.round += 1;
+    if (this.round < this.rounds) this._render();
+    else this._finish();
+  }
+
+  _finish() {
+    const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
+    const avgInvest = Math.round(this.log.reduce((s, l) => s + l.invested, 0) / this.log.length);
+    const avgReturn = Math.round(this.log.reduce((s, l) => s + (l.returned / (l.invested * 3 || 1)), 0) / this.log.length * 100);
+    this.finish({
+      kind: 'trust', rounds: this.log,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:
+        C.infoRow('平均投入', `${avgInvest} 枚`) +
+        C.infoRow('平均返还率', `${avgReturn}%`) +
+        C.infoRow('提示', '信任是双向的，适度投入测试对手诚意更为理性'),
+    });
+  }
+}
+
+
+/* ===== scenarios/bargaining.js ===== */
+// scenarios/bargaining.js — 商业谈判博弈
+// Phase 3：还价由 engine 决定。你越强硬（出价压得越低）→ 鹰派 confidence 跌→被迫大让步；
+// 风险规避型在压力下过度让步；操纵型忽大忽小。
+
+
+class BargainingGame extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.rounds = 5;
+    this.round = 0;
+    this.playerScore = 0;
+    this.oppScore = 0;
+    this.myAnchor = 40;
+    this.myOffer = 0;
+    this.oppOffer = 100;
+    this.trueVal = 60;
+    this.lastReason = '';
+  }
+
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
+
+  _render() {
+    const opp = this.opp;
+    const cur = this.myOffer || this.myAnchor;
+    const logHtml = this.log.map((l) =>
+      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
+    ).join('');
+
+    this.emitRender(`
+      ${C.gameHeader(`商业谈判 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.panel('谈判状态',
+        C.infoRow('商品真实价值', '<span style="color:var(--dim)">约 60 元（双方均未知）</span>') +
+        C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
+        C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
+        C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
+      ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
+      ${C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
+        C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
+        C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
+        C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
+        C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green') +
+        this.peekControls())}
+      ${C.logBox('谈判记录', logHtml)}
+    `);
+  }
+
+  handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
+    if (type === 'accept') { this._deal(this.oppOffer); return; }
+    if (type !== 'offer') return;
+    this._peekSnap = null;
+    const offer = parseInt(value, 10);
+    this.myOffer = offer;
+
+    // 观察玩家强硬度：出价压得越低越强硬（可压垮鹰派、施压风险规避型）
+    const lowness = clamp((this.trueVal - offer) / this.trueVal, 0, 1);
+    const firm = offer < this.trueVal * 0.7;
+    OpponentAI.observe(this.opp.id, { aggression: firm ? 0.7 : 0.3, firm, concession: offer - (this.log.length ? this.log[this.log.length - 1].my : this.myAnchor) });
+
+    const { move: newOpp, reason, mood } = OpponentAI.decide(this.opp.id, {
+      kind: 'bargain-counter', currentOppOffer: this.oppOffer, playerOffer: offer, trueVal: this.trueVal,
+    });
+    this.lastReason = reason;
+
+    if (newOpp <= offer || newOpp <= this.trueVal) {
+      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
+      this._deal(Math.round((offer + this.oppOffer) / 2));
+      return;
+    }
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood });
+    this.oppOffer = newOpp;
+    this.round += 1;
+
+    if (this.round >= this.rounds) {
+      if (this.oppOffer - offer < 15) this._deal(Math.round((offer + this.oppOffer) / 2));
+      else this._deal(this.oppOffer);
+    } else {
+      this._render();
+    }
+  }
+
+  _deal(price) {
+    this.playerScore = Math.max(0, 100 - price);
+    this.oppScore = Math.max(0, price - 40);
+    const outcome = price <= 55 ? 'win' : price <= 65 ? 'draw' : 'lose';
+    this.finish({
+      kind: 'bargaining', rounds: this.log,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:
+        C.infoRow('成交价格', `${price} 元`) +
+        C.infoRow('相比最高价节省', `${100 - price} 元`) +
+        C.infoRow('评价', price <= 55 ? '出色！远低于真实价值' : price <= 65 ? '良好，接近真实价值' : '偏高，需要提升议价技巧') +
+        C.infoRow('提示', '锚定低价、小幅递减让步、保持耐心是关键'),
+    });
+  }
+}
+
+
+/* ===== scenarios/crisis.js ===== */
+// scenarios/crisis.js — 危机谈判（从 v2.0 平移）
+// 四阶段危机处置；每个选择影响谈判积分与危机风险值。
+
+
+class CrisisNegotiation extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.stage = 0;
+    this.playerScore = 0;
+    this.oppScore = 50; // 危机风险值起点
+    this.stages = [
+      { title:'第一阶段：建立初步接触',
+        context:`危机现场：${opp.name}声称持有重要文件，威胁要公开引发连锁反应。您是谈判代表，需要建立接触。`,
+        options:[
+          { text:'战术性同理心："我理解您现在的压力，这一定非常困难..."', ps:15, os:-10, feedback:'很好！同理心降低了防御性，对话通道初步建立。' },
+          { text:'直接要求："请立即停止威胁行为，我们来谈条件。"', ps:5, os:0, feedback:'过于强硬，对方防御性增加，但明确了谈判立场。' },
+          { text:'倾听策略：沉默让对方先说，使用镜像技术复述', ps:12, os:-5, feedback:'有效的倾听技巧，获取了更多信息。' },
+          { text:'权威压制："上级已经授权我全权处理，必须服从。"', ps:-5, os:10, feedback:'权威策略激化矛盾，对方更加警觉。' },
+        ] },
+      { title:'第二阶段：深化沟通理解',
+        context:'初步接触建立后，需要深入了解对方诉求，寻找核心利益。',
+        options:[
+          { text:'校准问题："您最担心的具体是什么？我如何才能帮助您？"', ps:15, os:-10, feedback:'开放式校准问题触发深度思考，获取关键信息。' },
+          { text:'贴标签技术："看起来您对当前局面感到非常愤怒和失望。"', ps:12, os:-8, feedback:'准确标签降低情绪张力，建立情感连接。' },
+          { text:'利益置换："告诉我您真正需要的，也许我们能找到另一条路。"', ps:18, os:-15, feedback:'直指核心利益，突破立场僵局！' },
+          { text:'拖延策略："让我去请示上级，需要一些时间。"', ps:3, os:5, feedback:'拖延可能激怒对方，但为内部协调争取时间。' },
+        ] },
+      { title:'第三阶段：寻找解决方案',
+        context:'对方核心诉求已初步明确，需要创造可接受的解决方案。',
+        options:[
+          { text:'整合性方案："如果我们能保证您的A需求，您是否愿意在B上妥协？"', ps:18, os:-12, feedback:'整合性谈判创造新价值，双方空间扩大。' },
+          { text:'小步骤策略："先解决最小的问题，建立信任后再谈大问题。"', ps:15, os:-10, feedback:'增量式推进降低风险，积累谈判动力。' },
+          { text:'"就是这样"技术：重新表述对方诉求直到获得确认', ps:12, os:-8, feedback:'确认理解减少误解，为方案奠定基础。' },
+          { text:'最后期限压力："我们只有30分钟，现在必须做决定。"', ps:-8, os:15, feedback:'人工期限适得其反，破坏了之前建立的信任。' },
+        ] },
+      { title:'第四阶段：巩固协议',
+        context:'双方接近共识，需要巩固并确保协议落实。',
+        options:[
+          { text:'书面确认："让我们把达成的共识逐条写下来，确保理解一致。"', ps:15, os:-10, feedback:'书面确认防止事后争议，体现专业性。' },
+          { text:'"不"的保护：提供可接受的最低条件，让对方主动选择', ps:12, os:-8, feedback:'选择权归还给对方，增加协议持久性。' },
+          { text:'条件绑定："如果执行协议，我们将提供额外的保障措施。"', ps:18, os:-15, feedback:'条件让步激励执行，创造正向反馈机制！' },
+          { text:'强制结束："时间到，必须立即执行，否则后果自负。"', ps:-10, os:20, feedback:'强制性结束摧毁信任，协议可能不持久。' },
+        ] },
+    ];
+  }
+
+  start() { this._render(); }
+
+  _render() {
+    const s = this.stages[this.stage];
+    const opp = this.opp;
+    const logHtml = this.log.map((l) =>
+      `<div class="log-entry">[${l.stage}] ${l.feedback} <span style="color:var(--green)">+${l.ps}</span></div>`
+    ).join('');
+
+    this.emitRender(`
+      ${C.gameHeader(`危机谈判 — ${s.title}`)}
+      <div class="grid2" style="margin:12px 0">
+        ${C.scoreBox(this.playerScore, '谈判积分')}
+        ${C.scoreBox(Math.max(0, this.oppScore), '危机风险值', 'var(--red)')}
+      </div>
+      ${C.hint(s.context, 'yellow')}
+      ${C.hint(`对手档案：${opp.name} | ${opp.type} | ${opp.desc}`)}
+      ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
+      ${C.logBox('阶段记录', logHtml)}
+    `);
+  }
+
+  handleAction({ type, value }) {
+    if (type !== 'stage') return;
+    const s = this.stages[this.stage];
+    const opt = s.options[parseInt(value, 10)];
+    this.playerScore += opt.ps;
+    this.oppScore += opt.os;
+    const maxPs = Math.max(...s.options.map((o) => o.ps));
+    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
+    this.stage += 1;
+
+    if (this.stage < this.stages.length) {
+      this.emitRender(`${C.gameHeader('危机谈判 — 处理中...')}
+        ${C.hint(`<b>反馈：</b>${opt.feedback}`, opt.ps > 0 ? 'green' : 'red')}
+        ${C.hint('正在进入下一阶段...', 'cyan')}`);
+      setTimeout(() => this._render(), 1500);
+    } else {
+      this._finish();
+    }
+  }
+
+  _finish() {
+    const outcome = this.playerScore >= 50 ? 'win' : this.playerScore >= 20 ? 'draw' : 'lose';
+    this.finish({
+      kind: 'crisis', rounds: this.log,
+      playerScore: this.playerScore,
+      oppScore: Math.max(0, 100 - this.playerScore),
+      outcome,
+      summary:
+        C.infoRow('最终谈判积分', String(this.playerScore)) +
+        C.infoRow('危机化解程度', this.playerScore >= 50 ? '成功化解' : '部分化解') +
+        C.infoRow('评级', this.playerScore >= 60 ? '卓越谈判官' : this.playerScore >= 40 ? '称职谈判员' : '需要加强训练'),
+    });
+  }
+}
+
+
+/* ===== scenarios/public-goods.js ===== */
+// scenarios/public-goods.js — 公共品博弈
+// Phase 3：对手贡献由 engine 决定（理性型条件合作、操纵型飘忽等）。
+
+
+class PublicGoodsGame extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.rounds = 4;
+    this.round = 0;
+    this.playerScore = 40;
+    this.oppScore = 40;
+    this.multiplier = 2.2;
+  }
+
+  start() { OpponentAI.reset(this.opp.id); this._render(); }
+
+  _render() {
+    const opp = this.opp;
+    const logHtml = this.log.map((l) =>
+      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
+    ).join('');
+
+    this.emitRender(`
+      ${C.gameHeader(`公共品博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      <div class="grid2" style="margin:12px 0">
+        ${C.scoreBox(this.playerScore, '您的余额')}
+        ${C.scoreBox(this.oppScore, `${opp.name} 余额`)}
+      </div>
+      ${C.hint(`每轮各有 10 枚筹码，可贡献到公共池。公共池总额 ×${this.multiplier} 后平分给所有人。<br>理性自私：贡献 0（但若人人如此，公共品崩溃）。`)}
+      ${C.panel('选择贡献数量',
+        C.actionBtn('contribute', '10', '<b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益') +
+        C.actionBtn('contribute', '7', '<b>[高度合作]</b> 贡献 7枚 — 偏向集体') +
+        C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
+        C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益') +
+        this.peekControls())}
+      ${C.logBox('贡献记录', logHtml)}
+    `);
+  }
+
+  handleAction({ type, value }) {
+    if (type === 'peek') { this.handlePeek(); return; }
+    if (type !== 'contribute') return;
+    this._peekSnap = null;
+    const amount = parseInt(value, 10);
+    const prev = this.log.length ? this.log[this.log.length - 1].my : null;
+    OpponentAI.observe(this.opp.id, { coop: amount >= 5, aggression: amount <= 1 ? 0.7 : 0.2, firm: amount <= 1 });
+    const { move: oppContrib, reason, mood } = OpponentAI.decide(this.opp.id, { kind: 'pg-contribute', round: this.round, playerLastContrib: prev });
+    const pool = (amount + oppContrib) * this.multiplier;
+    const share = Math.round(pool / 2);
+    this.playerScore = this.playerScore - amount + share;
+    this.oppScore = this.oppScore - oppContrib + share;
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood });
+    this.round += 1;
+    if (this.round < this.rounds) this._render();
+    else this._finish();
+  }
+
+  _finish() {
+    const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore === this.oppScore ? 'coop' : 'lose';
+    const avg = Math.round(this.log.reduce((s, l) => s + l.my, 0) / this.log.length);
+    this.finish({
+      kind: 'publicgoods', rounds: this.log,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:
+        C.infoRow('平均贡献量', `${avg} 枚`) +
+        C.infoRow('最优策略', '条件合作：模仿对方上轮贡献，避免持续被剥削') +
+        C.infoRow('启示', '公共品博弈揭示集体行动困境，信任与声誉是合作的基础'),
+    });
+  }
+}
+
+
+/* ===== scenarios/coalition.js ===== */
+// scenarios/coalition.js — 联盟谈判（从 v2.0 平移，修正了 v2.0 中 ${opp.name} 未插值的笔误）
+// 四阶段多方博弈：信息扫描 → 联盟构建 → 巩固 → 终局转化。
+
+
+class CoalitionGame extends BaseScenario {
+  constructor(opp) {
+    super(opp);
+    this.stage = 0;
+    this.playerScore = 0;
+    this.oppScore = 0;
+    this.allies = 0;
+    this.stages = [
+      { title:'第一阶段：利益扫描',
+        context:'多方谈判开始。您需要了解各方立场，识别潜在盟友和威胁。',
+        options:[
+          { text:'广泛信息收集：私下约谈每一方，了解各自核心诉求', ps:15, allies:1, feedback:'信息优势确立，识别了两个潜在盟友。' },
+          { text:'公开立场宣示：直接阐明你的方案，测试各方反应', ps:8, allies:0, feedback:'立场清晰但暴露了底线，灵活性下降。' },
+          { text:'观察等待：保持中立，让各方先交锋', ps:5, allies:0, feedback:'获得了观察机会，但错过了主动建联时机。' },
+          { text:'与最强方结盟：立即接近实力最强的参与者', ps:-5, allies:1, feedback:'提前绑定可能失去其他联盟机会。' },
+        ] },
+      { title:'第二阶段：联盟构建',
+        context:`您已掌握部分信息。${opp.name}正在积极游说，与您竞争关键盟友。`,
+        options:[
+          { text:'利益整合提案：设计满足盟友核心诉求的联合方案', ps:20, allies:1, feedback:'精准的利益对接赢得关键盟友加入！' },
+          { text:'价值交换：提供对方高度需要的资源，换取联盟承诺', ps:15, allies:1, feedback:'等价交换达成，联盟基础稳固。' },
+          { text:'揭露竞争对手弱点：向潜在盟友展示对手方案的缺陷', ps:8, allies:0, feedback:'有一定效果，但道德风险影响长期声誉。' },
+          { text:'激进报价：承诺给盟友超额利益', ps:-10, allies:0, feedback:'过度承诺损害可信度，盟友持观望态度。' },
+        ] },
+      { title:'第三阶段：巩固联盟',
+        context:`联盟初步形成，但内部存在分歧，外部 ${opp.name} 在尝试分化。`,
+        options:[
+          { text:'建立内部共识机制：定期沟通，透明决策过程', ps:18, allies:1, feedback:'内聚力增强，联盟稳定性大幅提升。' },
+          { text:'创造集体认同：塑造"我们"的共同价值和目标', ps:15, allies:0, feedback:'集体认同建立，联盟更具凝聚力。' },
+          { text:'设立退出成本：建立联盟离开的代价机制', ps:10, allies:0, feedback:'约束机制有效，但也限制了联盟灵活性。' },
+          { text:'孤立对手：切断对手与中立方的联系', ps:5, allies:0, feedback:'孤立策略有风险，可能激化对抗。' },
+        ] },
+      { title:'第四阶段：最终谈判',
+        context:'联盟谈判进入终局，需要将联盟优势转化为最终协议。',
+        options:[
+          { text:'展示联盟实力：明确但非威胁性地呈现联盟的综合优势', ps:20, allies:0, feedback:'实力展示改变了对手的BATNA评估，协议加速达成。' },
+          { text:'提出一揽子方案：将所有议题打包，寻找整体最优解', ps:18, allies:0, feedback:'打包策略创造了额外价值，多方受益。' },
+          { text:'设置最后期限：宣布联盟在X时间后单方面行动', ps:8, allies:0, feedback:'期限有效但破坏了部分谈判善意。' },
+          { text:'妥协型收尾：主动放弃部分次要利益以确保核心利益', ps:15, allies:0, feedback:'战略性妥协展现了成熟的谈判风范。' },
+        ] },
+    ];
+  }
+
+  start() { this._render(); }
+
+  _render() {
+    const s = this.stages[this.stage];
+    const logHtml = this.log.map((l) => `<div class="log-entry">[${l.stage}] ${l.feedback}</div>`).join('');
+
+    this.emitRender(`
+      ${C.gameHeader(`联盟谈判 — ${s.title}`)}
+      <div class="grid3" style="margin:12px 0">
+        ${C.scoreBox(this.playerScore, '谈判积分')}
+        ${C.scoreBox(this.allies, '当前盟友数', 'var(--green)')}
+        ${C.scoreBox(`${this.stage + 1}/4`, '阶段进度', 'var(--yellow)')}
+      </div>
+      ${C.hint(s.context)}
+      ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
+      ${C.logBox('阶段记录', logHtml)}
+    `);
+  }
+
+  handleAction({ type, value }) {
+    if (type !== 'stage') return;
+    const s = this.stages[this.stage];
+    const opt = s.options[parseInt(value, 10)];
+    this.playerScore += opt.ps;
+    this.allies += opt.allies || 0;
+    this.oppScore += (5 - Math.floor(opt.ps / 5));
+    const maxPs = Math.max(...s.options.map((o) => o.ps));
+    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
+    this.stage += 1;
+
+    if (this.stage < this.stages.length) {
+      const kind = opt.ps > 10 ? 'green' : opt.ps > 0 ? 'cyan' : 'red';
+      this.emitRender(`${C.gameHeader('联盟谈判 — 推进中...')}
+        ${C.hint(`<b>阶段反馈：</b>${opt.feedback}`, kind)}
+        ${C.hint('正在进入下一阶段...', 'cyan')}`);
+      setTimeout(() => this._render(), 1500);
+    } else {
+      this._finish();
+    }
+  }
+
+  _finish() {
+    const outcome = this.playerScore > 45 && this.allies >= 2 ? 'win' : this.playerScore > 25 ? 'draw' : 'lose';
+    this.finish({
+      kind: 'coalition', rounds: this.log,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      summary:
+        C.infoRow('总积分', String(this.playerScore)) +
+        C.infoRow('最终盟友数', String(this.allies)) +
+        C.infoRow('评级', this.playerScore >= 55 && this.allies >= 2 ? '联盟大师' : this.playerScore >= 35 ? '合格谈判员' : '需要加强多方博弈技巧'),
+    });
+  }
+}
+
+
+/* ===== scenarios/registry.js ===== */
+// scenarios/registry.js — 场景注册表（新增场景只改这里）
+
+
+const CLASSES = {
+  prisoners: PrisonersDilemma,
+  ultimatum: UltimatumGame,
+  trust: TrustGame,
+  bargaining: BargainingGame,
+  crisis: CrisisNegotiation,
+  publicgoods: PublicGoodsGame,
+  coalition: CoalitionGame,
+};
+
+const REGISTRY = Object.fromEntries(
+  Object.entries(SCENARIO_META).map(([key, meta]) => [key, { Class: CLASSES[key], ...meta }])
+);
+
+
+/* ===== scenarios/runner.js ===== */
+// scenarios/runner.js — 对局控制器
+// 协调场景生命周期：监听 game:start 创建场景、转发 player:action、game:end 后导航到结果屏。
+// 只做编排与导航，不渲染（渲染交给 game-view）、不记录（记录交给 analytics/recorder）。
+
+
+function initRunner() {
+  EventBus.on(EVENTS.GAME_START, ({ scenarioKey, opponentId }) => {
+    const meta = REGISTRY[scenarioKey];
+    if (!meta || !meta.Class) {
+      console.error('[runner] 未知场景', scenarioKey);
+      return;
+    }
+    let opp;
+    if (opponentId === 'random') {
+      opp = randomOpponent(); // quick: never yields Boss
+    } else if (opponentId === 'trumpBoss') {
+      const player = Store.get('player');
+      const difficulty = Store.get('difficulty');
+      if (!canUnlockBoss(player, difficulty)) {
+        console.warn('[runner] Boss 尚未解锁');
+        return;
+      }
+      opp = TRUMP_BOSS;
+    } else {
+      opp = getOpponent(opponentId);
+    }
+    if (!opp) { console.error('[runner] 未知对手', opponentId); return; }
+    const scenario = new meta.Class(opp);
+    Store.patch({ scenarioKey, opponent: opp, activeScenario: scenario });
+
+    // 先导航到对局屏（同步渲染 #game-root），再 start() 触发首次 game:render
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.GAME, params: {} });
+    scenario.start();
+  });
+
+  EventBus.on(EVENTS.PLAYER_ACTION, (action) => {
+    if (action.type === 'exit') {
+      Store.set('activeScenario', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MAIN, params: {} });
+      return;
+    }
+    const scenario = Store.get('activeScenario');
+    if (scenario) scenario.handleAction(action);
+  });
+
+  // recorder 已先行处理记录（bootstrap 中先 init），这里仅负责导航到结果屏
+  EventBus.on(EVENTS.GAME_END, () => {
+    Store.set('activeScenario', null);
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.RESULT, params: {} });
+  });
+}
+
+
+/* ===== analytics/recorder.js ===== */
+// analytics/recorder.js — 对局记录器（Phase 4 增强）
+// 监听 game:end：累计行为统计 + 写档案 + 构建逐回合复盘 + 组装结果供结果屏读取。
+// bootstrap 中须在 runner 之前 init，确保"先记录、后导航"。
+
+
+function initRecorder() {
+  EventBus.on(EVENTS.GAME_END, ({ result }) => {
+    const player = Store.get('player');
+    const opp = Store.get('opponent');
+    const scenarioKey = Store.get('scenarioKey');
+    const meta = SCENARIO_META[scenarioKey];
+    const scenarioName = meta ? meta.name : scenarioKey;
+    const kind = result.kind || scenarioKey;
+    const rounds = result.rounds || [];
+
+    if (player) {
+      // 先累计行为统计（供心理画像），再写入对局记录（addSession 会持久化整份档案）
+      accumulate(player, kind, rounds, result, opp);
+      addSession(player, {
+        time: new Date().toLocaleString('zh-CN'),
+        scenarioKey,
+        scenario: scenarioName,
+        opponentId: opp ? opp.id : 'unknown',
+        opponent: opp ? opp.type : '—',
+        difficulty: Store.get('difficulty') || 'medium',
+        playerScore: result.playerScore,
+        oppScore: result.oppScore,
+        outcome: result.outcome,
+      });
+      Store.set('player', player); // 广播，刷新主菜单等
+    }
+
+    const replay = buildReplay(kind, rounds, opp, result);
+
+    Store.set('lastResult', {
+      result,
+      opp,
+      scenarioName,
+      tips: opp ? getOpponentTips(opp.id) : [],
+      tells: opp ? (PERSONALITY_TELLS[opp.id] || []) : [],
+      replay,
+    });
+  });
+}
+
+
+/* ===== ui/screens/welcome.js ===== */
+// ui/screens/welcome.js — 欢迎屏（Phase 2：接入真实玩家档案）
+
+
+function renderWelcome() {
+  return `
+    <div class="welcome-logo">
+      <div class="logo-art">
+╔══════════════════════════════════════╗<br>
+║  全谱系博弈实战演练系统  v3.0        ║<br>
+║  Full-Spectrum Negotiation Trainer   ║<br>
+╚══════════════════════════════════════╝
+      </div>
+    </div>
+    <div class="panel" style="max-width:420px;margin:0 auto">
+      <div class="panel-title">▶ 进入系统</div>
+      <div class="input-wrap">
+        <label>输入您的训练代号</label>
+        <input class="inp" id="player-name-input" placeholder="例如：谈判精英" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn btn-green" style="width:100%" id="btn-enter">进入训练系统 →</button>
+      ${C.hint('数据保存在本地浏览器（LocalStorage），兼容 v2.0 老存档。')}
+    </div>
+  `;
+}
+
+renderWelcome.afterRender = function () {
+  const input = document.getElementById('player-name-input');
+  const enter = () => {
+    const name = (input.value || '').trim();
+    if (!name) { alert('请输入训练代号'); return; }
+    const player = loadPlayer(name);
+    Store.set('player', player);
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MAIN, params: {} });
+  };
+  document.getElementById('btn-enter').addEventListener('click', enter);
+  input.addEventListener('keypress', (e) => { if (e.key === 'Enter') enter(); });
+  input.focus();
+};
+
+
+/* ===== ui/screens/main-menu.js ===== */
+// ui/screens/main-menu.js — 主菜单（Phase 2：5 项功能全接入）
+
+
+const MENU = [
+  ['①', '场景实战训练', '选择博弈场景，与AI对手对决', 'nav', SCREENS.SCENARIO_SELECT],
+  ['②', '快速训练模式', '随机场景与随机对手，快速提升', 'quick', null],
+  ['③', '策略理论库', '策略卡 / 沟通技术 / 心理防御 / 六大宗师理论', 'nav', SCREENS.STRATEGY],
+  ['④', '心理档案分析', '查看您的8维博弈心理画像', 'nav', SCREENS.PSYCHOLOGY],
+  ['⑤', '训练成绩看板', '历史战绩、胜率统计、成长曲线', 'nav', SCREENS.DASHBOARD],
+];
+
+function renderMainMenu() {
+  const p = Store.get('player') || { name: '训练员', total: 0, wins: 0 };
+  const difficulty = Store.get('difficulty') || 'medium';
+  const rank = getRank(p.total, p.wins);
+  const wr = p.total > 0 ? Math.round(p.wins / p.total * 100) : 0;
+
+  const items = MENU.map(([num, title, sub, act, target], i) => `
+    <div class="menu-item" data-act="${act}" data-target="${target || ''}" data-idx="${i}">
+      <div class="menu-num">${num}</div>
+      <div class="menu-text"><b>${title}</b><span>${sub}</span></div>
+    </div>`).join('');
+
+  let bossHint = '';
+  if (canUnlockBoss(p, difficulty)) {
+    bossHint = `<div class="hint hint-yellow" style="font-size:11px;text-align:center">🔓 <b>终局挑战已开启</b>：在场景训练中选择「终局挑战」难度挑战隐藏 Boss。</div>`;
+  } else if (isGrandMaster(p)) {
+    bossHint = `<div class="hint hint-cyan" style="font-size:11px;text-align:center">🏆 <b>宗师级</b>达成！进入场景训练并选择「终局挑战」难度解锁隐藏 Boss。</div>`;
+  }
+
+  return `
+    <div class="header">
+      <h1>◆ 全谱系博弈演练系统 ◆</h1>
+      <div class="sub">训练员: ${p.name}  |  军衔: ${rank}  |  总场次: ${p.total}  |  胜率: ${wr}%</div>
+    </div>
+    ${bossHint}
+    <div id="main-menu-items">${items}</div>
+  `;
+}
+
+renderMainMenu.afterRender = function () {
+  document.querySelectorAll('#main-menu-items .menu-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const act = el.getAttribute('data-act');
+      if (act === 'quick') {
+        const keys = Object.keys(SCENARIO_META);
+        const key = keys[Math.floor(Math.random() * keys.length)];
+        EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: 'random' });
+      } else {
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: el.getAttribute('data-target'), params: {} });
+      }
+    });
+  });
+};
+
+
+/* ===== ui/screens/scenario-select.js ===== */
+// ui/screens/scenario-select.js — 场景选择屏
+
+
+function renderScenarioSelect() {
+  const cards = Object.entries(SCENARIO_META).map(([key, s]) => `
+    <div class="card" data-key="${key}">
+      <h3>${s.name}</h3>
+      <div class="diff ${DIFF_CLASS[s.diff]}">${DIFF_LABEL[s.diff]}</div>
+      ${C.tag(s.domain)}
+      <p style="margin-top:8px">${s.desc}</p>
+    </div>`).join('');
+
+  return `
+    <div class="flex-between">
+      <div class="section-title">▶ 选择训练场景</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>
+    <div class="grid2">${cards}</div>
+  `;
+}
+
+renderScenarioSelect.afterRender = function () {
+  document.querySelectorAll('.card[data-key]').forEach((el) => {
+    el.addEventListener('click', () => {
+      Store.set('scenarioKey', el.getAttribute('data-key'));
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+    });
+  });
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+};
+
+
+/* ===== ui/screens/opponent-select.js ===== */
+// ui/screens/opponent-select.js — 对手选择屏（含难度选择 + Trump Boss 解锁）
+
+
+function buildOpponentCard(o, difficulty, player) {
+  const isBoss = !!o.boss;
+  const isEasy = difficulty === 'easy';
+  const isMed  = difficulty === 'medium';
+  const tells  = PERSONALITY_TELLS[o.id] || [];
+
+  let infoLine = '';
+  if (isEasy)      infoLine = `弱点：${o.weakness}`;
+  else if (isMed)  infoLine = `行为信号：${tells.join(' / ')}`;
+  else             infoLine = '未知对手 — 请通过行为判断其类型';
+
+  return `
+    <div class="opp-card${isBoss ? ' boss-card' : ''}" data-opp="${o.id}">
+      ${isBoss ? '<div class="boss-badge">隐藏 BOSS</div>' : ''}
+      <div class="opp-name">${o.name}</div>
+      <div class="opp-type">${o.type}</div>
+      <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
+      ${isEasy ? `<div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>` : ''}
+      <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoLine}</div>
+    </div>`;
+}
+
+function renderOpponentSelect() {
+  const key = Store.get('scenarioKey');
+  const meta = SCENARIO_META[key] || { name: '—', desc: '' };
+  const difficulty = Store.get('difficulty') || 'medium';
+  const player = Store.get('player');
+
+  const unlocked = canUnlockBoss(player, difficulty);
+  const grandMaster = isGrandMaster(player);
+
+  // Difficulty button row
+  const diffBtns = DIFFICULTIES.map((d) => {
+    const active = d.key === difficulty;
+    const isExtreme = d.key === 'extreme';
+    if (isExtreme && !grandMaster) return ''; // 极限挑战仅宗师可见
+    return `<button class="btn btn-sm diff-btn ${active ? 'btn-cyan active-diff' : ''}"
+              data-diff="${d.key}" style="margin:2px">${d.label}</button>`;
+  }).join('');
+
+  // Opponent cards
+  const opps = [...OPPONENTS];
+  if (unlocked) opps.push(TRUMP_BOSS);
+
+  const cards = opps.map((o) => buildOpponentCard(o, difficulty, player)).join('');
+
+  // Unlock hint
+  let hintHtml = '';
+  if (unlocked) {
+    hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可能出现，展示你的宗师实力。', 'yellow');
+  } else if (grandMaster) {
+    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」难度解锁隐藏 Boss。', 'cyan');
+  } else {
+    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b> 难度。', 'purple');
+  }
+
+  return `
+    <div class="flex-between">
+      <div class="section-title">▶ 选择对手</div>
+      <button class="back-btn" data-nav="${SCREENS.SCENARIO_SELECT}">← 返回</button>
+    </div>
+    ${C.hint(`已选场景：<b style="color:var(--cyan)">${meta.name}</b>  <span style="color:var(--dim)">${meta.desc}</span>`)}
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-title">训练难度</div>
+      <div id="diff-btns" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${diffBtns}</div>
+      <div style="font-size:11px;color:var(--dim)">
+        初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属，难度最高
+      </div>
+    </div>
+    ${hintHtml}
+    <div class="grid2">${cards}</div>
+    <div style="margin-top:12px">
+      <button class="btn btn-yellow" style="width:100%" data-opp="random">⚡ 随机对手（挑战未知）</button>
+    </div>
+  `;
+}
+
+renderOpponentSelect.afterRender = function () {
+  const key = Store.get('scenarioKey');
+
+  // Difficulty button click
+  document.querySelectorAll('.diff-btn[data-diff]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      Store.set('difficulty', btn.getAttribute('data-diff'));
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+    });
+  });
+
+  // Opponent card click
+  document.querySelectorAll('[data-opp]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const oppId = el.getAttribute('data-opp');
+      EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: oppId });
+    });
+  });
+
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+};
+
+
+/* ===== ui/screens/game-view.js ===== */
+// ui/screens/game-view.js — 对局屏
+// 渲染一个稳定容器 #game-root；监听 game:render 落地场景 HTML；
+// 用事件委托把 [data-game-action] 点击翻译成 player:action 事件。
+// （UI 只渲染与转发，不含任何场景逻辑。）
+
+
+function renderGame() {
+  return `<div id="game-root"></div>`;
+}
+
+let _inited = false;
+function initGameView() {
+  if (_inited) return;
+  _inited = true;
+
+  // 场景发出的 HTML 落地到 #game-root
+  EventBus.on(EVENTS.GAME_RENDER, ({ html }) => {
+    const root = document.getElementById('game-root');
+    if (root) root.innerHTML = html;
+  });
+
+  // 事件委托：仅响应 #game-root 内的动作按钮
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-game-action]');
+    if (!btn) return;
+    const root = document.getElementById('game-root');
+    if (!root || !root.contains(btn)) return;
+    EventBus.emit(EVENTS.PLAYER_ACTION, {
+      type: btn.getAttribute('data-game-action'),
+      value: btn.getAttribute('data-value'),
+    });
+  });
+}
+
+
+/* ===== ui/screens/result.js ===== */
+// ui/screens/result.js — 结果屏（读取 Store.lastResult）
+
+
+function renderResult() {
+  const data = Store.get('lastResult');
+  if (!data) {
+    return `${C.hint('暂无结果数据', 'yellow')}
+      <div style="text-align:center;margin-top:16px"><button class="btn" data-nav="${SCREENS.MAIN}">← 返回主菜单</button></div>`;
+  }
+  const { result, opp, scenarioName, tips, tells, replay } = data;
+
+  const tipsPanel = opp ? C.panel(`应对 ${opp.type} 的专项技巧`,
+    tips.map((t) => C.hint(`• ${t}`)).join('') +
+    `<div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>`) : '';
+
+  // Trump Boss 复盘：专项诊断
+  let bossReviewPanel = '';
+  if (opp && opp.id === 'trumpBoss') {
+    const rounds = result.rounds || [];
+    const tags = rounds.flatMap((r) => r.tags || []);
+    const resisted = tags.includes('BATNA') || tags.includes('底线控制');
+    const noFreeConcede = !tags.includes('无条件让步');
+    const usedConditional = tags.includes('条件让步');
+    const passed = resisted && noFreeConcede && usedConditional;
+    const diagnosis = passed
+      ? '你没有被极端锚定和时间压力完全牵引，能够用底线、条件交换削弱对手压迫。'
+      : '你在极端锚定或时间压力下出现了被动，底线表达和条件让步仍需加强。';
+    const advices = [
+      '① 不要接极端锚定的价格，先质疑其依据和可执行性。',
+      '② 所有让步必须换取对方实质承诺，禁止单方面善意释放。',
+      '③ 提前亮出BATNA，让对方知道你不是被迫成交的唯一选项。',
+      '④ 面对时间压力时主动暂停，把节奏拉回到客观标准。',
+      '⑤ 不要进入对方设置的胜负叙事，回到可执行条款本身。',
+    ];
+    bossReviewPanel = `
+      <div class="panel" style="border-color:var(--yellow)">
+        <div class="panel-title" style="color:var(--yellow)">终局 Boss 复盘｜极限交易型高压锚定模型</div>
+        ${C.hint(diagnosis, passed ? 'green' : 'yellow')}
+        ${advices.map((a) => C.hint(`• ${a}`)).join('')}
+      </div>`;
+  }
+
+  // Phase 4：逐回合复盘 + 转折点 + 对手情绪曲线 + 改进建议
+  let replayPanel = '';
+  if (replay && replay.perRound && replay.perRound.length) {
+    const rows = replay.perRound.map((pr) => {
+      const color = pr.score >= 70 ? 'bar-green' : pr.score >= 50 ? 'bar-yellow' : 'bar-red';
+      return `<div class="bar-wrap">
+        <div class="bar-label"><span>${pr.label} · <span style="color:var(--dim)">${pr.comment}</span></span><span>${pr.score}</span></div>
+        <div class="bar-bg"><div class="bar-fill ${color}" style="width:${pr.score}%"></div></div>
+      </div>`;
+    }).join('');
+    const turning = replay.turning ? C.hint((replay.turning.type === 'bad' ? '⚠ ' : '★ ') + replay.turning.text, replay.turning.type === 'bad' ? 'red' : 'green') : '';
+    const spark = replay.moodSeries ? C.moodSparkline(replay.moodSeries) : '';
+    replayPanel =
+      C.panel(`逐回合复盘　平均 ${replay.avgScore} 分`, turning + rows + spark) +
+      C.panel('改进建议', replay.advice.map((a) => C.hint(`• ${a}`)).join(''));
+  }
+
+  return `
+    <div class="header"><h1>${scenarioName} — 训练结束</h1></div>
+    <div class="grid2" style="margin-bottom:12px">
+      ${C.scoreBox(result.playerScore, '您的得分')}
+      ${C.scoreBox(result.oppScore, `${opp ? opp.name : '对手'} 得分`)}
+    </div>
+    <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
+    ${C.panel('复盘分析', result.summary || '')}
+    ${replayPanel}
+    ${tipsPanel}
+    ${bossReviewPanel}
+    <div style="margin-top:16px;text-align:center">
+      <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
+      <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>
+    </div>
+  `;
+}
+
+renderResult.afterRender = function () {
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+
+  const quick = document.querySelector('[data-action="quick"]');
+  if (quick) quick.addEventListener('click', () => {
+    const keys = Object.keys(SCENARIO_META);
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: 'random' });
+  });
+};
+
+
+/* ===== ui/screens/strategy-lib.js ===== */
+// ui/screens/strategy-lib.js — 策略理论库（策略卡 / 沟通技术 / 心理防御 / 六大宗师）
+// 屏幕内自管理 Tab 与宗师详情，直接更新 #strategy-content，不经路由。
+
+
+const TABS = [
+  ['cards', '策略卡牌'],
+  ['comm', '沟通技术'],
+  ['defense', '心理防御'],
+  ['masters', '六大宗师'],
+];
+
+function renderStrategyLib() {
+  const tabs = TABS.map(([id, label], i) =>
+    `<div class="tab ${i === 0 ? 'active' : ''}" data-tab="${id}">${label}</div>`).join('');
+  return `
+    <div class="flex-between">
+      <div class="section-title">▶ 策略理论库</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>
+    <div class="tabs" id="strategy-tabs">${tabs}</div>
+    <div id="strategy-content"></div>
+  `;
+}
+
+function contentFor(tab) {
+  if (tab === 'cards') {
+    return STRATEGY_CARDS.map((c) => `
+      <div class="master-card">
+        <div class="master-name">${c.name}</div>
+        <div style="margin:4px 0">${c.tags.map((t) => C.tag(t)).join('')}</div>
+        <div style="color:var(--text);font-size:12px;line-height:1.6;margin:6px 0">${c.desc}</div>
+        <div style="font-size:11px;color:var(--dim)">适用场景：${c.use}</div>
+      </div>`).join('');
+  }
+  if (tab === 'comm') {
+    return COMM_TECHNIQUES.map((c) =>
+      `<div class="tactic" style="margin-bottom:8px"><div class="tactic-name">${c.name}</div><div class="tactic-desc">${c.desc}</div></div>`).join('');
+  }
+  if (tab === 'defense') {
+    return DEFENSE_TACTICS.map((c) =>
+      `<div class="tactic" style="border-left-color:var(--red);margin-bottom:8px"><div class="tactic-name" style="color:var(--red)">${c.name}</div><div class="tactic-desc">${c.desc}</div></div>`).join('');
+  }
+  // masters
+  return `<div class="grid2">${Object.entries(MASTERS).map(([k, m]) => `
+    <div class="card" data-master="${k}">
+      <h3>${m.name}</h3>
+      <div style="color:var(--yellow);font-size:11px;margin-bottom:6px">${m.title}</div>
+      <p>${m.intro}</p>
+      <div style="margin-top:8px;font-size:11px;color:var(--cyan)">共 ${m.tactics.length} 个策略/原则 →</div>
+    </div>`).join('')}</div>`;
+}
+
+function masterDetail(key) {
+  const m = MASTERS[key];
+  const stages = [...new Set(m.tactics.map((t) => t.stage))];
+  const body = stages.map((stage) => `
+    <div style="margin-bottom:12px">
+      <div style="color:var(--yellow);font-size:11px;letter-spacing:1px;margin-bottom:6px">【${stage}】</div>
+      ${m.tactics.filter((t) => t.stage === stage).map((t) =>
+        `<div class="tactic" style="margin-bottom:6px"><div class="tactic-name">${t.name}</div><div class="tactic-desc">${t.desc}</div></div>`).join('')}
+    </div>`).join('');
+  return `
+    <button class="back-btn" id="master-back" style="margin-bottom:12px">← 返回宗师列表</button>
+    <div class="master-card">
+      <div class="master-name">${m.name}</div>
+      <div class="master-title">${m.title}</div>
+      ${C.hint(m.intro, 'yellow')}
+      ${body}
+    </div>`;
+}
+
+renderStrategyLib.afterRender = function () {
+  const contentEl = document.getElementById('strategy-content');
+
+  function showTab(tab) {
+    document.querySelectorAll('#strategy-tabs .tab').forEach((t) =>
+      t.classList.toggle('active', t.getAttribute('data-tab') === tab));
+    contentEl.innerHTML = contentFor(tab);
+    if (tab === 'masters') bindMasterCards();
+  }
+
+  function bindMasterCards() {
+    contentEl.querySelectorAll('[data-master]').forEach((el) => {
+      el.addEventListener('click', () => {
+        contentEl.innerHTML = masterDetail(el.getAttribute('data-master'));
+        const back = document.getElementById('master-back');
+        if (back) back.addEventListener('click', () => showTab('masters'));
+      });
+    });
+  }
+
+  document.querySelectorAll('#strategy-tabs .tab').forEach((t) =>
+    t.addEventListener('click', () => showTab(t.getAttribute('data-tab'))));
+
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+
+  showTab('cards');
+};
+
+
+/* ===== ui/screens/psychology.js ===== */
+// ui/screens/psychology.js — 心理档案分析屏（Phase 4：基于真实决策序列）
+
+
+function renderPsychology() {
+  const player = Store.get('player');
+  const total = player ? player.total : 0;
+
+  const head = `
+    <div class="flex-between">
+      <div class="section-title">▶ 心理档案分析</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>`;
+
+  if (!hasEnoughData(total)) {
+    return `${head}${C.hint('您还没有足够的训练数据。请先完成至少 2 场博弈训练，心理档案将更加准确。', 'yellow')}`;
+  }
+
+  const profile = computeProfile(player);
+  const bars = PSYCH_DIMENSIONS.map((d) => C.bar(d.label, profile[d.key] || 0, d.color)).join('');
+  const pt = getProfileType(profile);
+  const weak = detectWeakPoints(profile);
+  const weakHtml = weak.length
+    ? weak.map((w) => C.hint(`⚠ ${w}`, 'yellow')).join('')
+    : C.hint('暂未发现明显短板，继续积累训练样本。', 'green');
+
+  return `${head}
+    ${C.panel('博弈心理类型', `
+      <div style="text-align:center;padding:12px 0">
+        <div style="font-size:24px;color:var(--cyan);font-weight:bold">${pt.name}</div>
+        <div style="color:var(--dim);font-size:12px;margin-top:6px">${pt.desc}</div>
+      </div>`)}
+    ${C.panel('8维心理向量分析（基于真实决策序列）', bars)}
+    ${C.panel('当前短板', weakHtml)}
+    ${C.panel('成长建议', pt.advice.map((a) => C.hint(`• ${a}`)).join(''))}
+    ${C.hint(`样本：${player.behaviorStats.games} 局 / ${player.behaviorStats.totalMoves} 次决策`, 'cyan')}
+  `;
+}
+
+renderPsychology.afterRender = function () {
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+};
+
+
+/* ===== ui/screens/dashboard.js ===== */
+// ui/screens/dashboard.js — 训练成绩看板（场景/对手胜率 + 短板分析）
+
+
+function winRate(sessions, filterFn) {
+  const sub = sessions.filter(filterFn);
+  if (!sub.length) return null;
+  const wins = sub.filter((s) => s.outcome === 'win' || s.outcome === 'coop').length;
+  return { played: sub.length, winRate: Math.round(wins / sub.length * 100) };
+}
+
+function renderDashboard() {
+  const p = Store.get('player') || { name: '—', sessions: [], total: 0, wins: 0, draws: 0, losses: 0 };
+  const rank = getRank(p.total, p.wins);
+  const wr = p.total > 0 ? Math.round(p.wins / p.total * 100) : 0;
+  const sessions = p.sessions || [];
+
+  // ── 近期记录 ──────────────────────────────────────────────────────────────
+  const recent = sessions.slice(-8).reverse();
+  const histHtml = recent.length ? recent.map((r) => {
+    const oc = r.outcome === 'win' ? 'outcome-win' : r.outcome === 'lose' ? 'outcome-lose' : r.outcome === 'coop' ? 'outcome-coop' : 'outcome-draw';
+    const ocLabel = { win:'胜', lose:'负', coop:'合作', draw:'平' }[r.outcome] || '—';
+    return `<div class="info-row">
+      <span class="info-key" style="font-size:10px">${r.time}</span>
+      <span>${r.scenario || '—'}</span>
+      <span style="color:var(--dim)">${r.opponent || '—'}</span>
+      <span class="outcome ${oc}" style="padding:1px 6px;font-size:10px">${ocLabel}</span>
+    </div>`;
+  }).join('') : '<div style="color:var(--dim);font-size:12px;padding:8px">暂无训练记录</div>';
+
+  // ── 场景胜率 ──────────────────────────────────────────────────────────────
+  const scenarioHtml = Object.entries(SCENARIO_META).map(([key, meta]) => {
+    const stat = winRate(sessions, (s) => s.scenarioKey === key);
+    if (!stat) return `<div class="info-row"><span class="info-key">${meta.name}</span><span style="color:var(--dim)">未训练</span></div>`;
+    const color = stat.winRate >= 60 ? 'var(--green)' : stat.winRate >= 40 ? 'var(--yellow)' : 'var(--red)';
+    return `<div class="info-row">
+      <span class="info-key">${meta.name}</span>
+      <span style="color:${color}">${stat.played} 场 &nbsp; 胜率 ${stat.winRate}%</span>
+    </div>`;
+  }).join('');
+
+  // ── 对手胜率 ──────────────────────────────────────────────────────────────
+  const oppHtml = OPPONENTS.map((o) => {
+    const stat = winRate(sessions, (s) => s.opponentId === o.id);
+    if (!stat) return `<div class="info-row"><span class="info-key">${o.name} <span style="color:var(--dim);font-size:10px">${o.type}</span></span><span style="color:var(--dim)">未对战</span></div>`;
+    const color = stat.winRate >= 60 ? 'var(--green)' : stat.winRate >= 40 ? 'var(--yellow)' : 'var(--red)';
+    return `<div class="info-row">
+      <span class="info-key">${o.name} <span style="color:var(--dim);font-size:10px">${o.type}</span></span>
+      <span style="color:${color}">${stat.played} 场 &nbsp; 胜率 ${stat.winRate}%</span>
+    </div>`;
+  }).join('');
+
+  // Boss 记录（若有）
+  const bossStat = winRate(sessions, (s) => s.opponentId === 'trumpBoss');
+  const bossHtml = bossStat ? `<div class="info-row">
+    <span class="info-key" style="color:var(--yellow)">极限交易者 <span style="font-size:10px">隐藏 Boss</span></span>
+    <span style="color:${bossStat.winRate >= 50 ? 'var(--green)' : 'var(--red)'}">${bossStat.played} 场 &nbsp; 胜率 ${bossStat.winRate}%</span>
+  </div>` : '';
+
+  // ── 短板分析 ──────────────────────────────────────────────────────────────
+  const profile = p.total >= 2 ? computeProfile(p) : null;
+  const weak = profile ? detectWeakPoints(profile) : [];
+  const weakHtml = weak.length
+    ? weak.map((w) => C.hint(`⚠ ${w}`, 'yellow')).join('')
+    : p.total >= 2
+      ? C.hint('暂未发现明显短板，继续积累训练样本。', 'green')
+      : C.hint('完成至少 2 场训练后将显示短板分析。', 'dim');
+
+  // ── 难度分布 ──────────────────────────────────────────────────────────────
+  const diffMap = { easy:'初级', medium:'中级', hard:'高级', extreme:'终局挑战' };
+  const diffCount = sessions.reduce((acc, s) => {
+    const d = s.difficulty || 'medium';
+    acc[d] = (acc[d] || 0) + 1;
+    return acc;
+  }, {});
+  const diffHtml = Object.entries(diffMap)
+    .filter(([k]) => diffCount[k])
+    .map(([k, label]) => `<span class="tag tag-cyan">${label} ×${diffCount[k]}</span>`)
+    .join('') || '<span style="color:var(--dim);font-size:11px">暂无数据</span>';
+
+  return `
+    <div class="flex-between">
+      <div class="section-title">▶ 训练成绩看板</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>
+    <div class="grid3" style="margin-bottom:16px">
+      ${C.scoreBox(p.total, '总训练场次')}
+      ${C.scoreBox(`${wr}%`, '综合胜率', 'var(--green)')}
+      ${C.scoreBox(rank, '当前军衔', 'var(--yellow)')}
+    </div>
+    ${C.panel('战绩统计', `
+      <div class="grid3">
+        <div style="text-align:center"><div style="color:var(--green);font-size:20px;font-weight:bold">${p.wins || 0}</div><div style="color:var(--dim);font-size:11px">胜利</div></div>
+        <div style="text-align:center"><div style="color:var(--yellow);font-size:20px;font-weight:bold">${p.draws || 0}</div><div style="color:var(--dim);font-size:11px">平局/合作</div></div>
+        <div style="text-align:center"><div style="color:var(--red);font-size:20px;font-weight:bold">${p.losses || 0}</div><div style="color:var(--dim);font-size:11px">失利</div></div>
+      </div>`)}
+    ${C.panel('场景胜率', scenarioHtml || '<div style="color:var(--dim)">暂无数据</div>')}
+    ${C.panel('对手胜率', oppHtml + bossHtml)}
+    ${C.panel('当前短板', weakHtml)}
+    ${C.panel('难度分布', `<div style="padding:4px 0">${diffHtml}</div>`)}
+    ${C.panel('最近训练记录', histHtml)}
+  `;
+}
+
+renderDashboard.afterRender = function () {
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+};
+
+
+/* ===== core/bootstrap.js ===== */
+// core/bootstrap.js — 应用启动入口（组合根）
+// 职责：注册所有屏幕 → 初始化对局视图/记录器/控制器 → 渲染首屏。
+// 作为组合根，允许 import 各模块进行装配；这是依赖图的根，build.js 把它放最后。
+
+
+
+
+function boot() {
+  const root = document.getElementById('app');
+  if (!root) { console.error('[bootstrap] #app not found'); return; }
+
+  // 注册屏幕
+  Router.register(SCREENS.WELCOME, renderWelcome);
+  Router.register(SCREENS.MAIN, renderMainMenu);
+  Router.register(SCREENS.SCENARIO_SELECT, renderScenarioSelect);
+  Router.register(SCREENS.OPPONENT_SELECT, renderOpponentSelect);
+  Router.register(SCREENS.GAME, renderGame);
+  Router.register(SCREENS.RESULT, renderResult);
+  Router.register(SCREENS.STRATEGY, renderStrategyLib);
+  Router.register(SCREENS.PSYCHOLOGY, renderPsychology);
+  Router.register(SCREENS.DASHBOARD, renderDashboard);
+
+  // 初始化对局视图（game:render 落地 + 动作委托）
+  initGameView();
+  // 先初始化记录器，再初始化控制器 —— 保证 game:end 时"先记录、后导航"
+  initRecorder();
+  initRunner();
+
+  // 启动路由，首屏 = 欢迎屏
+  Router.init(root, SCREENS.WELCOME);
+  console.log('[bootstrap] v3 启动完成 ✓ (Phase 2：全功能迁移)');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>

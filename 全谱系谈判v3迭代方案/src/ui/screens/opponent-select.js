@@ -98,13 +98,64 @@ export function renderOpponentSelect() {
   `;
 }
 
+function showHellWarning(onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'hell-modal-overlay';
+  overlay.innerHTML = `
+    <div class="hell-modal">
+      <div class="hell-modal-icon">🔥</div>
+      <div class="hell-modal-title">地狱级 · 无上限协议</div>
+      <div class="hell-modal-body">
+        <ul>
+          <li>对手让步空间压缩至 <b style="color:var(--red)">45%</b>，强硬度倍增至 <b style="color:var(--red)">1.55×</b></li>
+          <li>接受概率下移 <b style="color:var(--red)">−20</b> 点，谈判空间极度压缩</li>
+          <li>隐藏 Boss 的豁免被取消——难度修正直接叠加到其极端基础行为上</li>
+          <li>没有信息辅助，对手的行为几乎不可预测</li>
+        </ul>
+      </div>
+      <div class="hell-modal-btns">
+        <button class="btn btn-red" id="hell-confirm" style="min-width:120px">接受挑战</button>
+        <button class="btn" id="hell-cancel" style="min-width:80px">撤回</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#hell-confirm').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    onConfirm();
+  });
+  overlay.querySelector('#hell-cancel').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    Store.set('difficulty', 'extreme');
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+  });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      document.body.removeChild(overlay);
+      Store.set('difficulty', 'extreme');
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+    }
+  });
+}
+
 renderOpponentSelect.afterRender = function () {
   const key = Store.get('scenarioKey');
 
   // Difficulty button click
   document.querySelectorAll('.diff-btn[data-diff]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      Store.set('difficulty', btn.getAttribute('data-diff'));
+      const diff = btn.getAttribute('data-diff');
+      if (diff === 'hell') {
+        // shake animation, then show warning modal
+        btn.classList.add('btn-shake');
+        btn.addEventListener('animationend', () => btn.classList.remove('btn-shake'), { once: true });
+        Store.set('difficulty', 'hell');
+        showHellWarning(() => {
+          EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+        });
+        return;
+      }
+      Store.set('difficulty', diff);
       EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
     });
   });

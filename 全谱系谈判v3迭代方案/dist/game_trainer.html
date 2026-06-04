@@ -227,6 +227,54 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 /* ── Opponent avatar in selection cards ───────────────────────────── */
 .opp-card-avatar { text-align:center; margin-bottom:6px; }
 
+/* ── Hell difficulty special effects ─────────────────────────────── */
+
+/* Hell boss card: animated red flicker border */
+@keyframes hell-flicker {
+  0%,100%{box-shadow:0 0 22px rgba(255,79,106,.25),0 0 0 0 rgba(255,79,106,0)}
+  25%{box-shadow:0 0 38px rgba(255,79,106,.6),0 0 8px rgba(255,60,60,.35)}
+  55%{box-shadow:0 0 18px rgba(255,79,106,.3),0 0 0 0 rgba(255,79,106,0)}
+  80%{box-shadow:0 0 45px rgba(255,79,106,.7),0 0 12px rgba(255,40,40,.4)}
+}
+.boss-card.hell-boss{animation:hell-flicker 1.9s ease-in-out infinite}
+
+/* Hell button shake */
+@keyframes btn-shake {
+  0%,100%{transform:translateX(0) rotate(0deg)}
+  15%{transform:translateX(-4px) rotate(-.5deg)}
+  30%{transform:translateX(4px) rotate(.5deg)}
+  45%{transform:translateX(-3px) rotate(-.3deg)}
+  60%{transform:translateX(3px) rotate(.3deg)}
+  75%{transform:translateX(-1px)}
+}
+.btn-shake{animation:btn-shake .42s ease}
+
+/* Hell modal overlay */
+@keyframes modal-fadein{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.hell-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.hell-modal{background:var(--bg2);border:2px solid var(--red);border-radius:4px;padding:28px 24px;max-width:370px;width:90%;text-align:center;box-shadow:0 0 50px rgba(255,79,106,.45);animation:modal-fadein .22s ease}
+.hell-modal-icon{font-size:38px;margin-bottom:10px;line-height:1}
+.hell-modal-title{color:var(--red);font-size:16px;font-weight:bold;letter-spacing:3px;margin-bottom:12px;text-shadow:0 0 10px rgba(255,79,106,.5)}
+.hell-modal-body{color:var(--text);font-size:12px;line-height:1.75;margin-bottom:18px;text-align:left}
+.hell-modal-body li{margin:4px 0;padding-left:4px}
+.hell-modal-body li::marker{color:var(--red)}
+.hell-modal-btns{display:flex;gap:10px;justify-content:center}
+
+/* Hell nego-chrome: red-tinted atmosphere */
+.nego-chrome.hell-chrome{border-color:rgba(255,79,106,.45)!important;background:linear-gradient(135deg,rgba(255,79,106,.07),var(--bg2) 55%)}
+.nego-chrome.hell-chrome::before{background:linear-gradient(135deg,rgba(255,79,106,.08),transparent 60%)}
+
+/* Hell avatar ring: red glow */
+@keyframes hell-avatar-glow {
+  0%,100%{box-shadow:0 0 18px rgba(255,79,106,.5),inset 0 0 10px rgba(255,79,106,.12)}
+  50%{box-shadow:0 0 34px rgba(255,79,106,.8),inset 0 0 16px rgba(255,79,106,.22)}
+}
+.nego-avatar-ring.hell-ring{border-color:var(--red)!important;box-shadow:0 0 18px rgba(255,79,106,.5),inset 0 0 10px rgba(255,79,106,.12);animation:hell-avatar-glow 2s ease-in-out infinite}
+
+/* Hell indicator strip above nego-chrome */
+@keyframes hell-indicator-pulse{0%,100%{opacity:.75;letter-spacing:3px}50%{opacity:1;letter-spacing:4px}}
+.hell-indicator{background:rgba(255,79,106,.1);border:1px solid rgba(255,79,106,.35);border-radius:2px;padding:4px 12px;font-size:10px;color:var(--red);text-align:center;margin-bottom:8px;animation:hell-indicator-pulse 2.2s ease-in-out infinite;text-transform:uppercase;font-weight:bold}
+
 </style>
 </head>
 <body>
@@ -2671,13 +2719,64 @@ function renderOpponentSelect() {
   `;
 }
 
+function showHellWarning(onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'hell-modal-overlay';
+  overlay.innerHTML = `
+    <div class="hell-modal">
+      <div class="hell-modal-icon">🔥</div>
+      <div class="hell-modal-title">地狱级 · 无上限协议</div>
+      <div class="hell-modal-body">
+        <ul>
+          <li>对手让步空间压缩至 <b style="color:var(--red)">45%</b>，强硬度倍增至 <b style="color:var(--red)">1.55×</b></li>
+          <li>接受概率下移 <b style="color:var(--red)">−20</b> 点，谈判空间极度压缩</li>
+          <li>隐藏 Boss 的豁免被取消——难度修正直接叠加到其极端基础行为上</li>
+          <li>没有信息辅助，对手的行为几乎不可预测</li>
+        </ul>
+      </div>
+      <div class="hell-modal-btns">
+        <button class="btn btn-red" id="hell-confirm" style="min-width:120px">接受挑战</button>
+        <button class="btn" id="hell-cancel" style="min-width:80px">撤回</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#hell-confirm').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    onConfirm();
+  });
+  overlay.querySelector('#hell-cancel').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    Store.set('difficulty', 'extreme');
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+  });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      document.body.removeChild(overlay);
+      Store.set('difficulty', 'extreme');
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+    }
+  });
+}
+
 renderOpponentSelect.afterRender = function () {
   const key = Store.get('scenarioKey');
 
   // Difficulty button click
   document.querySelectorAll('.diff-btn[data-diff]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      Store.set('difficulty', btn.getAttribute('data-diff'));
+      const diff = btn.getAttribute('data-diff');
+      if (diff === 'hell') {
+        // shake animation, then show warning modal
+        btn.classList.add('btn-shake');
+        btn.addEventListener('animationend', () => btn.classList.remove('btn-shake'), { once: true });
+        Store.set('difficulty', 'hell');
+        showHellWarning(() => {
+          EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
+        });
+        return;
+      }
+      Store.set('difficulty', diff);
       EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
     });
   });
@@ -2708,9 +2807,14 @@ function calcTemp(mood) {
 }
 
 function buildChrome(opp) {
-  const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+  const difficulty = Store.get('difficulty');
+  const isHell = difficulty === 'hell';
+  let ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+  if (isHell) ringCls += ' hell-ring';
+  const chromeCls = isHell ? 'nego-chrome hell-chrome' : 'nego-chrome';
   const typeLine = (opp.type || '').split('/')[0].trim();
-  return `<div class="nego-chrome">
+  const indicator = isHell ? `<div class="hell-indicator">🔥 地狱级 · 无上限协议 · Boss 豁免取消</div>` : '';
+  return `${indicator}<div class="${chromeCls}">
     <div class="nego-avatar-section">
       <div class="${ringCls}"><span class="nego-avatar-emoji">${C.avatarEmoji(opp.id)}</span></div>
       <div class="nego-avatar-name">${opp.name}</div>

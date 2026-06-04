@@ -13,9 +13,14 @@ function calcTemp(mood) {
 }
 
 function buildChrome(opp) {
-  const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+  const difficulty = Store.get('difficulty');
+  const isHell = difficulty === 'hell';
+  let ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+  if (isHell) ringCls += ' hell-ring';
+  const chromeCls = isHell ? 'nego-chrome hell-chrome' : 'nego-chrome';
   const typeLine = (opp.type || '').split('/')[0].trim();
-  return `<div class="nego-chrome">
+  const indicator = isHell ? `<div class="hell-indicator">🔥 地狱级 · 无上限协议 · Boss 豁免取消</div>` : '';
+  return `${indicator}<div class="${chromeCls}">
     <div class="nego-avatar-section">
       <div class="${ringCls}"><span class="nego-avatar-emoji">${C.avatarEmoji(opp.id)}</span></div>
       <div class="nego-avatar-name">${opp.name}</div>

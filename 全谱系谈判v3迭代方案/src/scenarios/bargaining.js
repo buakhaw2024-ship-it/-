@@ -26,6 +26,14 @@ export class BargainingGame extends BaseScenario {
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
+    // 蚕食检测：仅在中期，仅 Boss/强硬/操纵型 + hard 及以上难度触发
+    this.tryCram({
+      round: this.round,
+      totalRounds: this.rounds,
+      kind: 'bargaining',
+      text: `「如果您接受延后付款，我可以在价格上做小幅调整——但这需要额外 2% 的风险保证金。」`,
+    });
+    const cramHtml = this.cramControls();
     const logHtml = this.log.map((l) => {
       const pText = `出价 ${l.my} 元`;
       const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
@@ -41,6 +49,7 @@ export class BargainingGame extends BaseScenario {
         C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
         C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
       ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
+      ${cramHtml}
       ${C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
@@ -53,6 +62,23 @@ export class BargainingGame extends BaseScenario {
 
   handleAction({ type, value }) {
     if (type === 'peek') { this.handlePeek(); return; }
+    if (type === 'resist-cram') {
+      this.consumeCram();
+      // 拒绝蚕食 → 对手感到压力但保持高姿态
+      OpponentAI.observe(this.opp.id, { aggression: 0.6, firm: true });
+      this.lastReason = '你拒绝了加码，谈判气氛紧绷';
+      this._render();
+      return;
+    }
+    if (type === 'accept-cram') {
+      this.consumeCram();
+      // 接受蚕食 → 对手得逞，真实价值上抬，成交更难
+      OpponentAI.observe(this.opp.id, { aggression: 0.2, firm: false });
+      this.trueVal = Math.min(70, this.trueVal + 3);
+      this.lastReason = '你接受了新条件，对方气焰更盛';
+      this._render();
+      return;
+    }
     if (type === 'accept') { this._deal(this.oppOffer); return; }
     if (type !== 'offer') return;
     this._peekSnap = null;

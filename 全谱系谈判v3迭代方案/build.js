@@ -42,6 +42,7 @@ const MANIFEST = [
   'engine/difficulty.js',
   'engine/memory.js',
   'engine/mood.js',
+  'engine/reputation.js',
   'engine/strategies/rational.js',
   'engine/strategies/emotional.js',
   'engine/strategies/aggressive.js',

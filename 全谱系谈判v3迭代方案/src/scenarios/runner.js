@@ -8,6 +8,7 @@ import { Store } from '../core/store.js';
 import { REGISTRY } from './registry.js';
 import { getOpponent, randomOpponent, TRUMP_BOSS } from '../data/opponents.js';
 import { canUnlockBoss } from '../data/ranks.js';
+import { Mood } from '../engine/mood.js';
 
 export function initRunner() {
   EventBus.on(EVENTS.GAME_START, ({ scenarioKey, opponentId }) => {
@@ -31,6 +32,8 @@ export function initRunner() {
       opp = getOpponent(opponentId);
     }
     if (!opp) { console.error('[runner] 未知对手', opponentId); return; }
+    // 设置情绪伪装等级（hard 及以上对手的 peek 数据会被扰乱）
+    Mood.setDeception(Store.get('difficulty') || 'medium');
     const scenario = new meta.Class(opp);
     Store.patch({ scenarioKey, opponent: opp, activeScenario: scenario });
 

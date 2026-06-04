@@ -9,6 +9,7 @@ import { getOpponent } from '../data/opponents.js';
 import { Memory } from './memory.js';
 import { Mood } from './mood.js';
 import { getDifficultyMod, applyDifficulty } from './difficulty.js';
+import { loadReputation, applyReputation } from './reputation.js';
 
 import rational from './strategies/rational.js';
 import emotional from './strategies/emotional.js';
@@ -21,11 +22,15 @@ import trumpBoss from './strategies/trump-boss.js';
 const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse, trumpBoss };
 
 export const OpponentAI = {
-  // 每局开始重置该对手的记忆与情绪
+  // 每局开始重置该对手的记忆与情绪 + 注入跨局记忆偏置
   reset(opponentId) {
     const persona = getOpponent(opponentId);
     Memory.reset(opponentId);
     Mood.reset(opponentId, persona);
+    const rep = loadReputation(opponentId);
+    const effect = applyReputation(opponentId, rep);
+    Memory.get(opponentId).reputationBias = effect.openerBias;
+    Memory.get(opponentId).reputationGames = rep.games;
   },
 
   // 观察玩家一次行为：更新记忆 + 演化情绪（在对手做出反应前调用）

@@ -26,7 +26,10 @@ const expose = `
                'EventBus','EVENTS','Store',
                'OPPONENTS','C','SCENARIO_REGISTRY','SCENARIO_META',
                'getDifficultyMod','applyDifficulty','canUnlockBoss','isGrandMaster',
-               'getRank','TRUMP_BOSS'];
+               'getRank','TRUMP_BOSS',
+               // v4Pro
+               'loadReputation','saveReputation','updateReputation','applyReputation',
+               'freshReputation','Mood','OpponentAI','Memory','BaseScenario'];
   for(var i=0;i<names.length;i++){
     try{ G[names[i]] = eval(names[i]); } catch(e){}
   }
@@ -391,6 +394,158 @@ console.log('\n[12] recorder — session 包含 scenarioKey / opponentId / diffi
   assert(lastSess && lastSess.difficulty === 'hard', 'session.difficulty = hard');
   assert(lastSess && 'scenarioKey' in lastSess, 'session.scenarioKey 字段存在');
   assert(lastSess && 'opponentId' in lastSess, 'session.opponentId 字段存在');
+}
+
+// ─── Test v4Pro-1: 跨局记忆 ────────────────────────────────────────────────────
+console.log('\n[v4Pro-1] 跨局记忆 reputation');
+{
+  const { freshReputation, updateReputation, applyReputation, loadReputation } = G;
+  assert(typeof freshReputation === 'function', 'freshReputation 已导出');
+
+  // 清理上一次测试残留
+  for (const k of Object.keys(lsStore)) {
+    if (k.startsWith('gts_reputation_')) delete lsStore[k];
+  }
+
+  const fresh = freshReputation();
+  assert(fresh.games === 0 && fresh.coopRate === 0.5, '新档默认值正确');
+
+  // <2 局 → bias=0
+  const eff0 = applyReputation('rational', fresh);
+  assert(eff0.openerBias === 0, '<2 局 openerBias=0');
+
+  // 两局连胜 + 高合作率 → bias > 0
+  updateReputation('rational', { coopRate: 0.8, aggression: 0.2, avgConcession: 6 }, 'win');
+  updateReputation('rational', { coopRate: 0.8, aggression: 0.2, avgConcession: 6 }, 'win');
+  const repHigh = loadReputation('rational');
+  const eff1 = applyReputation('rational', repHigh);
+  assert(eff1.openerBias > 0, `高合作率 + 连胜 → bias>0 (=${eff1.openerBias.toFixed(2)})`);
+
+  // 持久化验证
+  const persisted = loadReputation('rational');
+  assert(persisted.games === 2, '持久化 games=2');
+  assert(persisted.lastOutcome === 'win', '持久化 lastOutcome=win');
+
+  // bias 上限不超过 0.4
+  for (let i = 0; i < 8; i++) updateReputation('rational', { coopRate: 0.95, aggression: 0.1, avgConcession: 8 }, 'win');
+  const repMax = loadReputation('rational');
+  const effMax = applyReputation('rational', repMax);
+  assert(effMax.openerBias <= 0.4, `bias 上限 ≤ 0.4 (=${effMax.openerBias.toFixed(2)})`);
+}
+
+// ─── Test v4Pro-2: 情绪伪装 ────────────────────────────────────────────────────
+console.log('\n[v4Pro-2] 情绪伪装 deception');
+{
+  const { Mood } = G;
+  assert(typeof Mood.setDeception === 'function', 'Mood.setDeception 已导出');
+  assert(typeof Mood.getDeceptiveSnapshot === 'function', 'getDeceptiveSnapshot 已导出');
+
+  // easy: 关闭伪装，返回真值
+  Mood.setDeception('easy');
+  assert(!Mood.isDeceptionActive(), 'easy 不启用伪装');
+  Mood.reset('test-opp', { id: 'rational', assert: 0.5 });
+  const real = Mood.get('test-opp');
+  const snap = Mood.getDeceptiveSnapshot('test-opp', { id: 'rational' });
+  assert(snap.trust === real.trust, 'easy: 快照=真实');
+
+  // hell + manipulative: 启用强伪装
+  Mood.setDeception('hell');
+  assert(Mood.isDeceptionActive(), 'hell 启用伪装');
+  assert(Mood.getDeceptionLevel() === 3, 'hell level=3');
+
+  Mood.reset('test-manip', { id: 'manipulative', assert: 0.8 });
+  // 调用 1 次伪装快照，应该不会等于真实快照（除非 RNG 极端）
+  let diffsFound = 0;
+  for (let i = 0; i < 10; i++) {
+    const r = Mood.get('test-manip');
+    const s = Mood.getDeceptiveSnapshot('test-manip', { id: 'manipulative' });
+    if (Math.abs(s.confidence - r.confidence) > 0.01 || Math.abs(s.anger - r.anger) > 0.01) diffsFound++;
+  }
+  assert(diffsFound >= 8, `hell+manipulative: 10次至少 8 次有偏移 (=${diffsFound})`);
+
+  // hell + cooperative: 伪装强度减半（manipTendency=0.5）
+  Mood.reset('test-coop', { id: 'cooperative', assert: 0.3 });
+  let coopDiffs = 0;
+  for (let i = 0; i < 10; i++) {
+    const r = Mood.get('test-coop');
+    const s = Mood.getDeceptiveSnapshot('test-coop', { id: 'cooperative' });
+    if (Math.abs(s.confidence - r.confidence) > 0.01) coopDiffs++;
+  }
+  assert(coopDiffs >= 5, `hell+cooperative: 仍有伪装但强度较弱 (=${coopDiffs})`);
+
+  // 关闭再验证
+  Mood.setDeception('easy');
+  assert(!Mood.isDeceptionActive(), '关闭伪装');
+}
+
+// ─── Test v4Pro-3: 动态锚定 / 蚕食 ─────────────────────────────────────────────
+console.log('\n[v4Pro-3] 蚕食机制 cram');
+{
+  const { BaseScenario, Store } = G;
+  assert(typeof BaseScenario === 'function', 'BaseScenario 已导出');
+
+  // easy: 无蚕食
+  Store.set('difficulty', 'easy');
+  const easy = new BaseScenario({ id: 'aggressive', name: '钢铁王', boss: false });
+  assert(easy._maxCramAttempts === 0, 'easy: maxCramAttempts=0');
+  assert(easy.tryCram({ round: 2, totalRounds: 5 }) === null, 'easy: 不触发');
+
+  // hell: 最高 3 次
+  Store.set('difficulty', 'hell');
+  const hell = new BaseScenario({ id: 'aggressive', name: '钢铁王', boss: false });
+  assert(hell._maxCramAttempts === 3, 'hell: maxCramAttempts=3');
+
+  // 强行尝试 30 次，应至少有 1 次触发（hell + aggressive）
+  let triggered = 0;
+  for (let i = 0; i < 30; i++) {
+    if (hell._cramAttempts >= hell._maxCramAttempts) break;
+    hell._cramCooldown = 0; // 强制清除冷却
+    const r = hell.tryCram({ round: 2, totalRounds: 5, text: 'test' });
+    if (r) { triggered++; hell.consumeCram(); }
+  }
+  assert(triggered >= 1, `hell + aggressive 触发 ≥ 1 次 (=${triggered})`);
+  assert(hell._cramAttempts <= hell._maxCramAttempts, '不超过 max 次数');
+
+  // cooperative 永不触发（非 Boss / aggressive / manipulative）
+  const coop = new BaseScenario({ id: 'cooperative', name: '和谐李', boss: false });
+  let coopTrig = 0;
+  for (let i = 0; i < 30; i++) {
+    coop._cramCooldown = 0;
+    if (coop.tryCram({ round: 2, totalRounds: 5 })) coopTrig++;
+  }
+  assert(coopTrig === 0, 'cooperative 永不蚕食');
+
+  // 中期外（第 0 轮或最后一轮）不触发
+  Store.set('difficulty', 'hell');
+  const edge = new BaseScenario({ id: 'aggressive', name: '钢铁王', boss: false });
+  assert(edge.tryCram({ round: 0, totalRounds: 5 }) === null, '第 0 轮不触发');
+  edge._cramCooldown = 0;
+  assert(edge.tryCram({ round: 4, totalRounds: 5 }) === null, '最后一轮不触发');
+
+  // Boss 启用
+  const boss = new BaseScenario({ id: 'trumpBoss', name: '极限交易者', boss: true });
+  let bossTrig = 0;
+  for (let i = 0; i < 30; i++) {
+    if (boss._cramAttempts >= boss._maxCramAttempts) break;
+    boss._cramCooldown = 0;
+    const r = boss.tryCram({ round: 2, totalRounds: 5, text: 'boss' });
+    if (r) { bossTrig++; boss.consumeCram(); }
+  }
+  assert(bossTrig >= 1, `Boss 启用 ≥ 1 次 (=${bossTrig})`);
+
+  // cramControls / consumeCram
+  const c = new BaseScenario({ id: 'trumpBoss', name: 'Boss', boss: true });
+  c._pendingCram = { text: 'hello', kind: 'bargaining' };
+  const ctrl = c.cramControls();
+  assert(ctrl.includes('hello'), 'cramControls 包含文本');
+  assert(ctrl.includes('resist-cram'), '含拒绝按钮');
+  assert(ctrl.includes('accept-cram'), '含接受按钮');
+  c.consumeCram();
+  assert(c._pendingCram === null, 'consumeCram 清空');
+  assert(c.cramControls() === '', '无 pending 时返回空');
+
+  // 还原 difficulty
+  Store.set('difficulty', 'medium');
 }
 
 // ─── 汇总 ─────────────────────────────────────────────────────────────────────

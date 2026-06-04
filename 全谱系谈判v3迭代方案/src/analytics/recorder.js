@@ -11,6 +11,12 @@ import { buildReplay } from './replay.js';
 import { getOpponentTips, PERSONALITY_TELLS } from '../data/opponents.js';
 import { SCENARIO_META } from '../data/scenarios.meta.js';
 import { checkNewCards, unlockCards, renderBoxOpenModal } from '../ui/cards.js';
+import { updateReputation } from '../engine/reputation.js';
+
+function _safe(num, den) {
+  if (!den || den <= 0) return 0.5;
+  return num / den;
+}
 
 export function initRecorder() {
   EventBus.on(EVENTS.GAME_END, ({ result }) => {
@@ -38,6 +44,17 @@ export function initRecorder() {
         oppScore: result.oppScore,
         outcome: result.outcome,
       });
+      // 更新跨局记忆（对手记住玩家风格）
+      if (opp && opp.id) {
+        const ps = player.behaviorStats || {};
+        const roundCoop = rounds.filter((r) => r && (r.move === 'coop' || r.playerMove === 'coop')).length;
+        const inGameCoopRate = rounds.length > 0 ? roundCoop / rounds.length : _safe(ps.coopMoves, ps.totalMoves);
+        updateReputation(opp.id, {
+          coopRate: inGameCoopRate,
+          aggression: _safe(ps.assertiveMoves, ps.totalMoves),
+          avgConcession: ps.avgConcession || 5,
+        }, result.outcome);
+      }
       // 检查新卡解锁（在 accumulate 之后）
       const newCards = checkNewCards(player);
       if (newCards.length) unlockCards(player, newCards);

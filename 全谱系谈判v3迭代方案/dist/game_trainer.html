@@ -889,6 +889,9 @@ const Memory = {
 
 const _mood = new Map();
 
+// 情绪伪装：hard 及以上难度对手会扰乱 peek 数据
+let _deceptionLevel = 0; // 0=透明，1=hard，2=extreme，3=hell
+
 function fresh(persona) {
   return {
     trust: 0.5,
@@ -928,7 +931,120 @@ const Mood = {
     d.patience = clamp(d.patience - 0.05); // 回合推进，耐心自然损耗
     return d;
   },
+
+  // 设置当前对局的伪装等级（在对局开始时由 runner 调用）
+  setDeception(difficulty) {
+    _deceptionLevel = difficulty === 'hell' ? 3 : difficulty === 'extreme' ? 2 : difficulty === 'hard' ? 1 : 0;
+  },
+
+  isDeceptionActive() { return _deceptionLevel > 0; },
+  getDeceptionLevel() { return _deceptionLevel; },
+
+  // 给 peek/读心系统使用：返回伪装后的情绪快照
+  getDeceptiveSnapshot(id, persona) {
+    const real = this.get(id);
+    if (_deceptionLevel <= 0) return { ...real };
+    const p = persona || {};
+    // 操纵者/Boss 更擅长伪装
+    const manipTendency = (p.id === 'manipulative' || p.id === 'trumpBoss') ? 1 : 0.5;
+    const intensity = (_deceptionLevel / 3) * manipTendency;
+    if (intensity <= 0) return { ...real };
+
+    const faked = { ...real };
+    const fakeWeak = chance(0.5);
+    if (fakeWeak) {
+      // 示弱：诱使你乘胜追击/施压
+      faked.trust = clamp(real.trust - intensity * 0.30 + rnd(-0.10, 0.10));
+      faked.anger = clamp(real.anger - intensity * 0.25 + rnd(-0.10, 0.10));
+      faked.confidence = clamp(real.confidence - intensity * 0.35 + rnd(-0.10, 0.10));
+    } else {
+      // 示强：诱导你让步
+      faked.trust = clamp(real.trust - intensity * 0.20 + rnd(-0.10, 0.10));
+      faked.anger = clamp(real.anger + intensity * 0.30 + rnd(-0.10, 0.10));
+      faked.confidence = clamp(real.confidence + intensity * 0.40 + rnd(-0.10, 0.10));
+    }
+    return faked;
+  },
 };
+
+
+/* ===== engine/reputation.js ===== */
+// engine/reputation.js — 跨局记忆：对手记住你的历史风格，并用它调整开局倾向
+// 数据存在 localStorage `gts_reputation_<oppId>` 下，每个对手独立一份记录。
+
+
+const REP_KEY_PREFIX = 'gts_reputation_';
+
+function freshReputation() {
+  return {
+    games: 0,                 // 与该对手交手次数
+    wins: 0,                  // 你赢的次数
+    coopRate: 0.5,            // 你对该对手的平均合作率（EMA）
+    aggressionRate: 0.5,      // 你的平均激进率（EMA）
+    avgConcession: 5,         // 你的平均让步幅度（EMA）
+    lastOutcome: null,        // 上一场结果: 'win'|'lose'|'draw'|'coop'
+    latestStrategies: [],     // 最近 5 场的合作率
+  };
+}
+
+function loadReputation(oppId) {
+  if (typeof localStorage === 'undefined') return freshReputation();
+  try {
+    const saved = localStorage.getItem(REP_KEY_PREFIX + oppId);
+    if (saved) return { ...freshReputation(), ...JSON.parse(saved) };
+  } catch (e) { /* ignore */ }
+  return freshReputation();
+}
+
+function saveReputation(oppId, rep) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(REP_KEY_PREFIX + oppId, JSON.stringify(rep));
+  } catch (e) { /* ignore */ }
+}
+
+// 一局结束后调用：累计该对手的跨局记忆
+function updateReputation(oppId, playerStats, outcome) {
+  const rep = loadReputation(oppId);
+  rep.games += 1;
+  if (outcome === 'win' || outcome === 'coop') rep.wins += 1;
+  rep.coopRate = ema(rep.coopRate, playerStats.coopRate != null ? playerStats.coopRate : 0.5, 0.3);
+  rep.aggressionRate = ema(rep.aggressionRate, playerStats.aggression != null ? playerStats.aggression : 0.5, 0.3);
+  rep.avgConcession = ema(rep.avgConcession, playerStats.avgConcession != null ? playerStats.avgConcession : 5, 0.3);
+  rep.lastOutcome = outcome;
+  rep.latestStrategies.push(playerStats.coopRate != null ? playerStats.coopRate : 0.5);
+  if (rep.latestStrategies.length > 5) rep.latestStrategies.shift();
+  saveReputation(oppId, rep);
+  return rep;
+}
+
+// 对手装载新一局时调用：根据跨局记忆生成开局偏置
+// openerBias: −0.3 ~ +0.4，越高代表对手开局越鹰派/越警惕
+function applyReputation(oppId, rep) {
+  if (rep.games < 2) return { openerBias: 0 };
+
+  let bias = 0;
+  // 你上局赢了 → 对手警惕，开局更强硬
+  if (rep.lastOutcome === 'win') bias += 0.12;
+  // 你上局输了 → 对手觉得你弱，略微松懈
+  if (rep.lastOutcome === 'lose') bias -= 0.08;
+
+  // 你历史合作率高 → 对手预判你合作，针对性背叛
+  if (rep.coopRate > 0.65) bias += 0.15;
+  // 你爱背叛 → 对手反而倾向尝试合作钓鱼
+  if (rep.coopRate < 0.35) bias -= 0.10;
+
+  // 连续 3 场以上的稳定模式 → 对手摸清你
+  if (rep.latestStrategies.length >= 3) {
+    const recent = rep.latestStrategies.slice(-3);
+    const allHigh = recent.every((r) => r > 0.6);
+    const allLow = recent.every((r) => r < 0.4);
+    if (allHigh) bias += 0.10;
+    if (allLow) bias += 0.05;
+  }
+
+  return { openerBias: clamp(bias, -0.3, 0.4) };
+}
 
 
 /* ===== engine/strategies/rational.js ===== */
@@ -1184,10 +1300,17 @@ function riskAverse(ctx, persona, mem, mood) {
 function trumpBoss(ctx, persona, mem, mood) {
   const resisted = mem.firmCount > 0 || mem.aggression > 0.6; // 玩家亮 BATNA / 强硬反压
   const overlySoft = mem.coop >= 2 && mem.firmCount === 0;     // 玩家持续无条件合作
+  const repBias = mem.reputationBias || 0;                     // 跨局记忆偏置
 
   switch (ctx.kind) {
     case 'pd': {
-      if (ctx.round === 0) return { move: chance(0.9) ? 'defect' : 'coop', reason: '开局极限施压：先背叛立威' };
+      if (ctx.round === 0) {
+        const defectChance = clamp(0.9 + repBias, 0.7, 0.99);
+        return {
+          move: chance(defectChance) ? 'defect' : 'coop',
+          reason: repBias > 0.1 ? '你已被我记住，别想故技重施' : '开局极限施压：先背叛立威',
+        };
+      }
       if (resisted) return { move: chance(0.5) ? 'defect' : 'coop', reason: '遇到可信反压，转为试探' };
       if (overlySoft) return { move: chance(0.95) ? 'defect' : 'coop', reason: '你越软我越索取' };
       return { move: chance(0.85) ? 'defect' : 'coop', reason: '高压交易本能：倾向背叛' };
@@ -1195,7 +1318,13 @@ function trumpBoss(ctx, persona, mem, mood) {
     case 'trust-return':
       return { move: Math.round(ctx.tripled * 0.08), reason: '极限榨取，几乎不返还' };
     case 'bargain-counter': {
-      if (ctx.round === 0) return { move: 95, reason: '极端锚定开价 95' };
+      if (ctx.round === 0) {
+        const anchor = Math.round(clamp(95 + repBias * 8, 88, 99));
+        return {
+          move: anchor,
+          reason: repBias > 0.1 ? `已对你建档，再加 ${anchor - 95} 元锚定` : '极端锚定开价 95',
+        };
+      }
       let red;
       if (resisted) red = 4 + (chance(0.5) ? 2 : 0);          // 被反压才肯多让一点
       else if (overlySoft) red = 1 + (chance(0.5) ? 1 : 0);   // 你软我几乎不动
@@ -1207,8 +1336,11 @@ function trumpBoss(ctx, persona, mem, mood) {
     }
     case 'pg-contribute':
       return { move: chance(0.5) ? 0 : 1, reason: '搭便车到底：让别人买单' };
-    case 'ultimatum-propose':
-      return { move: resisted ? 78 : 84, reason: resisted ? '稍稍收敛但仍极端' : '极端报价：自留绝大部分' };
+    case 'ultimatum-propose': {
+      const base = resisted ? 78 : 84;
+      const move = Math.round(clamp(base + repBias * 6, 70, 92));
+      return { move, reason: resisted ? '稍稍收敛但仍极端' : (repBias > 0.1 ? '记得你套路，提价' : '极端报价：自留绝大部分') };
+    }
     case 'ultimatum-respond': {
       const share = 100 - ctx.playerKeep;
       const need = resisted ? 42 : 50; // 极高接受门槛
@@ -1230,11 +1362,15 @@ function trumpBoss(ctx, persona, mem, mood) {
 const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse, trumpBoss };
 
 const OpponentAI = {
-  // 每局开始重置该对手的记忆与情绪
+  // 每局开始重置该对手的记忆与情绪 + 注入跨局记忆偏置
   reset(opponentId) {
     const persona = getOpponent(opponentId);
     Memory.reset(opponentId);
     Mood.reset(opponentId, persona);
+    const rep = loadReputation(opponentId);
+    const effect = applyReputation(opponentId, rep);
+    Memory.get(opponentId).reputationBias = effect.openerBias;
+    Memory.get(opponentId).reputationGames = rep.games;
   },
 
   // 观察玩家一次行为：更新记忆 + 演化情绪（在对手做出反应前调用）
@@ -1957,12 +2093,57 @@ const Router = {
 // 约束：场景不操作 DOM、不 import ui 屏幕逻辑（仅可用 components 纯字符串构造器）。
 
 
+const CRAM_MAP = { easy: 0, medium: 0, hard: 1, extreme: 2, hell: 3 };
+
 class BaseScenario {
   constructor(opp) {
     this.opp = opp;
     this.log = [];
     this.peeksLeft = 2;   // Phase 4：消耗式"识破对手"次数
     this._peekSnap = null;
+    // 蚕食机制（动态锚定 / 中途加码）
+    this._cramAttempts = 0;
+    this._maxCramAttempts = CRAM_MAP[Store.get('difficulty')] || 0;
+    this._cramCooldown = 0;
+    this._pendingCram = null;
+  }
+
+  // 子类在 _render() 开头调用：决定本回合是否抛出新条件
+  // 仅 Boss / 强硬型 / 操纵型 + hard 及以上难度才会触发
+  tryCram(opts = {}) {
+    if (this._pendingCram) return this._pendingCram;
+    if (this._cramAttempts >= this._maxCramAttempts) return null;
+    if (this._cramCooldown > 0) { this._cramCooldown -= 1; return null; }
+    const opp = this.opp;
+    const canCram = opp.boss || opp.id === 'aggressive' || opp.id === 'manipulative';
+    if (!canCram) return null;
+    const round = opts.round != null ? opts.round : 0;
+    const totalRounds = opts.totalRounds || 5;
+    const midGame = round >= 1 && round <= totalRounds - 2;
+    if (!midGame) return null;
+    // 概率随尝试次数递增，但每次最多 ~60%
+    const triggerChance = Math.min(0.6, (this._cramAttempts + 1) / (this._maxCramAttempts + 2));
+    if (!chance(triggerChance)) return null;
+    this._cramAttempts += 1;
+    this._cramCooldown = 2;
+    this._pendingCram = { text: opts.text || '', kind: opts.kind || 'generic' };
+    return this._pendingCram;
+  }
+
+  cramControls() {
+    if (!this._pendingCram) return '';
+    const cram = this._pendingCram;
+    return C.hint(`<b>⚠ ${this.opp.name} 中途加码：</b>${cram.text}`, 'red') +
+      `<div class="grid2" style="margin:8px 0">` +
+        C.actionBtn('resist-cram', '', '<b>🛡 拒绝额外条件</b>（坚守原框架）', 'btn-red') +
+        C.actionBtn('accept-cram', '', '<b>🤝 接受新条件</b>（推进谈判）', 'btn-green') +
+      `</div>`;
+  }
+
+  consumeCram() {
+    const c = this._pendingCram;
+    this._pendingCram = null;
+    return c;
   }
 
   emitRender(html) {
@@ -1981,8 +2162,10 @@ class BaseScenario {
       const m = this._peekSnap.mood;
       const pct = (x) => Math.round(x * 100);
       const tells = (PERSONALITY_TELLS[this.opp.id] || []).join(' / ');
+      const deceptive = this._peekSnap.deceptive
+        ? `<div style="color:var(--red);font-size:10px;margin-top:4px">⚠ 高难度对手可能伪装情绪，数据仅供参考</div>` : '';
       html += C.hint(
-        `<b>读心快照：</b>信任 ${pct(m.trust)}% · 愤怒 ${pct(m.anger)}% · 耐心 ${pct(m.patience)}% · 自信 ${pct(m.confidence)}%<br><span style="color:var(--dim)">行为信号：${tells}</span>`,
+        `<b>读心快照：</b>信任 ${pct(m.trust)}% · 愤怒 ${pct(m.anger)}% · 耐心 ${pct(m.patience)}% · 自信 ${pct(m.confidence)}%<br><span style="color:var(--dim)">行为信号：${tells}</span>${deceptive}`,
         'purple');
     }
     return html;
@@ -1991,7 +2174,16 @@ class BaseScenario {
   handlePeek() {
     if (this.peeksLeft > 0 && !this._peekSnap) {
       this.peeksLeft -= 1;
-      this._peekSnap = OpponentAI.snapshot(this.opp.id);
+      const deceptive = Mood.isDeceptionActive();
+      const realSnap = OpponentAI.snapshot(this.opp.id);
+      const mood = deceptive
+        ? Mood.getDeceptiveSnapshot(this.opp.id, this.opp)
+        : { ...realSnap.mood };
+      this._peekSnap = {
+        mood,
+        realMood: { ...realSnap.mood }, // 真实情绪保留供复盘
+        deceptive,
+      };
     }
     this._render();
   }
@@ -2314,6 +2506,14 @@ class BargainingGame extends BaseScenario {
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
+    // 蚕食检测：仅在中期，仅 Boss/强硬/操纵型 + hard 及以上难度触发
+    this.tryCram({
+      round: this.round,
+      totalRounds: this.rounds,
+      kind: 'bargaining',
+      text: `「如果您接受延后付款，我可以在价格上做小幅调整——但这需要额外 2% 的风险保证金。」`,
+    });
+    const cramHtml = this.cramControls();
     const logHtml = this.log.map((l) => {
       const pText = `出价 ${l.my} 元`;
       const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
@@ -2329,6 +2529,7 @@ class BargainingGame extends BaseScenario {
         C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
         C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
       ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : C.hint(`您是买方，希望以最低价买入。${opp.name} 是卖方，希望以最高价卖出。`)}
+      ${cramHtml}
       ${C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
         C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
         C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
@@ -2341,6 +2542,23 @@ class BargainingGame extends BaseScenario {
 
   handleAction({ type, value }) {
     if (type === 'peek') { this.handlePeek(); return; }
+    if (type === 'resist-cram') {
+      this.consumeCram();
+      // 拒绝蚕食 → 对手感到压力但保持高姿态
+      OpponentAI.observe(this.opp.id, { aggression: 0.6, firm: true });
+      this.lastReason = '你拒绝了加码，谈判气氛紧绷';
+      this._render();
+      return;
+    }
+    if (type === 'accept-cram') {
+      this.consumeCram();
+      // 接受蚕食 → 对手得逞，真实价值上抬，成交更难
+      OpponentAI.observe(this.opp.id, { aggression: 0.2, firm: false });
+      this.trueVal = Math.min(70, this.trueVal + 3);
+      this.lastReason = '你接受了新条件，对方气焰更盛';
+      this._render();
+      return;
+    }
     if (type === 'accept') { this._deal(this.oppOffer); return; }
     if (type !== 'offer') return;
     this._peekSnap = null;
@@ -2736,6 +2954,8 @@ function initRunner() {
       opp = getOpponent(opponentId);
     }
     if (!opp) { console.error('[runner] 未知对手', opponentId); return; }
+    // 设置情绪伪装等级（hard 及以上对手的 peek 数据会被扰乱）
+    Mood.setDeception(Store.get('difficulty') || 'medium');
     const scenario = new meta.Class(opp);
     Store.patch({ scenarioKey, opponent: opp, activeScenario: scenario });
 
@@ -3013,6 +3233,11 @@ renderCardAlbum.afterRender = function () {
 // bootstrap 中须在 runner 之前 init，确保"先记录、后导航"。
 
 
+function _safe(num, den) {
+  if (!den || den <= 0) return 0.5;
+  return num / den;
+}
+
 function initRecorder() {
   EventBus.on(EVENTS.GAME_END, ({ result }) => {
     const player = Store.get('player');
@@ -3039,6 +3264,17 @@ function initRecorder() {
         oppScore: result.oppScore,
         outcome: result.outcome,
       });
+      // 更新跨局记忆（对手记住玩家风格）
+      if (opp && opp.id) {
+        const ps = player.behaviorStats || {};
+        const roundCoop = rounds.filter((r) => r && (r.move === 'coop' || r.playerMove === 'coop')).length;
+        const inGameCoopRate = rounds.length > 0 ? roundCoop / rounds.length : _safe(ps.coopMoves, ps.totalMoves);
+        updateReputation(opp.id, {
+          coopRate: inGameCoopRate,
+          aggression: _safe(ps.assertiveMoves, ps.totalMoves),
+          avgConcession: ps.avgConcession || 5,
+        }, result.outcome);
+      }
       // 检查新卡解锁（在 accumulate 之后）
       const newCards = checkNewCards(player);
       if (newCards.length) unlockCards(player, newCards);

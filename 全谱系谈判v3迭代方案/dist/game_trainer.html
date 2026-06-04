@@ -171,8 +171,11 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
 /* Boss card + difficulty UI */
 .boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-card.hell-boss{border-color:var(--red)!important;background:linear-gradient(135deg,rgba(255,79,106,.12),rgba(255,0,0,.06));box-shadow:0 0 22px rgba(255,79,106,.25)}
 .boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.boss-badge.hell{border-color:var(--red);color:var(--red)}
 .active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
+.active-diff-hell{background:rgba(255,79,106,.15)!important;border-color:var(--red)!important;color:var(--red)!important;font-weight:bold}
 
 /* ── Negotiation table chrome ────────────────────────────────────────── */
 .nego-chrome{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;position:relative;overflow:hidden}
@@ -570,14 +573,14 @@ function getRank(total, wins) {
   return wr > 0.8 ? '宗师级' : '博弈大师';
 }
 
-// Trump Boss 解锁条件：宗师级 + 终局挑战难度
+// Trump Boss 解锁条件：宗师级 + 终局挑战 / 地狱级难度
 function isGrandMaster(player) {
   if (!player) return false;
   return getRank(player.total, player.wins) === '宗师级';
 }
 
 function canUnlockBoss(player, difficulty) {
-  return isGrandMaster(player) && difficulty === 'extreme';
+  return isGrandMaster(player) && (difficulty === 'extreme' || difficulty === 'hell');
 }
 
 // 8 维心理向量的展示定义
@@ -617,6 +620,7 @@ const DIFFICULTIES = [
   { key: 'medium',  label: '中级' },
   { key: 'hard',    label: '高级' },
   { key: 'extreme', label: '终局挑战' },
+  { key: 'hell',    label: '地狱级' },
 ];
 
 function getDifficultyLabel(d) {
@@ -635,6 +639,7 @@ function getDifficultyMod(d) {
     medium:  { coopFactor: 1.00, toughFactor: 1.00, acceptShift: 0 },
     hard:    { coopFactor: 0.78, toughFactor: 1.18, acceptShift: -6 },
     extreme: { coopFactor: 0.62, toughFactor: 1.35, acceptShift: -12 },
+    hell:    { coopFactor: 0.45, toughFactor: 1.55, acceptShift: -20 },
   };
   return TABLE[diff] || TABLE.medium;
 }
@@ -1091,9 +1096,12 @@ const OpponentAI = {
     const fn = STRATEGIES[opponentId] || STRATEGIES.rational;
 
     let { move, reason } = fn(ctx, persona, mem, mood);
-    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。Boss 已是极限值，豁免。
-    if (opponentId !== 'trumpBoss') {
-      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod());
+    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。
+    // Boss 默认豁免（已校准到极限）；但「地狱级」取消豁免——修正叠加到 Boss 上，构成终极挑战。
+    const difficulty = Store.get('difficulty');
+    const bossExempt = opponentId === 'trumpBoss' && difficulty !== 'hell';
+    if (!bossExempt) {
+      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod(difficulty));
     }
     const snapshot = { ...mood };
 
@@ -2577,17 +2585,23 @@ function buildOpponentCard(o, difficulty, player) {
   const isBoss = !!o.boss;
   const isEasy = difficulty === 'easy';
   const isMed  = difficulty === 'medium';
+  const isHell = difficulty === 'hell';
   const tells  = PERSONALITY_TELLS[o.id] || [];
 
   let infoLine = '';
-  if (isEasy)      infoLine = `弱点：${o.weakness}`;
-  else if (isMed)  infoLine = `行为信号：${tells.join(' / ')}`;
-  else             infoLine = '未知对手 — 请通过行为判断其类型';
+  if (isEasy)     infoLine = `弱点：${o.weakness}`;
+  else if (isMed) infoLine = `行为信号：${tells.join(' / ')}`;
+  else if (isHell && isBoss) infoLine = '⚠ 地狱级：难度修正叠加到 Boss 上，无豁免，无上限';
+  else            infoLine = '未知对手 — 请通过行为判断其类型';
+
+  const bossCls = isBoss ? (isHell ? ' boss-card hell-boss' : ' boss-card') : '';
+  const badgeCls = isHell ? ' hell' : '';
+  const badgeText = isBoss ? (isHell ? '🔥 地狱 BOSS' : '隐藏 BOSS') : '';
 
   return `
-    <div class="opp-card${isBoss ? ' boss-card' : ''}" data-opp="${o.id}">
+    <div class="opp-card${bossCls}" data-opp="${o.id}">
       <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
-      ${isBoss ? '<div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>' : ''}
+      ${isBoss ? `<div class="boss-badge${badgeCls}" style="display:block;text-align:center;margin-bottom:4px">${badgeText}</div>` : ''}
       <div class="opp-name" style="text-align:center">${o.name}</div>
       <div class="opp-type" style="text-align:center">${o.type}</div>
       <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
@@ -2608,9 +2622,12 @@ function renderOpponentSelect() {
   // Difficulty button row
   const diffBtns = DIFFICULTIES.map((d) => {
     const active = d.key === difficulty;
-    const isExtreme = d.key === 'extreme';
-    if (isExtreme && !grandMaster) return ''; // 极限挑战仅宗师可见
-    return `<button class="btn btn-sm diff-btn ${active ? 'btn-cyan active-diff' : ''}"
+    const gated = d.key === 'extreme' || d.key === 'hell';
+    if (gated && !grandMaster) return '';
+    const isHellBtn = d.key === 'hell';
+    const activeCls = active ? (isHellBtn ? 'active-diff-hell' : 'btn-cyan active-diff') : '';
+    const baseCls = isHellBtn ? ' btn-red' : '';
+    return `<button class="btn btn-sm diff-btn${baseCls} ${activeCls}"
               data-diff="${d.key}" style="margin:2px">${d.label}</button>`;
   }).join('');
 
@@ -2622,12 +2639,14 @@ function renderOpponentSelect() {
 
   // Unlock hint
   let hintHtml = '';
-  if (unlocked) {
-    hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可能出现，展示你的宗师实力。', 'yellow');
+  if (unlocked && difficulty === 'hell') {
+    hintHtml = C.hint('🔥 <b>地狱级已激活</b>：对手让步空间压到极限（45%），Boss 的豁免被取消——难度修正直接叠加到其已极端的基础行为上。', 'red');
+  } else if (unlocked) {
+    hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可选，展示你的宗师实力。', 'yellow');
   } else if (grandMaster) {
-    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」难度解锁隐藏 Boss。', 'cyan');
+    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」或「地狱级」解锁隐藏 Boss。', 'cyan');
   } else {
-    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b> 难度。', 'purple');
+    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b>（或地狱级）难度。', 'purple');
   }
 
   return `
@@ -2640,7 +2659,7 @@ function renderOpponentSelect() {
       <div class="panel-title">训练难度</div>
       <div id="diff-btns" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${diffBtns}</div>
       <div style="font-size:11px;color:var(--dim)">
-        初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属，难度最高
+        初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属 &nbsp;|&nbsp; <span style="color:var(--red)">地狱级：Boss 无豁免·无上限</span>
       </div>
     </div>
     ${hintHtml}
@@ -2774,6 +2793,8 @@ function renderResult() {
   // Trump Boss 复盘：专项诊断
   let bossReviewPanel = '';
   if (opp && opp.id === 'trumpBoss') {
+    const difficulty = Store.get('difficulty') || 'medium';
+    const isHell = difficulty === 'hell';
     const rounds = result.rounds || [];
     const tags = rounds.flatMap((r) => r.tags || []);
     const resisted = tags.includes('BATNA') || tags.includes('底线控制');
@@ -2790,9 +2811,17 @@ function renderResult() {
       '④ 面对时间压力时主动暂停，把节奏拉回到客观标准。',
       '⑤ 不要进入对方设置的胜负叙事，回到可执行条款本身。',
     ];
+    const hellNote = isHell ? C.hint(
+      '🔥 <b>地狱级加注</b>：本局 Boss 的豁免被取消，慷慨度再压 45%、强硬度叠加 ×1.55。' +
+      (passed ? '在这种条件下仍能坚守原则，证明你的抗压模型已相当成熟。' :
+                '在此难度下失手是正常的——先在终局挑战把基础抗压模型跑稳再挑地狱。'),
+      passed ? 'green' : 'red') : '';
     bossReviewPanel = `
-      <div class="panel" style="border-color:var(--yellow)">
-        <div class="panel-title" style="color:var(--yellow)">终局 Boss 复盘｜极限交易型高压锚定模型</div>
+      <div class="panel" style="border-color:${isHell ? 'var(--red)' : 'var(--yellow)'}">
+        <div class="panel-title" style="color:${isHell ? 'var(--red)' : 'var(--yellow)'}">
+          ${isHell ? '🔥 地狱级 Boss 复盘' : '终局 Boss 复盘'}｜极限交易型高压锚定模型
+        </div>
+        ${hellNote}
         ${C.hint(diagnosis, passed ? 'green' : 'yellow')}
         ${advices.map((a) => C.hint(`• ${a}`)).join('')}
       </div>`;

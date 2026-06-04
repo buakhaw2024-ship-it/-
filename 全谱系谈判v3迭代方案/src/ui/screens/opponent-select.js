@@ -13,17 +13,23 @@ function buildOpponentCard(o, difficulty, player) {
   const isBoss = !!o.boss;
   const isEasy = difficulty === 'easy';
   const isMed  = difficulty === 'medium';
+  const isHell = difficulty === 'hell';
   const tells  = PERSONALITY_TELLS[o.id] || [];
 
   let infoLine = '';
-  if (isEasy)      infoLine = `弱点：${o.weakness}`;
-  else if (isMed)  infoLine = `行为信号：${tells.join(' / ')}`;
-  else             infoLine = '未知对手 — 请通过行为判断其类型';
+  if (isEasy)     infoLine = `弱点：${o.weakness}`;
+  else if (isMed) infoLine = `行为信号：${tells.join(' / ')}`;
+  else if (isHell && isBoss) infoLine = '⚠ 地狱级：难度修正叠加到 Boss 上，无豁免，无上限';
+  else            infoLine = '未知对手 — 请通过行为判断其类型';
+
+  const bossCls = isBoss ? (isHell ? ' boss-card hell-boss' : ' boss-card') : '';
+  const badgeCls = isHell ? ' hell' : '';
+  const badgeText = isBoss ? (isHell ? '🔥 地狱 BOSS' : '隐藏 BOSS') : '';
 
   return `
-    <div class="opp-card${isBoss ? ' boss-card' : ''}" data-opp="${o.id}">
+    <div class="opp-card${bossCls}" data-opp="${o.id}">
       <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
-      ${isBoss ? '<div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>' : ''}
+      ${isBoss ? `<div class="boss-badge${badgeCls}" style="display:block;text-align:center;margin-bottom:4px">${badgeText}</div>` : ''}
       <div class="opp-name" style="text-align:center">${o.name}</div>
       <div class="opp-type" style="text-align:center">${o.type}</div>
       <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
@@ -44,9 +50,12 @@ export function renderOpponentSelect() {
   // Difficulty button row
   const diffBtns = DIFFICULTIES.map((d) => {
     const active = d.key === difficulty;
-    const isExtreme = d.key === 'extreme';
-    if (isExtreme && !grandMaster) return ''; // 极限挑战仅宗师可见
-    return `<button class="btn btn-sm diff-btn ${active ? 'btn-cyan active-diff' : ''}"
+    const gated = d.key === 'extreme' || d.key === 'hell';
+    if (gated && !grandMaster) return '';
+    const isHellBtn = d.key === 'hell';
+    const activeCls = active ? (isHellBtn ? 'active-diff-hell' : 'btn-cyan active-diff') : '';
+    const baseCls = isHellBtn ? ' btn-red' : '';
+    return `<button class="btn btn-sm diff-btn${baseCls} ${activeCls}"
               data-diff="${d.key}" style="margin:2px">${d.label}</button>`;
   }).join('');
 
@@ -58,12 +67,14 @@ export function renderOpponentSelect() {
 
   // Unlock hint
   let hintHtml = '';
-  if (unlocked) {
-    hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可能出现，展示你的宗师实力。', 'yellow');
+  if (unlocked && difficulty === 'hell') {
+    hintHtml = C.hint('🔥 <b>地狱级已激活</b>：对手让步空间压到极限（45%），Boss 的豁免被取消——难度修正直接叠加到其已极端的基础行为上。', 'red');
+  } else if (unlocked) {
+    hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可选，展示你的宗师实力。', 'yellow');
   } else if (grandMaster) {
-    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」难度解锁隐藏 Boss。', 'cyan');
+    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」或「地狱级」解锁隐藏 Boss。', 'cyan');
   } else {
-    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b> 难度。', 'purple');
+    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b>（或地狱级）难度。', 'purple');
   }
 
   return `
@@ -76,7 +87,7 @@ export function renderOpponentSelect() {
       <div class="panel-title">训练难度</div>
       <div id="diff-btns" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${diffBtns}</div>
       <div style="font-size:11px;color:var(--dim)">
-        初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属，难度最高
+        初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属 &nbsp;|&nbsp; <span style="color:var(--red)">地狱级：Boss 无豁免·无上限</span>
       </div>
     </div>
     ${hintHtml}

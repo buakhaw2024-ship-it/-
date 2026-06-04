@@ -4,6 +4,7 @@
 
 import { EventBus } from '../core/event-bus.js';
 import { EVENTS } from '../core/events.js';
+import { Store } from '../core/store.js';
 import { getOpponent } from '../data/opponents.js';
 import { Memory } from './memory.js';
 import { Mood } from './mood.js';
@@ -42,9 +43,12 @@ export const OpponentAI = {
     const fn = STRATEGIES[opponentId] || STRATEGIES.rational;
 
     let { move, reason } = fn(ctx, persona, mem, mood);
-    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。Boss 已是极限值，豁免。
-    if (opponentId !== 'trumpBoss') {
-      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod());
+    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。
+    // Boss 默认豁免（已校准到极限）；但「地狱级」取消豁免——修正叠加到 Boss 上，构成终极挑战。
+    const difficulty = Store.get('difficulty');
+    const bossExempt = opponentId === 'trumpBoss' && difficulty !== 'hell';
+    if (!bossExempt) {
+      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod(difficulty));
     }
     const snapshot = { ...mood };
 

@@ -164,8 +164,11 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
 /* Boss card + difficulty UI */
 .boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-card.hell-boss{border-color:var(--red)!important;background:linear-gradient(135deg,rgba(255,79,106,.12),rgba(255,0,0,.06));box-shadow:0 0 22px rgba(255,79,106,.25)}
 .boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.boss-badge.hell{border-color:var(--red);color:var(--red)}
 .active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
+.active-diff-hell{background:rgba(255,79,106,.15)!important;border-color:var(--red)!important;color:var(--red)!important;font-weight:bold}
 
 /* ── Negotiation table chrome ────────────────────────────────────────── */
 .nego-chrome{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;position:relative;overflow:hidden}

@@ -9,6 +9,7 @@ export const DIFFICULTIES = [
   { key: 'medium',  label: '中级' },
   { key: 'hard',    label: '高级' },
   { key: 'extreme', label: '终局挑战' },
+  { key: 'hell',    label: '地狱级' },
 ];
 
 export function getDifficultyLabel(d) {
@@ -27,6 +28,7 @@ export function getDifficultyMod(d) {
     medium:  { coopFactor: 1.00, toughFactor: 1.00, acceptShift: 0 },
     hard:    { coopFactor: 0.78, toughFactor: 1.18, acceptShift: -6 },
     extreme: { coopFactor: 0.62, toughFactor: 1.35, acceptShift: -12 },
+    hell:    { coopFactor: 0.45, toughFactor: 1.55, acceptShift: -20 },
   };
   return TABLE[diff] || TABLE.medium;
 }

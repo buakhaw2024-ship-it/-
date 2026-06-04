@@ -21,6 +21,8 @@ export function renderResult() {
   // Trump Boss 复盘：专项诊断
   let bossReviewPanel = '';
   if (opp && opp.id === 'trumpBoss') {
+    const difficulty = Store.get('difficulty') || 'medium';
+    const isHell = difficulty === 'hell';
     const rounds = result.rounds || [];
     const tags = rounds.flatMap((r) => r.tags || []);
     const resisted = tags.includes('BATNA') || tags.includes('底线控制');
@@ -37,9 +39,17 @@ export function renderResult() {
       '④ 面对时间压力时主动暂停，把节奏拉回到客观标准。',
       '⑤ 不要进入对方设置的胜负叙事，回到可执行条款本身。',
     ];
+    const hellNote = isHell ? C.hint(
+      '🔥 <b>地狱级加注</b>：本局 Boss 的豁免被取消，慷慨度再压 45%、强硬度叠加 ×1.55。' +
+      (passed ? '在这种条件下仍能坚守原则，证明你的抗压模型已相当成熟。' :
+                '在此难度下失手是正常的——先在终局挑战把基础抗压模型跑稳再挑地狱。'),
+      passed ? 'green' : 'red') : '';
     bossReviewPanel = `
-      <div class="panel" style="border-color:var(--yellow)">
-        <div class="panel-title" style="color:var(--yellow)">终局 Boss 复盘｜极限交易型高压锚定模型</div>
+      <div class="panel" style="border-color:${isHell ? 'var(--red)' : 'var(--yellow)'}">
+        <div class="panel-title" style="color:${isHell ? 'var(--red)' : 'var(--yellow)'}">
+          ${isHell ? '🔥 地狱级 Boss 复盘' : '终局 Boss 复盘'}｜极限交易型高压锚定模型
+        </div>
+        ${hellNote}
         ${C.hint(diagnosis, passed ? 'green' : 'yellow')}
         ${advices.map((a) => C.hint(`• ${a}`)).join('')}
       </div>`;

@@ -12,6 +12,7 @@ import { getOpponentTips, PERSONALITY_TELLS } from '../data/opponents.js';
 import { SCENARIO_META } from '../data/scenarios.meta.js';
 import { checkNewCards, unlockCards, renderBoxOpenModal } from '../ui/cards.js';
 import { updateReputation } from '../engine/reputation.js';
+import { addShards, computeShardsForGame } from '../data/card-synthesis.js';
 
 function _safe(num, den) {
   if (!den || den <= 0) return 0.5;
@@ -55,11 +56,18 @@ export function initRecorder() {
           avgConcession: ps.avgConcession || 5,
         }, result.outcome);
       }
+      // 碎片奖励：基于本局结果（每日首局加成）
+      const today = new Date().toLocaleDateString('zh-CN');
+      const isDailyFirst = player._lastShardDay !== today;
+      const shardsGain = computeShardsForGame(result, opp, isDailyFirst);
+      addShards(player, shardsGain, 'game-end');
+      player._lastShardDay = today;
+      Store.set('lastShardGain', { amount: shardsGain, daily: isDailyFirst });
+
       // 检查新卡解锁（在 accumulate 之后）
       const newCards = checkNewCards(player);
       if (newCards.length) unlockCards(player, newCards);
-      Store.set('player', player); // 广播，刷新主菜单等
-      // 新卡开盒动画（仅浏览器环境）
+      Store.set('player', player);
       if (newCards.length && typeof document !== 'undefined') {
         Store.set('pendingNewCards', newCards);
       }

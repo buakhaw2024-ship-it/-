@@ -17,6 +17,16 @@ export function renderResult() {
   }
   const { result, opp, scenarioName, tips, tells, replay } = data;
 
+  // 碎片奖励小提示
+  const shardGain = Store.get('lastShardGain');
+  let shardsBlock = '';
+  if (shardGain && shardGain.amount) {
+    shardsBlock = C.hint(
+      `💎 本局获得 <b style="color:var(--purple)">${shardGain.amount}</b> 碎片${shardGain.daily ? '（含每日首局 +50 加成）' : ''}　→　可在「卡牌收藏册 · 合成工坊」合成专属新卡`,
+      'purple');
+    Store.set('lastShardGain', null);
+  }
+
   // v2 体验增强结果块
   let v2Blocks = '';
   if (result.variant) {
@@ -126,6 +136,7 @@ export function renderResult() {
       ${C.scoreBox(result.oppScore, `${opp ? opp.name : '对手'} 得分`)}
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
+    ${shardsBlock}
     ${C.panel('复盘分析', result.summary || '')}
     ${v2Blocks}
     ${replayPanel}

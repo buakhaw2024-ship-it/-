@@ -1,10 +1,11 @@
 // ui/cards.js — 泡泡马特风格卡池系统
-// 30 张收藏卡，按稀有度分 R/SR/SSR/SP；游戏结算后自动开盒；集卡册屏幕。
+// 30 张收藏卡 + 8 张合成专属卡，按稀有度分 R/SR/SSR/SP；游戏结算后自动开盒；集卡册屏幕。
 
 import { EventBus } from '../core/event-bus.js';
 import { EVENTS, SCREENS } from '../core/events.js';
 import { Store } from '../core/store.js';
 import { savePlayer } from '../analytics/player-data.js';
+import { FUSION_CARDS, FUSION_AVATARS, getShards, getRecipeStatus, craftFusionCard } from '../data/card-synthesis.js';
 
 // ─── 30 张卡定义 ────────────────────────────────────────────────────────────
 export const CARD_POOL = [
@@ -188,11 +189,23 @@ export function renderBoxOpenModal(newCards, onClose) {
   });
 }
 
-function buildCardAvatar(oppId) {
+function buildCardAvatar(oppId, fusionAvatarKey) {
+  // 合成卡使用专属可爱 SVG
+  if (fusionAvatarKey && FUSION_AVATARS[fusionAvatarKey]) {
+    return `<div class="box-card-svg">${FUSION_AVATARS[fusionAvatarKey]}</div>`;
+  }
   // 纯内联 SVG，无远程资源，离线友好
   if (typeof avatarSvg === 'function') return `<div class="box-card-svg">${avatarSvg(oppId)}</div>`;
   const emojiMap = { rational:'🧮', emotional:'🌊', aggressive:'🦅', cooperative:'🤝', manipulative:'🎭', riskAverse:'🛡️', trumpBoss:'👑' };
   return `<span style="font-size:28px">${emojiMap[oppId] || '🤝'}</span>`;
+}
+
+// 合成卡名表（供 hint / 合成 modal 显示）
+function _cardNameById(id) {
+  const f = FUSION_CARDS.find((c) => c.id === id);
+  if (f) return f.name;
+  const c = CARD_POOL.find((c) => c.id === id);
+  return c ? c.name : id;
 }
 
 // ─── 解锁条件提示（SSR/SP 锁定卡片显示条件文字）─────────────────────────────
@@ -207,12 +220,66 @@ const CARD_HINTS = {
   'sp_legend':     '30 局 · 胜率≥80% · 见全 7 类对手',
 };
 
+// ─── 合成工坊渲染 ────────────────────────────────────────────────────────────
+function renderSynthesisWorkshop(player) {
+  const shards = getShards(player);
+  const recipes = FUSION_CARDS.map((recipe) => {
+    const rc = RARITY_CFG[recipe.rarity];
+    const status = getRecipeStatus(player, recipe);
+    const reqHtml = recipe.requires.map((id) => {
+      const owned = (player.cardCollection || []).includes(id);
+      const name = _cardNameById(id);
+      return `<span class="synth-req ${owned ? 'synth-req-ok' : 'synth-req-miss'}">${owned ? '✓' : '✗'} ${name}</span>`;
+    }).join('');
+
+    let stateLabel, stateCls, btnDisabled;
+    if (status.alreadyOwned) {
+      stateLabel = '✓ 已合成'; stateCls = 'synth-state-done'; btnDisabled = true;
+    } else if (status.canCraft) {
+      stateLabel = '✦ 可合成'; stateCls = 'synth-state-ready'; btnDisabled = false;
+    } else if (!status.enoughShards) {
+      stateLabel = `碎片不足（差 ${recipe.shards - shards}）`; stateCls = 'synth-state-locked'; btnDisabled = true;
+    } else {
+      stateLabel = `还差 ${status.missingCards.length} 张材料`; stateCls = 'synth-state-locked'; btnDisabled = true;
+    }
+
+    return `<div class="synth-card synth-card-${recipe.rarity.toLowerCase()} ${status.alreadyOwned ? 'synth-card-owned' : status.canCraft ? 'synth-card-ready' : ''}"
+                 style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}">
+      <div class="synth-card-rarity">${rc.label} · 合成专属</div>
+      <div class="synth-card-avatar">${status.alreadyOwned || status.canCraft
+        ? buildCardAvatar(null, recipe.avatar)
+        : `<div class="synth-card-locked-avatar">🔒</div>`}</div>
+      <div class="synth-card-name">${recipe.name}</div>
+      <div class="synth-card-flavor">${status.alreadyOwned ? recipe.flavor : '???'}</div>
+      <div class="synth-card-reqs">${reqHtml}</div>
+      <div class="synth-card-cost">需碎片 <b style="color:${rc.color}">${recipe.shards}</b></div>
+      <div class="synth-card-state ${stateCls}">${stateLabel}</div>
+      <button class="synth-craft-btn" data-craft="${recipe.id}" ${btnDisabled ? 'disabled' : ''}>
+        ${status.alreadyOwned ? '✓ 已收藏' : '✨ 合成'}
+      </button>
+    </div>`;
+  }).join('');
+
+  return `<div class="synth-workshop">
+    <div class="synth-header">
+      <div class="synth-title">✨ 合成工坊</div>
+      <div class="synth-shards">💎 <b>${shards}</b> 碎片</div>
+    </div>
+    <div class="synth-help">
+      ▸ 合成专属卡只能在此处获得，无法通过对局解锁<br>
+      ▸ 满足"持有材料 + 碎片"条件即可合成，<b style="color:var(--green)">不消耗材料</b><br>
+      ▸ 碎片来源：每局 +20，胜利 +30，地狱/Boss胜 +50，隐藏目标 +40，每日首局 +50
+    </div>
+    <div class="synth-grid">${recipes}</div>
+  </div>`;
+}
+
 // ─── 集卡册屏幕 ───────────────────────────────────────────────────────────────
 export function renderCardAlbum() {
   const player = Store.get('player');
   if (!player) return '<div class="hint hint-yellow">请先创建玩家档案。</div>';
   const owned = getCollection(player);
-  const total = CARD_POOL.length;
+  const total = CARD_POOL.length + FUSION_CARDS.length;
   const got = owned.length;
 
   const byRarity = { SP: [], SSR: [], SR: [], R: [] };
@@ -251,8 +318,11 @@ export function renderCardAlbum() {
       <button class="back-btn" data-nav="main">← 返回</button>
     </div>
     <div class="hint hint-cyan" style="margin-bottom:12px">
-      已收集 <b style="color:var(--cyan)">${got}</b> / ${total} 张 &nbsp;·&nbsp; 完成率 <b style="color:var(--yellow)">${Math.round(got / total * 100)}%</b> &nbsp;·&nbsp; 通过对局解锁新卡
+      已收集 <b style="color:var(--cyan)">${got}</b> / ${total} 张 &nbsp;·&nbsp;
+      完成率 <b style="color:var(--yellow)">${Math.round(got / total * 100)}%</b> &nbsp;·&nbsp;
+      碎片 <b style="color:var(--purple)">💎 ${getShards(player)}</b>
     </div>
+    ${renderSynthesisWorkshop(player)}
     ${sections}
   `;
 }
@@ -260,4 +330,48 @@ export function renderCardAlbum() {
 renderCardAlbum.afterRender = function () {
   const back = document.querySelector('[data-nav="main"]');
   if (back) back.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MAIN, params: {} }));
+
+  // 合成按钮
+  document.querySelectorAll('.synth-craft-btn[data-craft]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-craft');
+      const player = Store.get('player');
+      const res = craftFusionCard(player, id);
+      if (res.ok) {
+        renderSynthesisSuccessModal(res.card, res.shardsLeft);
+      }
+    });
+  });
 };
+
+// 合成成功动画弹窗
+function renderSynthesisSuccessModal(card, shardsLeft) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+  const rc = RARITY_CFG[card.rarity] || RARITY_CFG.R;
+  const overlay = document.createElement('div');
+  overlay.className = 'synth-success-overlay';
+  // 八向爱心粒子
+  const particles = [0, 45, 90, 135, 180, 225, 270, 315].map((a) => {
+    const r = a * Math.PI / 180;
+    return `<div class="synth-heart" style="--dx:${Math.cos(r).toFixed(2)};--dy:${Math.sin(r).toFixed(2)};color:${rc.color}">${a % 90 === 0 ? '✦' : '♡'}</div>`;
+  }).join('');
+  overlay.innerHTML = `
+    <div class="synth-success">
+      <div class="synth-success-title">✨ 合成成功！</div>
+      <div class="synth-success-sub">材料汇聚，新卡诞生</div>
+      <div class="synth-success-burst">${particles}</div>
+      <div class="synth-success-card" style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}">
+        <div class="synth-card-rarity">${rc.label} · 合成专属</div>
+        <div class="synth-card-avatar">${buildCardAvatar(null, card.avatar)}</div>
+        <div class="synth-card-name">${card.name}</div>
+        <div class="synth-card-flavor">${card.flavor}</div>
+      </div>
+      <div class="synth-success-shards">剩余碎片：💎 <b>${shardsLeft}</b></div>
+      <button class="btn btn-cyan synth-success-close">收下 ▶</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.synth-success-close').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.CARD_ALBUM, params: {} });
+  });
+}

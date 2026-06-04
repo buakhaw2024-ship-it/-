@@ -417,3 +417,145 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 
 /* ── 集卡册解锁条件提示 ─────────────────────────────────────────────────────── */
 .album-card-cond{font-size:8px;color:rgba(255,215,0,.6);line-height:1.4;margin-top:3px;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   合成工坊 · 萌系可爱卡牌
+   ════════════════════════════════════════════════════════════════════════════ */
+@keyframes synth-shimmer{0%,100%{transform:translateX(-100%) skewX(-15deg)}50%{transform:translateX(180%) skewX(-15deg)}}
+@keyframes synth-sparkle{0%,100%{opacity:.4;transform:translateY(0) scale(1)}50%{opacity:1;transform:translateY(-3px) scale(1.18)}}
+@keyframes synth-ready-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,.55),0 0 24px var(--card-glow,rgba(255,215,0,.5))}50%{box-shadow:0 0 0 6px rgba(255,215,0,0),0 0 36px var(--card-glow,rgba(255,215,0,.7))}}
+@keyframes synth-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes synth-heart-fly{0%{transform:translate(0,0) scale(0);opacity:0}30%{opacity:1}100%{transform:translate(calc(var(--dx)*120px),calc(var(--dy)*120px)) scale(1.4) rotate(180deg);opacity:0}}
+@keyframes synth-card-pop{0%{opacity:0;transform:scale(.3) rotate(-12deg)}55%{opacity:1;transform:scale(1.1) rotate(6deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes synth-title-bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes synth-foil-rotate{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+
+.synth-workshop{
+  background:linear-gradient(135deg,rgba(192,132,252,.06) 0%,rgba(255,215,0,.04) 50%,rgba(0,212,255,.06) 100%);
+  border:1px solid rgba(192,132,252,.30);
+  border-radius:8px; padding:14px; margin-bottom:18px; position:relative; overflow:hidden;
+}
+.synth-workshop::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,var(--purple),transparent);
+  animation:synth-shimmer 4s ease-in-out infinite;
+}
+.synth-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.synth-title{
+  color:#ffd700; font-size:14px; font-weight:bold; letter-spacing:2px;
+  text-shadow:0 0 12px rgba(255,215,0,.55);
+  animation:synth-title-bounce 2.4s ease-in-out infinite;
+}
+.synth-shards{
+  background:rgba(192,132,252,.15); border:1px solid rgba(192,132,252,.4);
+  color:var(--purple); font-size:12px; padding:4px 10px; border-radius:12px; letter-spacing:.5px;
+}
+.synth-shards b{color:#fff;font-size:13px}
+.synth-help{
+  font-size:10.5px; color:var(--dim); line-height:1.7;
+  padding:8px 10px; background:rgba(0,0,0,.2); border-radius:4px; margin-bottom:12px;
+  border-left:2px solid var(--purple);
+}
+
+.synth-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px;
+}
+
+.synth-card{
+  position:relative; background:linear-gradient(160deg,var(--bg2) 0%,var(--bg3) 100%);
+  border:1.5px solid var(--card-color,var(--border)); border-radius:10px;
+  padding:10px 8px 8px; text-align:center; transition:all .25s; overflow:hidden;
+}
+.synth-card::before{
+  /* 镭射 / 全息 foil */
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.18; mix-blend-mode:screen;
+  background:conic-gradient(from 0deg,rgba(255,107,138,.5),rgba(255,215,0,.5),rgba(136,224,192,.5),rgba(107,184,216,.5),rgba(192,132,252,.5),rgba(255,107,138,.5));
+}
+.synth-card-ready{
+  animation:synth-ready-pulse 1.8s ease-in-out infinite,synth-float 3s ease-in-out infinite;
+  border-color:#ffd700; cursor:pointer;
+}
+.synth-card-ready::after{
+  /* 顶角小爱心徽章 */
+  content:"✨"; position:absolute; top:-4px; right:-4px;
+  width:22px; height:22px; line-height:22px; text-align:center;
+  background:#ffd700; color:#fff; border-radius:50%; font-size:11px;
+  box-shadow:0 0 12px rgba(255,215,0,.8); animation:synth-sparkle 1.2s ease-in-out infinite;
+}
+.synth-card-owned{
+  opacity:.92; border-style:double; border-width:3px;
+  background:linear-gradient(160deg,var(--card-bg,var(--bg3)) 0%,var(--bg2) 100%);
+}
+.synth-card-owned::before{animation:synth-foil-rotate 8s linear infinite}
+
+.synth-card-rarity{font-size:8.5px;font-weight:bold;color:var(--card-color);letter-spacing:1.5px;margin-bottom:4px}
+.synth-card-avatar{height:48px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;position:relative;z-index:1}
+.synth-card-avatar svg{width:44px;height:44px;border-radius:50%;filter:drop-shadow(0 2px 6px var(--card-glow,rgba(255,215,0,.4)))}
+.synth-card-locked-avatar{font-size:24px;opacity:.4;line-height:48px}
+.synth-card-name{color:var(--white);font-size:12px;font-weight:bold;margin-bottom:4px;letter-spacing:.5px;position:relative;z-index:1}
+.synth-card-flavor{font-size:9.5px;color:var(--dim);font-style:italic;line-height:1.4;margin-bottom:6px;min-height:24px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;position:relative;z-index:1}
+.synth-card-reqs{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-bottom:6px;position:relative;z-index:1}
+.synth-req{font-size:8.5px;padding:1px 5px;border-radius:8px;border:1px solid}
+.synth-req-ok{color:var(--green);border-color:rgba(0,255,159,.4);background:rgba(0,255,159,.08)}
+.synth-req-miss{color:var(--dim);border-color:var(--border);background:rgba(255,255,255,.03)}
+.synth-card-cost{font-size:9.5px;color:var(--text);margin-bottom:6px;position:relative;z-index:1}
+.synth-card-cost b{font-size:11px}
+.synth-card-state{font-size:9px;letter-spacing:.5px;margin-bottom:6px;font-weight:bold;position:relative;z-index:1}
+.synth-state-ready{color:#ffd700;text-shadow:0 0 6px rgba(255,215,0,.5)}
+.synth-state-done{color:var(--green)}
+.synth-state-locked{color:var(--dim)}
+.synth-craft-btn{
+  width:100%; padding:6px 8px; font-size:11px; font-family:inherit;
+  background:linear-gradient(135deg,var(--card-color),var(--purple));
+  color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; letter-spacing:1px;
+  box-shadow:0 2px 8px var(--card-glow,rgba(255,215,0,.3));
+  transition:all .15s; position:relative; z-index:1;
+}
+.synth-craft-btn:not(:disabled):hover{transform:translateY(-1px) scale(1.03);box-shadow:0 4px 16px var(--card-glow,rgba(255,215,0,.6))}
+.synth-craft-btn:disabled{background:var(--bg3);color:var(--dim);cursor:not-allowed;box-shadow:none}
+
+/* ── 合成成功弹窗 ──────────────────────────────────────────────────────────── */
+.synth-success-overlay{
+  position:fixed; inset:0; background:radial-gradient(ellipse at center,rgba(192,132,252,.4) 0%,rgba(0,0,0,.92) 70%);
+  z-index:9500; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);
+  animation:modal-fadein .3s ease;
+}
+.synth-success{
+  background:linear-gradient(160deg,var(--bg2) 0%,var(--bg3) 100%);
+  border:2px solid #ffd700; border-radius:14px; padding:24px 28px;
+  max-width:340px; width:90%; text-align:center; position:relative;
+  box-shadow:0 0 60px rgba(255,215,0,.45),0 0 120px rgba(192,132,252,.35);
+}
+.synth-success-title{
+  color:#ffd700; font-size:18px; font-weight:bold; letter-spacing:3px; margin-bottom:4px;
+  text-shadow:0 0 18px rgba(255,215,0,.7);
+}
+.synth-success-sub{color:var(--dim);font-size:11px;margin-bottom:18px}
+.synth-success-burst{
+  position:absolute; top:38%; left:50%; pointer-events:none; width:0; height:0;
+}
+.synth-heart{
+  position:absolute; left:0; top:0; font-size:18px;
+  animation:synth-heart-fly 1.4s ease-out forwards;
+}
+.synth-heart:nth-child(2){animation-delay:.05s}
+.synth-heart:nth-child(3){animation-delay:.1s}
+.synth-heart:nth-child(4){animation-delay:.15s}
+.synth-heart:nth-child(5){animation-delay:.2s}
+.synth-heart:nth-child(6){animation-delay:.25s}
+.synth-heart:nth-child(7){animation-delay:.3s}
+.synth-heart:nth-child(8){animation-delay:.35s}
+.synth-success-card{
+  max-width:200px; margin:8px auto 14px; background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1.5px solid var(--card-color); border-radius:10px; padding:12px 10px; position:relative;
+  animation:synth-card-pop .8s cubic-bezier(.34,1.56,.64,1) forwards;
+  box-shadow:0 0 24px var(--card-glow);
+}
+.synth-success-card::before{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.25; mix-blend-mode:screen; border-radius:10px;
+  background:conic-gradient(from 0deg,rgba(255,107,138,.6),rgba(255,215,0,.6),rgba(136,224,192,.6),rgba(107,184,216,.6),rgba(192,132,252,.6),rgba(255,107,138,.6));
+  animation:synth-foil-rotate 5s linear infinite;
+}
+.synth-success-shards{color:var(--purple);font-size:12px;margin-bottom:14px;letter-spacing:.5px}
+.synth-success-shards b{color:#fff;font-size:14px}
+.synth-success-close{min-width:140px}

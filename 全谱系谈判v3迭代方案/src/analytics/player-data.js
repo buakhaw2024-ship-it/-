@@ -33,12 +33,13 @@ export function loadPlayer(name) {
       // 向后兼容：补齐 v3 可能新增的字段
       p.sessions = p.sessions || [];
       p.behaviorStats = { ...freshBehaviorStats(), ...(p.behaviorStats || {}) };
+      if (typeof p.cardShards !== 'number') p.cardShards = 0;
       return p;
     }
   } catch (e) {
     console.warn('[player-data] 读取存档失败，新建档案', e);
   }
-  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats() };
+  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats(), cardShards: 0 };
 }
 
 export function savePlayer(player) {

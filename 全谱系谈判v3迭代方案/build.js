@@ -65,6 +65,8 @@ const MANIFEST = [
   'engine/counter-questions-v2.js',
   'engine/hidden-objectives-v2.js',
   'analytics/opponent-insight-v2.js',
+  // 卡牌合成系统（依赖 player-data + Store + EventBus）
+  'data/card-synthesis.js',
   // 路由
   'ui/router.js',
   // 场景（base 在前，registry 在后）

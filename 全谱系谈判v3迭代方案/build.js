@@ -51,6 +51,7 @@ const MANIFEST = [
   'engine/strategies/trump-boss.js',
   'engine/opponent-ai.js',
   // 通用 UI 片段
+  'ui/avatars.js',
   'ui/components.js',
   // 分析与持久化
   'analytics/player-data.js',

@@ -72,10 +72,11 @@ export class BaseScenario {
     EventBus.emit(EVENTS.GAME_END, { result });
   }
 
-  // 破绽提示控件：按钮 + （已识破时）对手情绪/行为快照
+  // 破绽提示控件：按钮 + ℹ说明 + （已识破时）对手情绪/行为快照
   peekControls() {
     const label = this.peeksLeft > 0 ? `🔍 识破对手（剩 ${this.peeksLeft} 次）` : '🔍 识破次数已用完';
     let html = C.actionBtn('peek', '', label, 'btn-purple');
+    html += `<div class="peek-tip-row"><button class="info-tip-btn" data-itip="peek" title="了解识破功能">ℹ</button><span class="peek-tip-label">每局 2 次 · 高难度可能伪装</span></div>`;
     if (this._peekSnap) {
       const m = this._peekSnap.mood;
       const pct = (x) => Math.round(x * 100);

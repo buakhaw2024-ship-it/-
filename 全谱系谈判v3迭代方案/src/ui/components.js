@@ -119,7 +119,7 @@ export const C = {
       const cls = i < done ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
       return `<div class="tl-dot ${cls}" title="第${i + 1}轮"></div>`;
     }).join('');
-    return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮</div><div class="tl-dots">${dots}</div></div>`;
+    return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮 <button class="info-tip-btn" data-itip="rounds" title="回合说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
   },
 
   // 阶段进度条（用于危机/联盟等多阶段场景）
@@ -128,7 +128,7 @@ export const C = {
       const cls = i < current ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
       return `<div class="tl-dot ${cls}" title="第${i + 1}阶段"></div>`;
     }).join('');
-    return `<div class="round-timeline"><div class="tl-label">阶段${current + 1}/${total}</div><div class="tl-dots">${dots}</div></div>`;
+    return `<div class="round-timeline"><div class="tl-label">阶段${current + 1}/${total} <button class="info-tip-btn" data-itip="rounds" title="阶段说明">ℹ</button></div><div class="tl-dots">${dots}</div></div>`;
   },
 
   // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG

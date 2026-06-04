@@ -253,7 +253,44 @@ const _TOURS = {
   ],
 };
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// ── 场景首次对局策略提示（每个 scenarioKey 独立，仅首次显示）─────────────────
+const _SCENARIO_TIPS = {
+  prisoners: {
+    title: '🎮 囚徒困境 · 核心策略提示',
+    body: '<b>纳什均衡陷阱</b>：个人理性 = 背叛，但双方背叛仅 +1，远低于双合作 +3。<br><b>推荐起手</b>：第 1 轮先<b>合作</b>，之后<b>模仿对手上轮行为（TfT）</b>。<br><span style="color:var(--dim)">▸ C/C=+3 &nbsp; C/D=+0 &nbsp; D/C=+5 &nbsp; D/D=+1</span><br><b>💡 关键观察</b>：使用<b>识破（🔍）</b>感知对手情绪，在对手信任高时加大合作力度。',
+    position: 'center',
+  },
+  ultimatum: {
+    title: '📋 最后通牒 · 核心策略提示',
+    body: '<b>提案方</b>：提案须被接受才成效，否则双方均得 0。<br><b>接受临界</b>：低于 35% 的份额通常被拒绝（公平感驱动）。<br><b>推荐区间</b>：对方份额设为 <b style="color:var(--cyan)">40-50%</b> → 高接受率 + 你保留合理利润。<br><b>💡 关键观察</b>：注意对手的强硬度——情绪型对手比理性型更容易因"不公平"而拒绝。',
+    position: 'center',
+  },
+  trust: {
+    title: '🤝 信任博弈 · 核心策略提示',
+    body: '你的投资 ×3 后全给受信方，对方决定返还多少。<br><b>信任悖论</b>：自私对手倾向全留；但实验证明多数人返还约 40-50%。<br><b>推荐</b>：先小额投资（3-5），观察返还比后再决定是否加码。<br><b>💡 关键观察</b>：合作型对手（和谐李）返还率显著高于强硬型（钢铁王）。',
+    position: 'center',
+  },
+  bargaining: {
+    title: '💰 砍价谈判 · 核心策略提示',
+    body: '双方从对立锚点出发交替报价，向中间靠拢。<br><b>让步节奏信号</b>：先大后小 → 暗示接近底线；急速让步 → 空间仍大。<br><b>锚定效应</b>：先出价定义谈判区间，对手的反应揭示其真实底线。<br><b>💡 关键观察</b>：高难度时对手可能中途<b>加码</b>（蚕食），拒绝新条件通常是更优选择。',
+    position: 'center',
+  },
+  crisis: {
+    title: '⚡ 危机谈判 · 核心策略提示',
+    body: '分阶段推进，每阶段需达成可量化目标。<br><b>情绪管理优先</b>：对方愤怒值高时避免推进实质条款，先降温。<br><b>阶段锁定</b>：每阶段结束后确认结果，防止对手"复盘"已谈妥内容。<br><b>💡 关键观察</b>：高难度下对手可能在后期突然引入新条件，打乱已建立的框架。',
+    position: 'center',
+  },
+  publicgoods: {
+    title: '🏗️ 公共品博弈 · 核心策略提示',
+    body: '你的贡献进入公共池，系统 ×2 后平分给所有人。<br><b>个人最优 = 贡献 0</b>（搭便车），但全员搭便车 → 公共池清零。<br><b>社会最优 = 全员贡献 10</b>，净收益最高。<br><b>💡 关键策略</b>：先中等贡献（5-7）观察，出现搭便车者立即降低，保持相互压力。',
+    position: 'center',
+  },
+  coalition: {
+    title: '🤝 联盟博弈 · 核心策略提示',
+    body: '与盟友协调可获得远超单打独斗的谈判空间。<br><b>先锁定核心盟友</b>：在对手策反前建立稳定共识，确定分配方案。<br><b>联盟稳定性</b>：即使内部有分歧，对外也应统一立场。<br><b>💡 关键观察</b>：高难度下对手可能在后期引入第三方利益相关者，动摇盟友。',
+    position: 'center',
+  },
+};
 let _gDim = null, _gSpot = null, _gTip = null, _gHelp = null;
 let _gScreen = '', _gSteps = [], _gIdx = 0, _gActive = false;
 
@@ -384,12 +421,33 @@ function _startTour(screenId) {
 
 // Called by router after each screen render.
 // Shows tour automatically on first visit; otherwise shows ? help button only.
-function showTour(screenId) {
+// params.scenarioKey is used on the game screen for per-scenario first-time tips.
+function showTour(screenId, params) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
   _initInlineTips();
   _cleanTour();
   _rmHelp();
   _gScreen = screenId;
+
+  // Per-scenario strategy intro: shown once per scenario key, before the general game tour
+  if (screenId === 'game') {
+    const sk = params && params.scenarioKey;
+    if (sk && _SCENARIO_TIPS[sk] && !_isDone('game-' + sk)) {
+      _gScreen = 'game-' + sk;
+      _gSteps = [_SCENARIO_TIPS[sk]];
+      _gActive = true;
+      _gDim = document.createElement('div');
+      _gDim.className = 'guide-dim';
+      document.body.appendChild(_gDim);
+      _gTip = document.createElement('div');
+      _gTip.className = 'guide-tooltip';
+      document.body.appendChild(_gTip);
+      // 600ms: wait for scenario.start() GAME_RENDER to populate game-content
+      setTimeout(function () { _renderStep(0); }, 600);
+      return;
+    }
+  }
+
   if (!_TOURS[screenId]) return;
   if (_isDone(screenId)) {
     _addHelpBtn();

@@ -116,7 +116,8 @@ build.js  →  dist/game_trainer.html （单文件，可离线分发）
 
 > 改造全部基于纯 CSS + HTML 字符串生成；引擎仍不碰 DOM，UI 仅通过事件总线通信，架构约束保持不变。
 
-构建：`node build.js` — 测试：`node test_phase4.js`（**80/80 通过**）
+构建：`node build.js`
+测试：`node test_phase4.js`（**80/80 通过**） + `node test_ui.mjs`（**31/31 通过**，谈判桌组件 HTML 结构断言）
 
 ---
 

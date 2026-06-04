@@ -13,7 +13,7 @@ function chrome(opp, tempPct, mood, isHell = false) {
   const indicator = isHell ? `<div class="hell-indicator">🔥 地狱级 · 无上限协议 · Boss 豁免取消</div>` : '';
   return `${indicator}<div class="${chromeCls}">
     <div class="nego-avatar-section">
-      <div class="${ringCls}"><span class="nego-avatar-emoji">${C.avatarEmoji(opp.id)}</span></div>
+      <div class="${ringCls} avatar-svg-host">${C.avatarSvg(opp.id)}</div>
       <div class="nego-avatar-name">${opp.name}</div>
       <div class="nego-avatar-type">${typeLine}</div>
     </div>
@@ -44,9 +44,27 @@ const hellModalPreview = `<div style="position:relative;height:280px;background:
   </div>
 </div>`;
 
-const OPP_RATIONAL = { id:'rational', name:'理性博弈者', type:'理性算计型 / 利益最大化', boss:false };
-const OPP_AGGR     = { id:'aggressive', name:'强硬鹰派', type:'高压强硬型 / 锚定施压', boss:false };
+const OPP_RATIONAL = { id:'rational', name:'陈逻辑', type:'理性分析型 / 利益最大化', boss:false };
+const OPP_AGGR     = { id:'aggressive', name:'钢铁王', type:'强硬鹰派型 / 锚定施压', boss:false };
 const OPP_BOSS     = { id:'trumpBoss', name:'极限交易者', type:'极限交易型 / 高压锚定型', boss:true };
+
+const ALL_OPPS = [
+  { id:'rational',     name:'陈逻辑', type:'理性分析型' },
+  { id:'emotional',    name:'林敏感', type:'情感驱动型' },
+  { id:'aggressive',   name:'钢铁王', type:'强硬鹰派型' },
+  { id:'cooperative',  name:'和谐李', type:'合作共赢型' },
+  { id:'manipulative', name:'影子张', type:'操纵控制型' },
+  { id:'riskAverse',   name:'稳健吴', type:'风险规避型' },
+  { id:'trumpBoss',    name:'极限交易者', type:'极限交易型', boss:true },
+];
+
+function avatarGalleryCell(o) {
+  return `<div style="text-align:center;padding:8px 4px">
+    ${C.avatarBadge(o, 72)}
+    <div style="color:var(--white);font-size:12px;font-weight:bold;margin-top:8px">${o.name}</div>
+    <div style="color:var(--purple);font-size:10px">${o.type}</div>
+  </div>`;
+}
 
 // 样例对话（囚徒困境）
 const convo =
@@ -65,7 +83,7 @@ const sysConvo =
 // 地狱级版 Boss 卡片（红色边框 + 红徽章）
 function hellBossCard(o) {
   return `<div class="opp-card boss-card hell-boss">
-    <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
+    <div class="opp-card-avatar">${C.avatarBadge(o, 48)}</div>
     <div class="boss-badge hell" style="display:block;text-align:center;margin-bottom:4px">🔥 地狱 BOSS</div>
     <div class="opp-name" style="text-align:center">${o.name}</div>
     <div class="opp-type" style="text-align:center">${o.type}</div>
@@ -87,7 +105,7 @@ function diffButtons(active) {
 // 对手选择卡片
 function oppCard(o, infoLine, isBoss) {
   return `<div class="opp-card${isBoss?' boss-card':''}">
-    <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
+    <div class="opp-card-avatar">${C.avatarBadge(o, 48)}</div>
     ${isBoss?'<div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>':''}
     <div class="opp-name" style="text-align:center">${o.name}</div>
     <div class="opp-type" style="text-align:center">${o.type}</div>
@@ -116,6 +134,12 @@ const page = `<!DOCTYPE html>
 </style></head>
 <body><div class="container">
 <div class="header"><h1>◆ 谈判桌 UI 预览 ◆</h1><div class="sub">PHASE 7 · 可视化谈判桌组件静态预览（样例数据）</div></div>
+
+${section('⓪ 七位角色专属 SVG 头像（含特朗普 Boss）',
+  `<div class="preview-note">每个头像为纯 SVG（1–2KB），由 .nego-avatar-ring 提供圆形裁切与光环动画；Boss 自动套金色呼吸光环。</div>
+   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:14px">
+     ${ALL_OPPS.map(avatarGalleryCell).join('')}
+   </div>`)}
 
 ${section('① 谈判桌外壳：对手头像 + 关系温度条（三种温度/情绪/Boss）',
   `<div class="preview-note">滑块位置 = 信任−愤怒映射；Boss 头像为金色光环。在浏览器中光环有呼吸动画。</div>

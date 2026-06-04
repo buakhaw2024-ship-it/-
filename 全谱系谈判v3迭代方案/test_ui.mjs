@@ -12,11 +12,14 @@ ok(C.avatarEmoji('unknown') === '🤝', '未知回退 = 🤝');
 
 console.log('[2] avatarBadge');
 const badge = C.avatarBadge({ id:'aggressive', boss:false }, 40);
-ok(badge.includes('🦅'), '含鹰派 emoji');
+ok(badge.includes('<svg'), '含 SVG 头像');
+ok(badge.includes('avatar-svg-host'), '含 SVG 宿主 class');
 ok(badge.includes('nego-avatar-ring'), '含光环类');
 ok(!badge.includes('boss-ring'), '非 Boss 无金环');
 ok(C.avatarBadge({ id:'trumpBoss', boss:true }).includes('boss-ring'), 'Boss 有金环');
 ok(C.avatarBadge(null) === '', 'null 安全返回空');
+ok(C.avatarSvg('trumpBoss').includes('<svg'), '特朗普专属 SVG');
+ok(C.avatarSvg('rational') !== C.avatarSvg('trumpBoss'), '不同角色 SVG 不同');
 
 console.log('[3] moodEmoji 分支（完整 mood 对象）');
 ok(C.moodEmoji({ trust:0.2, anger:0.8, patience:0.5, confidence:0.5 }) === '😠', '高愤怒 = 😠');

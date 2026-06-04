@@ -2,8 +2,10 @@
 // 被 screens 与 scenarios 复用。游戏内交互元素统一带 data-game-action / data-value，
 // 由 game-view 的事件委托翻译成 player:action 事件。
 
+import { avatarSvg } from './avatars.js';
+
 export const C = {
-  // 对手头像 emoji 映射（无外部图片，纯 Unicode）
+  // 对手头像 emoji 映射（保留为 fallback / 角色徽章场景）
   avatarEmoji(oppId) {
     const MAP = {
       rational: '🧮', emotional: '🌊', aggressive: '🦅',
@@ -12,13 +14,16 @@ export const C = {
     return MAP[oppId] || '🤝';
   },
 
-  // 独立头像徽章（结果屏等处复用）
+  // 角色专属风格化 SVG 头像（无外部资源）
+  avatarSvg(oppId) {
+    return avatarSvg(oppId);
+  },
+
+  // 独立头像徽章（结果屏等处复用）—— 使用 SVG 头像
   avatarBadge(opp, size = 44) {
     if (!opp) return '';
     const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
-    return `<div class="${ringCls}" style="width:${size}px;height:${size}px">
-      <span class="nego-avatar-emoji" style="font-size:${Math.round(size * 0.46)}px">${this.avatarEmoji(opp.id)}</span>
-    </div>`;
+    return `<div class="${ringCls} avatar-svg-host" style="width:${size}px;height:${size}px">${this.avatarSvg(opp.id)}</div>`;
   },
 
   panel(title, body) {

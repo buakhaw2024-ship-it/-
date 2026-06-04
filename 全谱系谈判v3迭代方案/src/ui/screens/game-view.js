@@ -22,7 +22,7 @@ function buildChrome(opp) {
   const indicator = isHell ? `<div class="hell-indicator">🔥 地狱级 · 无上限协议 · Boss 豁免取消</div>` : '';
   return `${indicator}<div class="${chromeCls}">
     <div class="nego-avatar-section">
-      <div class="${ringCls}"><span class="nego-avatar-emoji">${C.avatarEmoji(opp.id)}</span></div>
+      <div class="${ringCls} avatar-svg-host">${C.avatarSvg(opp.id)}</div>
       <div class="nego-avatar-name">${opp.name}</div>
       <div class="nego-avatar-type">${typeLine}</div>
     </div>

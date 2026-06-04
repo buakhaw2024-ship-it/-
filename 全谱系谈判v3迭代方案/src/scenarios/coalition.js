@@ -56,6 +56,15 @@ export class CoalitionGame extends BaseScenario {
       return C.dialogBubble(`${l.feedback}（<span style="color:${color}">+${l.ps}分</span>）`, 'system', l.stage);
     }).join('');
 
+    // 蚕食：中期阶段引入新利益相关者
+    this.tryCram({
+      round: this.stage,
+      totalRounds: this.stages.length,
+      kind: 'coalition',
+      text: `「实际上还有第三方利益相关者，他们的要求也必须被考虑。」`,
+    });
+    const cramHtml = this.cramControls();
+
     this.emitRender(`
       ${C.gameHeader(`联盟谈判 — ${s.title}`)}
       ${C.stageProgress(this.stage, this.stages.length)}
@@ -65,12 +74,29 @@ export class CoalitionGame extends BaseScenario {
         ${C.scoreBox(`${this.stage + 1}/4`, '阶段进度', 'var(--yellow)')}
       </div>
       ${C.hint(s.context)}
+      ${cramHtml}
       ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'resist-cram') {
+      this.consumeCram();
+      // 拒绝纳入第三方 → 失去 1 个盟友机会
+      this.allies = Math.max(0, this.allies - 1);
+      this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: '你拒绝了第三方加入，失去 1 个潜在盟友', ps: 0, maxPs: 1 });
+      this._render();
+      return;
+    }
+    if (type === 'accept-cram') {
+      this.consumeCram();
+      // 接受第三方 → 积分被稀释 8 分
+      this.playerScore = Math.max(0, this.playerScore - 8);
+      this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: '你接受了第三方诉求，利益被稀释 8 分', ps: -8, maxPs: 1 });
+      this._render();
+      return;
+    }
     if (type !== 'stage') return;
     const s = this.stages[this.stage];
     const opt = s.options[parseInt(value, 10)];

@@ -29,7 +29,8 @@ const expose = `
                'getRank','TRUMP_BOSS',
                // v4Pro
                'loadReputation','saveReputation','updateReputation','applyReputation',
-               'freshReputation','Mood','OpponentAI','Memory','BaseScenario'];
+               'freshReputation','Mood','OpponentAI','Memory','BaseScenario',
+               'BargainingGame','CrisisNegotiation','CoalitionGame'];
   for(var i=0;i<names.length;i++){
     try{ G[names[i]] = eval(names[i]); } catch(e){}
   }
@@ -545,6 +546,55 @@ console.log('\n[v4Pro-3] 蚕食机制 cram');
   assert(c.cramControls() === '', '无 pending 时返回空');
 
   // 还原 difficulty
+  Store.set('difficulty', 'medium');
+}
+
+// ─── Test v4Pro-4: 蚕食在 bargaining/crisis/coalition 三场景接入 ───────────────
+console.log('\n[v4Pro-4] 蚕食场景接入');
+{
+  const { BargainingGame, CrisisNegotiation, CoalitionGame, Store, EventBus, EVENTS } = G;
+  assert(typeof BargainingGame === 'function', 'BargainingGame 已导出');
+  assert(typeof CrisisNegotiation === 'function', 'CrisisNegotiation 已导出');
+  assert(typeof CoalitionGame === 'function', 'CoalitionGame 已导出');
+
+  // bargaining: hell 难度 + Boss → 强制注入 cram，验证 handleAction 走 resist 分支
+  Store.set('difficulty', 'hell');
+  const bg = new BargainingGame({ id: 'trumpBoss', name: 'Boss', boss: true });
+  bg._pendingCram = { text: 'test bargain', kind: 'bargaining' };
+  const trueValBefore = bg.trueVal;
+  let rendered = false;
+  const offHandler = EventBus.on(EVENTS.GAME_RENDER, () => { rendered = true; });
+  bg.handleAction({ type: 'resist-cram', value: '' });
+  assert(bg._pendingCram === null, 'bargaining resist 清空 pending');
+  assert(bg.trueVal === trueValBefore, 'bargaining resist 不改 trueVal');
+  rendered = false;
+  bg._pendingCram = { text: 't', kind: 'bargaining' };
+  bg.handleAction({ type: 'accept-cram', value: '' });
+  assert(bg.trueVal > trueValBefore, 'bargaining accept 提高 trueVal');
+
+  // crisis
+  const cr = new CrisisNegotiation({ id: 'trumpBoss', name: 'Boss', type: 'boss', desc: '极限', boss: true });
+  cr.playerScore = 30; cr.oppScore = 20;
+  cr._pendingCram = { text: 't', kind: 'crisis' };
+  cr.handleAction({ type: 'resist-cram', value: '' });
+  assert(cr.oppScore === 25, 'crisis resist 风险 +5');
+  assert(cr.playerScore === 30, 'crisis resist 不扣分');
+  cr._pendingCram = { text: 't', kind: 'crisis' };
+  cr.handleAction({ type: 'accept-cram', value: '' });
+  assert(cr.playerScore === 22, 'crisis accept 扣 8 分');
+  assert(cr.oppScore === 20, 'crisis accept 风险 -5');
+
+  // coalition
+  const co = new CoalitionGame({ id: 'trumpBoss', name: 'Boss', boss: true });
+  co.playerScore = 30; co.allies = 2;
+  co._pendingCram = { text: 't', kind: 'coalition' };
+  co.handleAction({ type: 'resist-cram', value: '' });
+  assert(co.allies === 1, 'coalition resist 失 1 盟友');
+  co._pendingCram = { text: 't', kind: 'coalition' };
+  co.handleAction({ type: 'accept-cram', value: '' });
+  assert(co.playerScore === 22, 'coalition accept 稀释 8 分');
+
+  // 还原
   Store.set('difficulty', 'medium');
 }
 

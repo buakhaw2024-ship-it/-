@@ -56,6 +56,15 @@ export class CrisisNegotiation extends BaseScenario {
       return C.dialogBubble(`${l.feedback} <span style="color:${color}">${l.ps > 0 ? '+' : ''}${l.ps}分</span>`, 'system', l.stage);
     }).join('');
 
+    // 蚕食：Boss / 强硬 / 操纵型对手在中期阶段引入新条件
+    this.tryCram({
+      round: this.stage,
+      totalRounds: this.stages.length,
+      kind: 'crisis',
+      text: `「我还有另一个问题需要一并解决——我的合作伙伴也受到了影响，他们要求单独谈判。」`,
+    });
+    const cramHtml = this.cramControls();
+
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
       ${C.stageProgress(this.stage, this.stages.length)}
@@ -65,12 +74,30 @@ export class CrisisNegotiation extends BaseScenario {
       </div>
       ${C.hint(s.context, 'yellow')}
       ${C.hint(`对手档案：${opp.name} | ${opp.type} | ${opp.desc}`)}
+      ${cramHtml}
       ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
   handleAction({ type, value }) {
+    if (type === 'resist-cram') {
+      this.consumeCram();
+      // 拒绝蚕食 → 危机风险上升，但守住积分底线
+      this.oppScore += 5;
+      this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: '你拒绝了对方的额外条件，危机风险微升', ps: 0, maxPs: 1 });
+      this._render();
+      return;
+    }
+    if (type === 'accept-cram') {
+      this.consumeCram();
+      // 接受蚕食 → 损失谈判积分但缓解风险
+      this.playerScore = Math.max(0, this.playerScore - 8);
+      this.oppScore = Math.max(0, this.oppScore - 5);
+      this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: '你接受了额外条件，付出了 8 分代价', ps: -8, maxPs: 1 });
+      this._render();
+      return;
+    }
     if (type !== 'stage') return;
     const s = this.stages[this.stage];
     const opt = s.options[parseInt(value, 10)];

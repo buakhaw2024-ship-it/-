@@ -169,6 +169,10 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .back-btn:hover{color:var(--text);border-color:var(--text)}
 .flex-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
+/* Boss card + difficulty UI */
+.boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
 
 </style>
 </head>
@@ -272,6 +276,7 @@ const _state = {
   opponentId: null,    // 当前选中的对手
   currentScreen: null, // 当前屏幕
   profile: null,       // 心理画像向量
+  difficulty: 'medium',// 难度：easy/medium/hard/extreme（影响真实博弈机制）
 };
 
 const Store = {
@@ -307,6 +312,15 @@ const OPPONENTS = [
   { id:'riskAverse',   name:'稳健吴', type:'风险规避型', desc:'保守稳健，避免不确定结果',     weakness:'在压力下倾向过度让步',   risk:0.2, coop:0.6, fair:0.6, assert:0.4 },
 ];
 
+// 隐藏 Boss：极限交易型 / 高压锚定型。仅在「宗师级 + 终局挑战难度」下解锁。
+// 抽象其公开化、交易化、高压化、锚定化、不可预测化的谈判风格——非政治评论。
+const TRUMP_BOSS = {
+  id:'trumpBoss', name:'极限交易者', type:'极限交易型 / 高压锚定型',
+  desc:'极端开价、公开施压、几乎不让步，把每一步都包装成胜负叙事',
+  weakness:'对方亮出可信BATNA、坚守客观标准并拒绝胜负叙事时，其锚定开始失效',
+  risk:0.8, coop:0.15, fair:0.15, assert:0.98, boss:true,
+};
+
 const PERSONALITY_TELLS = {
   rational:     ['总是要求数据支持','反复确认细节','表情克制中性'],
   emotional:    ['声音起伏明显','频繁提及"感受"','肢体语言丰富'],
@@ -314,6 +328,7 @@ const PERSONALITY_TELLS = {
   cooperative:  ['主动提出让步','寻找共同利益','保持开放态度'],
   manipulative: ['突然改变话题','制造紧迫感','模糊关键条款'],
   riskAverse:   ['多次确认安全性','偏好保守方案','回避极端选项'],
+  trumpBoss:    ['开局抛出极端条件','频繁使用胜负二元叙事','制造公开与时间压力','突然改变议题或报价'],
 };
 
 const OPPONENT_TIPS = {
@@ -323,9 +338,11 @@ const OPPONENT_TIPS = {
   cooperative:  ['诚实合作，建立长期信任','提出双赢方案，强调共同利益','避免利用其善意过度索取','记录协议细节，防止善意被误解'],
   manipulative: ['保持高度警觉，识别话术变化','要求书面确认所有关键条款','直接说出你识别到的操控手法','减慢节奏，不受人工紧迫感驱使'],
   riskAverse:   ['用数据和案例证明方案的安全性','提供保障条款和退出选项','强调不行动的风险大于行动','循序渐进，不要一次推进太多变化'],
+  trumpBoss:    ['不要急于回应极端锚定，先质疑其依据和可执行性','明确你的BATNA，让对方知道你不是被迫成交','把议题拆小，避免被带入宏大胜负叙事','所有让步必须绑定对方的实质承诺','不要被公开压力和时间压力牵引，主动放慢节奏','用客观标准、书面条件和退出选项压缩其操控空间'],
 };
 
 function getOpponent(id) {
+  if (id === TRUMP_BOSS.id) return TRUMP_BOSS;
   return OPPONENTS.find((o) => o.id === id);
 }
 
@@ -504,6 +521,16 @@ function getRank(total, wins) {
   return wr > 0.8 ? '宗师级' : '博弈大师';
 }
 
+// Trump Boss 解锁条件：宗师级 + 终局挑战难度
+function isGrandMaster(player) {
+  if (!player) return false;
+  return getRank(player.total, player.wins) === '宗师级';
+}
+
+function canUnlockBoss(player, difficulty) {
+  return isGrandMaster(player) && difficulty === 'extreme';
+}
+
 // 8 维心理向量的展示定义
 const PSYCH_DIMENSIONS = [
   { key:'cooperation_rate', label:'合作倾向', color:'bar-green' },
@@ -528,6 +555,75 @@ const ema = (prev, val, a = 0.4) => prev * (1 - a) + val * a;
 const rnd = (a = 0, b = 1) => a + Math.random() * (b - a);
 
 const chance = (p) => Math.random() < p;
+
+
+/* ===== engine/difficulty.js ===== */
+// engine/difficulty.js — 难度系统：把难度映射为对手机制修正系数
+// 难度真正影响博弈机制（对手慷慨度 / 强硬度 / 接受阈值），而非仅展示。
+// Trump Boss 豁免（其行为已校准到极限），由 opponent-ai 调用时判断。
+
+
+const DIFFICULTIES = [
+  { key: 'easy',    label: '初级' },
+  { key: 'medium',  label: '中级' },
+  { key: 'hard',    label: '高级' },
+  { key: 'extreme', label: '终局挑战' },
+];
+
+function getDifficultyLabel(d) {
+  const found = DIFFICULTIES.find((x) => x.key === d);
+  return found ? found.label : '中级';
+}
+
+// 返回三个修正系数：
+//  coopFactor  —— 乘在对手"慷慨度"（返还/贡献/让步）上，>1 对玩家更友好
+//  toughFactor —— 乘在对手"强硬度"（锚定/自留）上，>1 更难
+//  acceptShift —— 加在最后通牒接受倾向上，正值=更容易接受
+function getDifficultyMod(d) {
+  const diff = d || (typeof Store !== 'undefined' ? Store.get('difficulty') : 'medium') || 'medium';
+  const TABLE = {
+    easy:    { coopFactor: 1.30, toughFactor: 0.82, acceptShift: 8 },
+    medium:  { coopFactor: 1.00, toughFactor: 1.00, acceptShift: 0 },
+    hard:    { coopFactor: 0.78, toughFactor: 1.18, acceptShift: -6 },
+    extreme: { coopFactor: 0.62, toughFactor: 1.35, acceptShift: -12 },
+  };
+  return TABLE[diff] || TABLE.medium;
+}
+
+// 把难度修正应用到对手已决策的 move 上。纯函数（pd / ultimatum-respond 含随机微调）。
+// kind 决定 move 的语义；ctx 提供所需上下文（tripled / currentOppOffer / trueVal）。
+function applyDifficulty(kind, move, ctx, mod) {
+  const { coopFactor, toughFactor, acceptShift } = mod;
+  switch (kind) {
+    case 'pd':
+      if (move === 'defect' && coopFactor > 1 && Math.random() < (coopFactor - 1)) return 'coop';
+      if (move === 'coop' && coopFactor < 1 && Math.random() < (1 - coopFactor)) return 'defect';
+      return move;
+    case 'trust-return': {
+      const cap = ctx && ctx.tripled != null ? ctx.tripled : move;
+      return Math.max(0, Math.min(cap, Math.round(move * coopFactor)));
+    }
+    case 'pg-contribute':
+      return Math.max(0, Math.min(10, Math.round(move * coopFactor)));
+    case 'bargain-counter': {
+      if (!ctx || ctx.currentOppOffer == null) return move;
+      const concession = ctx.currentOppOffer - move;       // 对手本轮让步幅度
+      const scaled = concession * coopFactor;               // 难度越高让步越小
+      const floor = ctx.trueVal != null ? ctx.trueVal : move;
+      return Math.max(floor, Math.round(ctx.currentOppOffer - scaled));
+    }
+    case 'ultimatum-propose':
+      return Math.max(20, Math.min(80, Math.round(50 + (move - 50) * toughFactor)));
+    case 'ultimatum-respond': {
+      if (typeof move !== 'boolean') return move;
+      if (!move && acceptShift > 0 && Math.random() < acceptShift / 40) return true;
+      if (move && acceptShift < 0 && Math.random() < -acceptShift / 40) return false;
+      return move;
+    }
+    default:
+      return move;
+  }
+}
 
 
 /* ===== engine/memory.js ===== */
@@ -868,6 +964,52 @@ function riskAverse(ctx, persona, mem, mood) {
 }
 
 
+/* ===== engine/strategies/trump-boss.js ===== */
+// engine/strategies/trump-boss.js — 极限交易者·高压锚定型（隐藏 Boss）
+// 抽象「极端开价 / 公开施压 / 极少让步 / 锚定 / 不可预测」的谈判风格。
+// 跨回合自适应：你越无条件合作，它越索取；你亮 BATNA / 强硬，它才略微松动。
+// 难度豁免：本策略输出即极限值，opponent-ai 不再叠加难度修正。
+
+
+function trumpBoss(ctx, persona, mem, mood) {
+  const resisted = mem.firmCount > 0 || mem.aggression > 0.6; // 玩家亮 BATNA / 强硬反压
+  const overlySoft = mem.coop >= 2 && mem.firmCount === 0;     // 玩家持续无条件合作
+
+  switch (ctx.kind) {
+    case 'pd': {
+      if (ctx.round === 0) return { move: chance(0.9) ? 'defect' : 'coop', reason: '开局极限施压：先背叛立威' };
+      if (resisted) return { move: chance(0.5) ? 'defect' : 'coop', reason: '遇到可信反压，转为试探' };
+      if (overlySoft) return { move: chance(0.95) ? 'defect' : 'coop', reason: '你越软我越索取' };
+      return { move: chance(0.85) ? 'defect' : 'coop', reason: '高压交易本能：倾向背叛' };
+    }
+    case 'trust-return':
+      return { move: Math.round(ctx.tripled * 0.08), reason: '极限榨取，几乎不返还' };
+    case 'bargain-counter': {
+      if (ctx.round === 0) return { move: 95, reason: '极端锚定开价 95' };
+      let red;
+      if (resisted) red = 4 + (chance(0.5) ? 2 : 0);          // 被反压才肯多让一点
+      else if (overlySoft) red = 1 + (chance(0.5) ? 1 : 0);   // 你软我几乎不动
+      else red = 3 + (chance(0.5) ? 2 : 0);
+      return {
+        move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
+        reason: resisted ? '迫于你的底气略作让步' : '寸土不让的高压让步',
+      };
+    }
+    case 'pg-contribute':
+      return { move: chance(0.5) ? 0 : 1, reason: '搭便车到底：让别人买单' };
+    case 'ultimatum-propose':
+      return { move: resisted ? 78 : 84, reason: resisted ? '稍稍收敛但仍极端' : '极端报价：自留绝大部分' };
+    case 'ultimatum-respond': {
+      const share = 100 - ctx.playerKeep;
+      const need = resisted ? 42 : 50; // 极高接受门槛
+      return { move: share >= need, reason: share >= need ? '勉强收下' : '不够多，拒绝并继续加压' };
+    }
+    default:
+      return { move: null, reason: '' };
+  }
+}
+
+
 /* ===== engine/opponent-ai.js ===== */
 // engine/opponent-ai.js — AI 决策引擎统一入口
 // 装配性格(静态) + 记忆(动态认知) + 情绪(状态机) + 性格专属策略。
@@ -875,7 +1017,7 @@ function riskAverse(ctx, persona, mem, mood) {
 
 
 
-const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse };
+const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse, trumpBoss };
 
 const OpponentAI = {
   // 每局开始重置该对手的记忆与情绪
@@ -899,7 +1041,11 @@ const OpponentAI = {
     const mood = Mood.get(opponentId);
     const fn = STRATEGIES[opponentId] || STRATEGIES.rational;
 
-    const { move, reason } = fn(ctx, persona, mem, mood);
+    let { move, reason } = fn(ctx, persona, mem, mood);
+    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。Boss 已是极限值，豁免。
+    if (opponentId !== 'trumpBoss') {
+      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod());
+    }
     const snapshot = { ...mood };
 
     EventBus.emit(EVENTS.AI_DECIDED, { opponentId, move, reason, mood: snapshot, kind: ctx.kind });
@@ -2054,7 +2200,21 @@ function initRunner() {
       console.error('[runner] 未知场景', scenarioKey);
       return;
     }
-    const opp = opponentId === 'random' ? randomOpponent() : getOpponent(opponentId);
+    let opp;
+    if (opponentId === 'random') {
+      opp = randomOpponent(); // quick: never yields Boss
+    } else if (opponentId === 'trumpBoss') {
+      const player = Store.get('player');
+      const difficulty = Store.get('difficulty');
+      if (!canUnlockBoss(player, difficulty)) {
+        console.warn('[runner] Boss 尚未解锁');
+        return;
+      }
+      opp = TRUMP_BOSS;
+    } else {
+      opp = getOpponent(opponentId);
+    }
+    if (!opp) { console.error('[runner] 未知对手', opponentId); return; }
     const scenario = new meta.Class(opp);
     Store.patch({ scenarioKey, opponent: opp, activeScenario: scenario });
 
@@ -2250,20 +2410,64 @@ renderScenarioSelect.afterRender = function () {
 
 
 /* ===== ui/screens/opponent-select.js ===== */
-// ui/screens/opponent-select.js — 对手选择屏
+// ui/screens/opponent-select.js — 对手选择屏（含难度选择 + Trump Boss 解锁）
 
+
+function buildOpponentCard(o, difficulty, player) {
+  const isBoss = !!o.boss;
+  const isEasy = difficulty === 'easy';
+  const isMed  = difficulty === 'medium';
+  const tells  = PERSONALITY_TELLS[o.id] || [];
+
+  let infoLine = '';
+  if (isEasy)      infoLine = `弱点：${o.weakness}`;
+  else if (isMed)  infoLine = `行为信号：${tells.join(' / ')}`;
+  else             infoLine = '未知对手 — 请通过行为判断其类型';
+
+  return `
+    <div class="opp-card${isBoss ? ' boss-card' : ''}" data-opp="${o.id}">
+      ${isBoss ? '<div class="boss-badge">隐藏 BOSS</div>' : ''}
+      <div class="opp-name">${o.name}</div>
+      <div class="opp-type">${o.type}</div>
+      <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
+      ${isEasy ? `<div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>` : ''}
+      <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoLine}</div>
+    </div>`;
+}
 
 function renderOpponentSelect() {
   const key = Store.get('scenarioKey');
   const meta = SCENARIO_META[key] || { name: '—', desc: '' };
-  const cards = OPPONENTS.map((o) => `
-    <div class="opp-card" data-opp="${o.id}">
-      <div class="opp-name">${o.name}</div>
-      <div class="opp-type">${o.type}</div>
-      <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
-      <div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>
-      <div style="margin-top:6px;font-size:10px;color:var(--dim)">${(PERSONALITY_TELLS[o.id] || []).join(' | ')}</div>
-    </div>`).join('');
+  const difficulty = Store.get('difficulty') || 'medium';
+  const player = Store.get('player');
+
+  const unlocked = canUnlockBoss(player, difficulty);
+  const grandMaster = isGrandMaster(player);
+
+  // Difficulty button row
+  const diffBtns = DIFFICULTIES.map((d) => {
+    const active = d.key === difficulty;
+    const isExtreme = d.key === 'extreme';
+    if (isExtreme && !grandMaster) return ''; // 极限挑战仅宗师可见
+    return `<button class="btn btn-sm diff-btn ${active ? 'btn-cyan active-diff' : ''}"
+              data-diff="${d.key}" style="margin:2px">${d.label}</button>`;
+  }).join('');
+
+  // Opponent cards
+  const opps = [...OPPONENTS];
+  if (unlocked) opps.push(TRUMP_BOSS);
+
+  const cards = opps.map((o) => buildOpponentCard(o, difficulty, player)).join('');
+
+  // Unlock hint
+  let hintHtml = '';
+  if (unlocked) {
+    hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可能出现，展示你的宗师实力。', 'yellow');
+  } else if (grandMaster) {
+    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」难度解锁隐藏 Boss。', 'cyan');
+  } else {
+    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b> 难度。', 'purple');
+  }
 
   return `
     <div class="flex-between">
@@ -2271,6 +2475,14 @@ function renderOpponentSelect() {
       <button class="back-btn" data-nav="${SCREENS.SCENARIO_SELECT}">← 返回</button>
     </div>
     ${C.hint(`已选场景：<b style="color:var(--cyan)">${meta.name}</b>  <span style="color:var(--dim)">${meta.desc}</span>`)}
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-title">训练难度</div>
+      <div id="diff-btns" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${diffBtns}</div>
+      <div style="font-size:11px;color:var(--dim)">
+        初级：显示弱点 &nbsp;|&nbsp; 中级：行为信号 &nbsp;|&nbsp; 高级：信息封锁 &nbsp;|&nbsp; 终局挑战：宗师专属，难度最高
+      </div>
+    </div>
+    ${hintHtml}
     <div class="grid2">${cards}</div>
     <div style="margin-top:12px">
       <button class="btn btn-yellow" style="width:100%" data-opp="random">⚡ 随机对手（挑战未知）</button>
@@ -2280,11 +2492,23 @@ function renderOpponentSelect() {
 
 renderOpponentSelect.afterRender = function () {
   const key = Store.get('scenarioKey');
-  document.querySelectorAll('[data-opp]').forEach((el) => {
-    el.addEventListener('click', () => {
-      EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: el.getAttribute('data-opp') });
+
+  // Difficulty button click
+  document.querySelectorAll('.diff-btn[data-diff]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      Store.set('difficulty', btn.getAttribute('data-diff'));
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
     });
   });
+
+  // Opponent card click
+  document.querySelectorAll('[data-opp]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const oppId = el.getAttribute('data-opp');
+      EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: oppId });
+    });
+  });
+
   const back = document.querySelector('[data-nav]');
   if (back) back.addEventListener('click', () =>
     EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
@@ -2343,6 +2567,33 @@ function renderResult() {
     tips.map((t) => C.hint(`• ${t}`)).join('') +
     `<div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>`) : '';
 
+  // Trump Boss 复盘：专项诊断
+  let bossReviewPanel = '';
+  if (opp && opp.id === 'trumpBoss') {
+    const rounds = result.rounds || [];
+    const tags = rounds.flatMap((r) => r.tags || []);
+    const resisted = tags.includes('BATNA') || tags.includes('底线控制');
+    const noFreeConcede = !tags.includes('无条件让步');
+    const usedConditional = tags.includes('条件让步');
+    const passed = resisted && noFreeConcede && usedConditional;
+    const diagnosis = passed
+      ? '你没有被极端锚定和时间压力完全牵引，能够用底线、条件交换削弱对手压迫。'
+      : '你在极端锚定或时间压力下出现了被动，底线表达和条件让步仍需加强。';
+    const advices = [
+      '① 不要接极端锚定的价格，先质疑其依据和可执行性。',
+      '② 所有让步必须换取对方实质承诺，禁止单方面善意释放。',
+      '③ 提前亮出BATNA，让对方知道你不是被迫成交的唯一选项。',
+      '④ 面对时间压力时主动暂停，把节奏拉回到客观标准。',
+      '⑤ 不要进入对方设置的胜负叙事，回到可执行条款本身。',
+    ];
+    bossReviewPanel = `
+      <div class="panel" style="border-color:var(--yellow)">
+        <div class="panel-title" style="color:var(--yellow)">终局 Boss 复盘｜极限交易型高压锚定模型</div>
+        ${C.hint(diagnosis, passed ? 'green' : 'yellow')}
+        ${advices.map((a) => C.hint(`• ${a}`)).join('')}
+      </div>`;
+  }
+
   // Phase 4：逐回合复盘 + 转折点 + 对手情绪曲线 + 改进建议
   let replayPanel = '';
   if (replay && replay.perRound && replay.perRound.length) {
@@ -2370,6 +2621,7 @@ function renderResult() {
     ${C.panel('复盘分析', result.summary || '')}
     ${replayPanel}
     ${tipsPanel}
+    ${bossReviewPanel}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
       <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>

@@ -7,6 +7,7 @@ import { EVENTS } from '../core/events.js';
 import { getOpponent } from '../data/opponents.js';
 import { Memory } from './memory.js';
 import { Mood } from './mood.js';
+import { getDifficultyMod, applyDifficulty } from './difficulty.js';
 
 import rational from './strategies/rational.js';
 import emotional from './strategies/emotional.js';
@@ -14,8 +15,9 @@ import aggressive from './strategies/aggressive.js';
 import cooperative from './strategies/cooperative.js';
 import manipulative from './strategies/manipulative.js';
 import riskAverse from './strategies/risk-averse.js';
+import trumpBoss from './strategies/trump-boss.js';
 
-const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse };
+const STRATEGIES = { rational, emotional, aggressive, cooperative, manipulative, riskAverse, trumpBoss };
 
 export const OpponentAI = {
   // 每局开始重置该对手的记忆与情绪
@@ -39,7 +41,11 @@ export const OpponentAI = {
     const mood = Mood.get(opponentId);
     const fn = STRATEGIES[opponentId] || STRATEGIES.rational;
 
-    const { move, reason } = fn(ctx, persona, mem, mood);
+    let { move, reason } = fn(ctx, persona, mem, mood);
+    // 难度修正：缩放对手慷慨度/强硬度/接受倾向。Boss 已是极限值，豁免。
+    if (opponentId !== 'trumpBoss') {
+      move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod());
+    }
     const snapshot = { ...mood };
 
     EventBus.emit(EVENTS.AI_DECIDED, { opponentId, move, reason, mood: snapshot, kind: ctx.kind });

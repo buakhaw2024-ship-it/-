@@ -162,3 +162,7 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .back-btn:hover{color:var(--text);border-color:var(--text)}
 .flex-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .section-title{color:var(--cyan);font-size:13px;letter-spacing:1px}
+/* Boss card + difficulty UI */
+.boss-card{border-color:var(--yellow)!important;background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,79,106,.06));box-shadow:0 0 18px rgba(255,215,0,.12)}
+.boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
+.active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}

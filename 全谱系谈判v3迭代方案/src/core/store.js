@@ -10,6 +10,7 @@ const _state = {
   opponentId: null,    // 当前选中的对手
   currentScreen: null, // 当前屏幕
   profile: null,       // 心理画像向量
+  difficulty: 'medium',// 难度：easy/medium/hard/extreme（影响真实博弈机制）
 };
 
 export const Store = {

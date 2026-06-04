@@ -10,6 +10,16 @@ export function getRank(total, wins) {
   return wr > 0.8 ? '宗师级' : '博弈大师';
 }
 
+// Trump Boss 解锁条件：宗师级 + 终局挑战难度
+export function isGrandMaster(player) {
+  if (!player) return false;
+  return getRank(player.total, player.wins) === '宗师级';
+}
+
+export function canUnlockBoss(player, difficulty) {
+  return isGrandMaster(player) && difficulty === 'extreme';
+}
+
 // 8 维心理向量的展示定义
 export const PSYCH_DIMENSIONS = [
   { key:'cooperation_rate', label:'合作倾向', color:'bar-green' },

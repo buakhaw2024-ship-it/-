@@ -6,7 +6,8 @@ import { EventBus } from '../core/event-bus.js';
 import { EVENTS, SCREENS } from '../core/events.js';
 import { Store } from '../core/store.js';
 import { REGISTRY } from './registry.js';
-import { getOpponent, randomOpponent } from '../data/opponents.js';
+import { getOpponent, randomOpponent, TRUMP_BOSS } from '../data/opponents.js';
+import { canUnlockBoss } from '../data/ranks.js';
 
 export function initRunner() {
   EventBus.on(EVENTS.GAME_START, ({ scenarioKey, opponentId }) => {
@@ -15,7 +16,21 @@ export function initRunner() {
       console.error('[runner] 未知场景', scenarioKey);
       return;
     }
-    const opp = opponentId === 'random' ? randomOpponent() : getOpponent(opponentId);
+    let opp;
+    if (opponentId === 'random') {
+      opp = randomOpponent(); // quick: never yields Boss
+    } else if (opponentId === 'trumpBoss') {
+      const player = Store.get('player');
+      const difficulty = Store.get('difficulty');
+      if (!canUnlockBoss(player, difficulty)) {
+        console.warn('[runner] Boss 尚未解锁');
+        return;
+      }
+      opp = TRUMP_BOSS;
+    } else {
+      opp = getOpponent(opponentId);
+    }
+    if (!opp) { console.error('[runner] 未知对手', opponentId); return; }
     const scenario = new meta.Class(opp);
     Store.patch({ scenarioKey, opponent: opp, activeScenario: scenario });
 

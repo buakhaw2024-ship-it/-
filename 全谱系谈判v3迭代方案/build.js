@@ -39,6 +39,7 @@ const MANIFEST = [
   'data/ranks.js',
   // AI 决策引擎（被 scenarios 依赖，须在其之前）
   'engine/util.js',
+  'engine/difficulty.js',
   'engine/memory.js',
   'engine/mood.js',
   'engine/strategies/rational.js',
@@ -47,6 +48,7 @@ const MANIFEST = [
   'engine/strategies/cooperative.js',
   'engine/strategies/manipulative.js',
   'engine/strategies/risk-averse.js',
+  'engine/strategies/trump-boss.js',
   'engine/opponent-ai.js',
   // 通用 UI 片段
   'ui/components.js',

@@ -18,6 +18,33 @@ export function renderResult() {
     tips.map((t) => C.hint(`• ${t}`)).join('') +
     `<div style="margin-top:8px;font-size:11px;color:var(--dim)">行为识别信号：${tells.join(' | ')}</div>`) : '';
 
+  // Trump Boss 复盘：专项诊断
+  let bossReviewPanel = '';
+  if (opp && opp.id === 'trumpBoss') {
+    const rounds = result.rounds || [];
+    const tags = rounds.flatMap((r) => r.tags || []);
+    const resisted = tags.includes('BATNA') || tags.includes('底线控制');
+    const noFreeConcede = !tags.includes('无条件让步');
+    const usedConditional = tags.includes('条件让步');
+    const passed = resisted && noFreeConcede && usedConditional;
+    const diagnosis = passed
+      ? '你没有被极端锚定和时间压力完全牵引，能够用底线、条件交换削弱对手压迫。'
+      : '你在极端锚定或时间压力下出现了被动，底线表达和条件让步仍需加强。';
+    const advices = [
+      '① 不要接极端锚定的价格，先质疑其依据和可执行性。',
+      '② 所有让步必须换取对方实质承诺，禁止单方面善意释放。',
+      '③ 提前亮出BATNA，让对方知道你不是被迫成交的唯一选项。',
+      '④ 面对时间压力时主动暂停，把节奏拉回到客观标准。',
+      '⑤ 不要进入对方设置的胜负叙事，回到可执行条款本身。',
+    ];
+    bossReviewPanel = `
+      <div class="panel" style="border-color:var(--yellow)">
+        <div class="panel-title" style="color:var(--yellow)">终局 Boss 复盘｜极限交易型高压锚定模型</div>
+        ${C.hint(diagnosis, passed ? 'green' : 'yellow')}
+        ${advices.map((a) => C.hint(`• ${a}`)).join('')}
+      </div>`;
+  }
+
   // Phase 4：逐回合复盘 + 转折点 + 对手情绪曲线 + 改进建议
   let replayPanel = '';
   if (replay && replay.perRound && replay.perRound.length) {
@@ -45,6 +72,7 @@ export function renderResult() {
     ${C.panel('复盘分析', result.summary || '')}
     ${replayPanel}
     ${tipsPanel}
+    ${bossReviewPanel}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
       <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>

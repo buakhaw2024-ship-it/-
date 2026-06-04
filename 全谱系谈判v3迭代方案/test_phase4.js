@@ -23,7 +23,9 @@ const expose = `
 ;(function(){
   var names = ['buildReplay','loadPlayer','accumulate','computeProfile',
                'getProfileType','hasEnoughData','EventBus','EVENTS','Store',
-               'OPPONENTS','C','SCENARIO_REGISTRY'];
+               'OPPONENTS','C','SCENARIO_REGISTRY',
+               'getDifficultyMod','applyDifficulty','canUnlockBoss','isGrandMaster',
+               'getRank','TRUMP_BOSS'];
   for(var i=0;i<names.length;i++){
     try{ G[names[i]] = eval(names[i]); } catch(e){}
   }
@@ -270,6 +272,71 @@ console.log('\n[7] C.moodSparkline');
   assert(svg.includes('var(--cyan)'), '信任线 cyan');
   assert(svg.includes('var(--red)'),  '愤怒线 red');
   assert(C.moodSparkline(null) === '', '空序列 → 空字符串');
+}
+
+// ─── Test 8: getDifficultyMod ─────────────────────────────────────────────────
+console.log('\n[8] getDifficultyMod');
+{
+  const { getDifficultyMod } = G;
+  const easy = getDifficultyMod('easy');
+  const hard = getDifficultyMod('hard');
+  const ext  = getDifficultyMod('extreme');
+  assert(easy.coopFactor > 1,              'easy coopFactor > 1');
+  assert(hard.coopFactor < 1,              'hard coopFactor < 1');
+  assert(ext.coopFactor < hard.coopFactor, 'extreme < hard coopFactor');
+  assert(easy.acceptShift > 0,             'easy acceptShift > 0');
+  assert(ext.acceptShift < 0,              'extreme acceptShift < 0');
+  assert(easy.toughFactor < 1,             'easy toughFactor < 1');
+  assert(hard.toughFactor > 1,             'hard toughFactor > 1');
+}
+
+// ─── Test 9: applyDifficulty ──────────────────────────────────────────────────
+console.log('\n[9] applyDifficulty');
+{
+  const { applyDifficulty, getDifficultyMod } = G;
+  const easy = getDifficultyMod('easy');
+  const hard = getDifficultyMod('hard');
+
+  // trust-return
+  assert(applyDifficulty('trust-return', 12, { tripled:30 }, easy) > 12, 'easy inflates trust return');
+  assert(applyDifficulty('trust-return', 12, { tripled:30 }, hard) < 12, 'hard deflates trust return');
+
+  // pg-contribute
+  assert(applyDifficulty('pg-contribute', 5, {}, easy) >= 5, 'easy inflates pg contribution');
+  assert(applyDifficulty('pg-contribute', 5, {}, hard) <= 5, 'hard deflates pg contribution');
+
+  // ultimatum-propose (opp keeps — hard keeps more)
+  assert(applyDifficulty('ultimatum-propose', 62, {}, easy) < 62, 'easy: opp keeps less');
+  assert(applyDifficulty('ultimatum-propose', 62, {}, hard) > 62, 'hard: opp keeps more');
+
+  // bargain-counter (smaller concession = harder)
+  const ctx = { currentOppOffer: 80, trueVal: 60 };
+  const counterEasy = applyDifficulty('bargain-counter', 70, ctx, easy); // concession=10, easy inflates → bigger drop
+  const counterHard = applyDifficulty('bargain-counter', 70, ctx, hard);
+  assert(counterEasy <= counterHard, 'easy makes bigger bargain concession than hard');
+}
+
+// ─── Test 10: TRUMP_BOSS + canUnlockBoss ─────────────────────────────────────
+console.log('\n[10] TRUMP_BOSS + canUnlockBoss');
+{
+  const { TRUMP_BOSS, canUnlockBoss, isGrandMaster, getRank } = G;
+
+  assert(TRUMP_BOSS !== undefined,          'TRUMP_BOSS 存在');
+  assert(TRUMP_BOSS && TRUMP_BOSS.id === 'trumpBoss', 'id = trumpBoss');
+  assert(TRUMP_BOSS && TRUMP_BOSS.boss === true,       'boss = true');
+  assert(TRUMP_BOSS && TRUMP_BOSS.assert >= 0.95,      'assert >= 0.95');
+
+  // Rank check
+  assert(getRank(0, 0) === '新兵',          'getRank 0局 = 新兵');
+  const gmPlayer = { total: 35, wins: 30 };
+  assert(getRank(gmPlayer.total, gmPlayer.wins) === '宗师级', '宗师级条件满足');
+
+  // Unlock gating
+  assert(!canUnlockBoss({ total:5, wins:4 }, 'extreme'),   '非宗师 → 不解锁');
+  assert(!canUnlockBoss(gmPlayer, 'hard'),                  '宗师+高级 → 不解锁');
+  assert(!canUnlockBoss(gmPlayer, 'medium'),                '宗师+中级 → 不解锁');
+  assert( canUnlockBoss(gmPlayer, 'extreme'),               '宗师+终局 → 解锁');
+  assert(!canUnlockBoss(null, 'extreme'),                   'null player → 不解锁');
 }
 
 // ─── 汇总 ─────────────────────────────────────────────────────────────────────

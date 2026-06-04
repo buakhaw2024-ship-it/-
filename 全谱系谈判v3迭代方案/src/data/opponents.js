@@ -10,6 +10,15 @@ export const OPPONENTS = [
   { id:'riskAverse',   name:'稳健吴', type:'风险规避型', desc:'保守稳健，避免不确定结果',     weakness:'在压力下倾向过度让步',   risk:0.2, coop:0.6, fair:0.6, assert:0.4 },
 ];
 
+// 隐藏 Boss：极限交易型 / 高压锚定型。仅在「宗师级 + 终局挑战难度」下解锁。
+// 抽象其公开化、交易化、高压化、锚定化、不可预测化的谈判风格——非政治评论。
+export const TRUMP_BOSS = {
+  id:'trumpBoss', name:'极限交易者', type:'极限交易型 / 高压锚定型',
+  desc:'极端开价、公开施压、几乎不让步，把每一步都包装成胜负叙事',
+  weakness:'对方亮出可信BATNA、坚守客观标准并拒绝胜负叙事时，其锚定开始失效',
+  risk:0.8, coop:0.15, fair:0.15, assert:0.98, boss:true,
+};
+
 export const PERSONALITY_TELLS = {
   rational:     ['总是要求数据支持','反复确认细节','表情克制中性'],
   emotional:    ['声音起伏明显','频繁提及"感受"','肢体语言丰富'],
@@ -17,6 +26,7 @@ export const PERSONALITY_TELLS = {
   cooperative:  ['主动提出让步','寻找共同利益','保持开放态度'],
   manipulative: ['突然改变话题','制造紧迫感','模糊关键条款'],
   riskAverse:   ['多次确认安全性','偏好保守方案','回避极端选项'],
+  trumpBoss:    ['开局抛出极端条件','频繁使用胜负二元叙事','制造公开与时间压力','突然改变议题或报价'],
 };
 
 const OPPONENT_TIPS = {
@@ -26,9 +36,11 @@ const OPPONENT_TIPS = {
   cooperative:  ['诚实合作，建立长期信任','提出双赢方案，强调共同利益','避免利用其善意过度索取','记录协议细节，防止善意被误解'],
   manipulative: ['保持高度警觉，识别话术变化','要求书面确认所有关键条款','直接说出你识别到的操控手法','减慢节奏，不受人工紧迫感驱使'],
   riskAverse:   ['用数据和案例证明方案的安全性','提供保障条款和退出选项','强调不行动的风险大于行动','循序渐进，不要一次推进太多变化'],
+  trumpBoss:    ['不要急于回应极端锚定，先质疑其依据和可执行性','明确你的BATNA，让对方知道你不是被迫成交','把议题拆小，避免被带入宏大胜负叙事','所有让步必须绑定对方的实质承诺','不要被公开压力和时间压力牵引，主动放慢节奏','用客观标准、书面条件和退出选项压缩其操控空间'],
 };
 
 export function getOpponent(id) {
+  if (id === TRUMP_BOSS.id) return TRUMP_BOSS;
   return OPPONENTS.find((o) => o.id === id);
 }
 

@@ -11,19 +11,36 @@ export function accumulate(player, kind, rounds, result, opp) {
   const s = player.behaviorStats;
   s.games += 1;
   if (opp && !s.opponentsSeen.includes(opp.id)) s.opponentsSeen.push(opp.id);
-  if (result.outcome === 'win') s.wins += 1;
+  const won = result.outcome === 'win';
+  const coop = result.outcome === 'coop';
+  const difficulty = (result.difficulty) || 'medium';
+  const isHell = difficulty === 'hell';
+
+  if (won) s.wins += 1;
+  if (isHell && won) s.hellWins += 1;
+  if (opp && opp.boss && won) s.bossWins += 1;
   if (opp && HARD_OPPONENTS.includes(opp.id)) {
     s.hardGames += 1;
-    if (result.outcome === 'win') s.hardWins += 1;
+    if (won) s.hardWins += 1;
   }
+  // 公平成交计数（由各场景在 result.fairDeal 中注入）
+  if (result.fairDeal) s.fairDeals += 1;
+
   if (!rounds || !rounds.length) return player;
 
   if (kind === 'prisoners') {
+    const coopCount = rounds.filter((r) => r.player === 'coop').length;
+    const defectCount = rounds.length - coopCount;
     rounds.forEach((r) => {
       s.totalMoves += 1; s.impulseTotal += 1;
       if (r.player === 'coop') { s.coopMoves += 1; s.impulseAvoid += 1; }
       else { s.riskyMoves += 1; s.assertiveMoves += 1; }
     });
+    // TfT 赢：混合策略（有合作也有背叛）+ 胜利
+    if (won && coopCount > 0 && defectCount > 0) s.tftWins += 1;
+    // 正确识别对手：有 peek 记录 + 胜利（tags 携带信号）
+    if (won && rounds.some((r) => r.tags && r.tags.includes('peek'))) s.correctReads += 1;
+
   } else if (kind === 'trust') {
     rounds.forEach((r) => {
       s.totalMoves += 1; s.impulseTotal += 1;
@@ -33,7 +50,9 @@ export function accumulate(player, kind, rounds, result, opp) {
       if (r.invested === 0) s.assertiveMoves += 1;
       if (r.myNet >= 0) s.impulseAvoid += 1;
     });
+
   } else if (kind === 'publicgoods') {
+    const allCoop = rounds.every((r) => r.my >= 5);
     rounds.forEach((r) => {
       s.totalMoves += 1; s.impulseTotal += 1;
       s.trustInvested += r.my; s.trustMax += 10;
@@ -41,6 +60,12 @@ export function accumulate(player, kind, rounds, result, opp) {
       if (r.my <= 1) s.assertiveMoves += 1;
       if (r.my === 0) s.riskyMoves += 1;
     });
+    // 纯合作策略（每轮 ≥5）+ 胜利或平局
+    if (allCoop && (won || coop)) {
+      s.pureCoopWins += 1;
+      if (isHell) s.hellPureCoop += 1;
+    }
+
   } else if (kind === 'bargaining') {
     rounds.forEach((r, i) => {
       s.totalMoves += 1; s.impulseTotal += 1;
@@ -48,6 +73,7 @@ export function accumulate(player, kind, rounds, result, opp) {
       if (r.my - prev <= 3) s.impulseAvoid += 1;
       if (r.my < 42) s.assertiveMoves += 1;
     });
+
   } else if (kind === 'ultimatum') {
     rounds.forEach((r) => {
       s.totalMoves += 1; s.fairOpps += 1;
@@ -55,6 +81,7 @@ export function accumulate(player, kind, rounds, result, opp) {
       else if (r.accepted) s.fairActs += 0.5;
       if (r.myOffer > 62) s.assertiveMoves += 1;
     });
+
   } else if (kind === 'crisis' || kind === 'coalition') {
     rounds.forEach((r) => {
       s.totalMoves += 1; s.impulseTotal += 1;

@@ -14,6 +14,14 @@ export function freshBehaviorStats() {
     impulseAvoid: 0, impulseTotal: 0,
     wins: 0, hardGames: 0, hardWins: 0,
     opponentsSeen: [],
+    // 卡池解锁相关统计
+    correctReads: 0,    // 正确判断对手类型（使用 peek 后仍获胜）
+    tftWins: 0,         // 以 TfT 混合策略赢得囚徒困境
+    pureCoopWins: 0,    // 纯合作策略赢得/平局公共品
+    hellPureCoop: 0,    // 地狱难度下的纯合作胜利
+    fairDeals: 0,       // 公平成交局数
+    hellWins: 0,        // 地狱难度胜利数
+    bossWins: 0,        // 击败 Boss 次数
   };
 }
 

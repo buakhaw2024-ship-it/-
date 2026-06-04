@@ -14,6 +14,7 @@ import { renderResult } from '../ui/screens/result.js';
 import { renderStrategyLib } from '../ui/screens/strategy-lib.js';
 import { renderPsychology } from '../ui/screens/psychology.js';
 import { renderDashboard } from '../ui/screens/dashboard.js';
+import { renderCardAlbum } from '../ui/cards.js';
 
 import { initRecorder } from '../analytics/recorder.js';
 import { initRunner } from '../scenarios/runner.js';
@@ -32,6 +33,7 @@ function boot() {
   Router.register(SCREENS.STRATEGY, renderStrategyLib);
   Router.register(SCREENS.PSYCHOLOGY, renderPsychology);
   Router.register(SCREENS.DASHBOARD, renderDashboard);
+  Router.register(SCREENS.CARD_ALBUM, renderCardAlbum);
 
   // 初始化对局视图（game:render 落地 + 动作委托）
   initGameView();

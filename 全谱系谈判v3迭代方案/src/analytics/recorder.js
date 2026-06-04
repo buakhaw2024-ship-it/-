@@ -10,6 +10,7 @@ import { accumulate } from './psych-analyzer.js';
 import { buildReplay } from './replay.js';
 import { getOpponentTips, PERSONALITY_TELLS } from '../data/opponents.js';
 import { SCENARIO_META } from '../data/scenarios.meta.js';
+import { checkNewCards, unlockCards, renderBoxOpenModal } from '../ui/cards.js';
 
 export function initRecorder() {
   EventBus.on(EVENTS.GAME_END, ({ result }) => {
@@ -22,6 +23,8 @@ export function initRecorder() {
     const rounds = result.rounds || [];
 
     if (player) {
+      // 注入 difficulty 到 result 供 accumulate 使用
+      result.difficulty = Store.get('difficulty') || 'medium';
       // 先累计行为统计（供心理画像），再写入对局记录（addSession 会持久化整份档案）
       accumulate(player, kind, rounds, result, opp);
       addSession(player, {
@@ -35,7 +38,14 @@ export function initRecorder() {
         oppScore: result.oppScore,
         outcome: result.outcome,
       });
+      // 检查新卡解锁（在 accumulate 之后）
+      const newCards = checkNewCards(player);
+      if (newCards.length) unlockCards(player, newCards);
       Store.set('player', player); // 广播，刷新主菜单等
+      // 新卡开盒动画（仅浏览器环境）
+      if (newCards.length && typeof document !== 'undefined') {
+        Store.set('pendingNewCards', newCards);
+      }
     }
 
     const replay = buildReplay(kind, rounds, opp, result);

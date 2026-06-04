@@ -64,9 +64,11 @@ export class PublicGoodsGame extends BaseScenario {
   _finish() {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore === this.oppScore ? 'coop' : 'lose';
     const avg = Math.round(this.log.reduce((s, l) => s + l.my, 0) / this.log.length);
+    // 公平：平均贡献 ≥4（全员合作接近最优）
+    const fairDeal = avg >= 4;
     this.finish({
       kind: 'publicgoods', rounds: this.log,
-      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome, fairDeal,
       summary:
         C.infoRow('平均贡献量', `${avg} 枚`) +
         C.infoRow('最优策略', '条件合作：模仿对方上轮贡献，避免持续被剥削') +

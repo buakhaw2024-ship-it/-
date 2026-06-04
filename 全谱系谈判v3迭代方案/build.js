@@ -70,7 +70,9 @@ const MANIFEST = [
   'scenarios/coalition.js',
   'scenarios/registry.js',
   'scenarios/runner.js',
-  // 记录器（依赖 data/analytics）
+  // 卡池系统（依赖 player-data + avatarSvg；被 recorder + 屏幕依赖）
+  'ui/cards.js',
+  // 记录器（依赖 data/analytics + cards）
   'analytics/recorder.js',
   // 屏幕
   'ui/screens/welcome.js',

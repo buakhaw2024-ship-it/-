@@ -92,11 +92,13 @@ export class CrisisNegotiation extends BaseScenario {
 
   _finish() {
     const outcome = this.playerScore >= 50 ? 'win' : this.playerScore >= 20 ? 'draw' : 'lose';
+    // 公平：有效化解危机（分数 ≥40），非极端强硬解法
+    const fairDeal = this.playerScore >= 40;
     this.finish({
       kind: 'crisis', rounds: this.log,
       playerScore: this.playerScore,
       oppScore: Math.max(0, 100 - this.playerScore),
-      outcome,
+      outcome, fairDeal,
       summary:
         C.infoRow('最终谈判积分', String(this.playerScore)) +
         C.infoRow('危机化解程度', this.playerScore >= 50 ? '成功化解' : '部分化解') +

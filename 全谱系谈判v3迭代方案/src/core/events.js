@@ -32,4 +32,5 @@ export const SCREENS = {
   STRATEGY: 'strategy',
   PSYCHOLOGY: 'psychology',
   DASHBOARD: 'dashboard',
+  CARD_ALBUM: 'card-album',
 };

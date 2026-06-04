@@ -65,9 +65,11 @@ export class TrustGame extends BaseScenario {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const avgInvest = Math.round(this.log.reduce((s, l) => s + l.invested, 0) / this.log.length);
     const avgReturn = Math.round(this.log.reduce((s, l) => s + (l.returned / (l.invested * 3 || 1)), 0) / this.log.length * 100);
+    // 公平：平均投入 ≥5 且对手平均返还率 ≥50%（相互信任）
+    const fairDeal = avgInvest >= 5 && avgReturn >= 50;
     this.finish({
       kind: 'trust', rounds: this.log,
-      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome, fairDeal,
       summary:
         C.infoRow('平均投入', `${avgInvest} 枚`) +
         C.infoRow('平均返还率', `${avgReturn}%`) +

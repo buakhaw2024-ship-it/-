@@ -94,9 +94,11 @@ export class CoalitionGame extends BaseScenario {
 
   _finish() {
     const outcome = this.playerScore > 45 && this.allies >= 2 ? 'win' : this.playerScore > 25 ? 'draw' : 'lose';
+    // 公平：建立至少 2 个盟友且总积分超过 35（互利联盟）
+    const fairDeal = this.allies >= 2 && this.playerScore >= 35;
     this.finish({
       kind: 'coalition', rounds: this.log,
-      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome, fairDeal,
       summary:
         C.infoRow('总积分', String(this.playerScore)) +
         C.infoRow('最终盟友数', String(this.allies)) +

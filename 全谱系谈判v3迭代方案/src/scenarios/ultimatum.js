@@ -110,9 +110,11 @@ export class UltimatumGame extends BaseScenario {
   _finish() {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const acc = Math.round(this.log.filter((l) => l.accepted).length / this.log.length * 100);
+    // 公平成交：有分配回合中我方提案在 40-62 区间且被接受
+    const fairDeal = this.log.some((r) => r.accepted && r.myOffer >= 40 && r.myOffer <= 62);
     this.finish({
       kind: 'ultimatum', rounds: this.log,
-      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome, fairDeal,
       summary:
         C.infoRow('接受率', `${acc}%`) +
         C.infoRow('最优策略', '作为提议者锚定 55-60，接受者接受 >30% 的方案'),

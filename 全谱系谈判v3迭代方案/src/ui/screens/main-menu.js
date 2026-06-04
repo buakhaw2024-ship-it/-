@@ -1,10 +1,11 @@
-// ui/screens/main-menu.js — 主菜单（Phase 2：5 项功能全接入）
+// ui/screens/main-menu.js — 主菜单
 
 import { EventBus } from '../../core/event-bus.js';
 import { EVENTS, SCREENS } from '../../core/events.js';
 import { Store } from '../../core/store.js';
 import { getRank, isGrandMaster, canUnlockBoss } from '../../data/ranks.js';
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
+import { getCollection, CARD_POOL } from '../cards.js';
 
 const MENU = [
   ['①', '场景实战训练', '选择博弈场景，与AI对手对决', 'nav', SCREENS.SCENARIO_SELECT],
@@ -12,6 +13,7 @@ const MENU = [
   ['③', '策略理论库', '策略卡 / 沟通技术 / 心理防御 / 六大宗师理论', 'nav', SCREENS.STRATEGY],
   ['④', '心理档案分析', '查看您的8维博弈心理画像', 'nav', SCREENS.PSYCHOLOGY],
   ['⑤', '训练成绩看板', '历史战绩、胜率统计、成长曲线', 'nav', SCREENS.DASHBOARD],
+  ['⑥', '卡牌收藏册', '收集对局卡片，解锁稀有 SSR/SP 卡', 'nav', SCREENS.CARD_ALBUM],
 ];
 
 export function renderMainMenu() {
@@ -20,11 +22,18 @@ export function renderMainMenu() {
   const rank = getRank(p.total, p.wins);
   const wr = p.total > 0 ? Math.round(p.wins / p.total * 100) : 0;
 
-  const items = MENU.map(([num, title, sub, act, target], i) => `
-    <div class="menu-item" data-act="${act}" data-target="${target || ''}" data-idx="${i}">
+  // 卡牌收藏进度（⑥ 菜单显示 new badge）
+  const owned = getCollection(p);
+  const cardNew = owned.length > 0 && owned.length < CARD_POOL.length
+    ? `<span class="menu-new-badge">${owned.length}/${CARD_POOL.length}</span>` : '';
+
+  const items = MENU.map(([num, title, sub, act, target], i) => {
+    const badge = (i === 5) ? cardNew : '';
+    return `<div class="menu-item" data-act="${act}" data-target="${target || ''}" data-idx="${i}">
       <div class="menu-num">${num}</div>
-      <div class="menu-text"><b>${title}</b><span>${sub}</span></div>
-    </div>`).join('');
+      <div class="menu-text"><b>${title}${badge}</b><span>${sub}</span></div>
+    </div>`;
+  }).join('');
 
   let bossHint = '';
   if (canUnlockBoss(p, difficulty)) {

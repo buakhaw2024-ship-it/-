@@ -285,3 +285,43 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .hell-stamp{display:inline-block;padding:6px 22px;border:3px solid var(--red);color:var(--red);font-size:18px;font-weight:bold;letter-spacing:6px;transform:rotate(-12deg);text-shadow:0 0 8px rgba(255,79,106,.5);box-shadow:0 0 16px rgba(255,79,106,.35),inset 0 0 8px rgba(255,79,106,.15);background:rgba(10,14,26,.8);animation:hell-stamp-in .5s cubic-bezier(.34,1.56,.64,1);font-family:'Courier New',monospace}
 .hell-stamp.pass{border-color:var(--green);color:var(--green);text-shadow:0 0 8px rgba(0,255,159,.5);box-shadow:0 0 16px rgba(0,255,159,.35),inset 0 0 8px rgba(0,255,159,.15)}
 .hell-stamp-wrap{text-align:center;margin:14px 0}
+
+/* ── 泡泡马特卡池系统 ───────────────────────────────────────────────────── */
+
+/* 开盒模态 */
+.box-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.box-modal{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:28px 24px;max-width:480px;width:94%;text-align:center;box-shadow:0 0 60px rgba(0,212,255,.15)}
+.box-modal-title{color:var(--cyan);font-size:15px;font-weight:bold;letter-spacing:3px;margin-bottom:18px}
+.box-cards-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* 单张卡片 */
+@keyframes card-flip-in{0%{transform:rotateY(180deg) scale(.8);opacity:0}60%{transform:rotateY(-10deg) scale(1.08)}100%{transform:rotateY(0deg) scale(1);opacity:1}}
+@keyframes card-glow-pulse{0%,100%{box-shadow:0 0 12px var(--card-glow,rgba(0,212,255,.3))}50%{box-shadow:0 0 26px var(--card-glow,rgba(0,212,255,.5)),0 0 8px var(--card-glow,rgba(0,212,255,.3))}}
+.box-card{width:110px;perspective:600px;cursor:default}
+.box-card-inner{position:relative;width:100%;border-radius:6px;transition:transform .6s}
+.box-card-hidden .box-card-front{display:none}
+.box-card-hidden .box-card-back{display:flex;align-items:center;justify-content:center;height:150px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:28px;color:var(--dim)}
+.box-card-reveal .box-card-back{display:none}
+.box-card-reveal .box-card-front{display:block;animation:card-flip-in .55s cubic-bezier(.34,1.56,.64,1),card-glow-pulse 2s ease-in-out infinite 0.6s}
+.box-card-front{background:var(--card-bg,rgba(0,212,255,.08));border:2px solid var(--card-color,var(--cyan));border-radius:6px;padding:10px 8px;text-align:center;box-shadow:0 0 14px var(--card-glow,rgba(0,212,255,.3))}
+.box-card-rarity{font-size:9px;font-weight:bold;color:var(--card-color,var(--cyan));letter-spacing:2px;margin-bottom:6px}
+.box-card-avatar{height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.box-card-svg{width:48px;height:48px;border-radius:50%;overflow:hidden}
+.box-card-svg svg{width:100%;height:100%;display:block}
+.box-card-name{color:var(--white);font-size:11px;font-weight:bold;margin-bottom:4px;line-height:1.3}
+.box-card-flavor{color:var(--dim);font-size:9px;line-height:1.4}
+
+/* 集卡册 */
+.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.album-card{border:1px solid var(--border);border-radius:4px;padding:8px 6px;text-align:center;cursor:default;background:var(--bg3);transition:all .2s}
+.album-card-owned{border-color:var(--card-color,var(--border));box-shadow:0 0 8px var(--card-glow,transparent);background:var(--card-bg,var(--bg3))}
+.album-card-owned:hover{transform:translateY(-2px);box-shadow:0 0 16px var(--card-glow,transparent)}
+.album-card-locked{opacity:.45}
+.album-card-rarity{font-size:8px;font-weight:bold;color:var(--card-color,var(--dim));letter-spacing:1.5px;margin-bottom:4px}
+.album-card-avatar{height:36px;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.album-card-avatar svg{width:32px;height:32px;border-radius:50%}
+.album-card-name{color:var(--text);font-size:9px;line-height:1.3}
+
+/* 主菜单新解锁闪光提示 */
+@keyframes menu-badge-pulse{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+.menu-new-badge{display:inline-block;background:rgba(255,215,0,.15);border:1px solid var(--yellow);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:8px;margin-left:6px;animation:menu-badge-pulse 1.4s ease-in-out infinite;vertical-align:middle}

@@ -5,6 +5,7 @@ import { EVENTS, SCREENS } from '../../core/events.js';
 import { Store } from '../../core/store.js';
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
 import { C } from '../components.js';
+import { renderBoxOpenModal } from '../cards.js';
 
 export function renderResult() {
   const data = Store.get('lastResult');
@@ -120,4 +121,11 @@ renderResult.afterRender = function () {
     const key = keys[Math.floor(Math.random() * keys.length)];
     EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: 'random' });
   });
+
+  // 开盒动画：若 recorder 发现有新卡，延迟 600ms 后弹出
+  const newCards = Store.get('pendingNewCards');
+  if (newCards && newCards.length) {
+    Store.set('pendingNewCards', null);
+    setTimeout(() => renderBoxOpenModal(newCards, null), 600);
+  }
 };

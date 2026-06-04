@@ -71,9 +71,11 @@ export class PrisonersDilemma extends BaseScenario {
     const outcome = this.playerScore > this.oppScore ? 'win' : this.playerScore < this.oppScore ? 'lose' : 'draw';
     const coop = this.log.filter((l) => l.player === 'coop').length;
     const lastReason = this.log.length ? this.log[this.log.length - 1].reason : '';
+    // 公平：双方合作率相近（我方合作 ≥3 且双方互信收益最优）
+    const fairDeal = coop >= 3 && outcome !== 'lose';
     this.finish({
       kind: 'prisoners', rounds: this.log,
-      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome, fairDeal,
       summary:
         C.infoRow('总轮数', `${this.rounds} 轮`) +
         C.infoRow('您的合作率', `${Math.round(coop / this.rounds * 100)}%`) +

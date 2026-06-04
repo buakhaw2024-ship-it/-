@@ -90,9 +90,11 @@ export class BargainingGame extends BaseScenario {
     this.playerScore = Math.max(0, 100 - price);
     this.oppScore = Math.max(0, price - 40);
     const outcome = price <= 55 ? 'win' : price <= 65 ? 'draw' : 'lose';
+    // 公平成交：成交价在真实价值附近（55-70 区间），双方均有收益
+    const fairDeal = price >= 55 && price <= 70;
     this.finish({
       kind: 'bargaining', rounds: this.log,
-      playerScore: this.playerScore, oppScore: this.oppScore, outcome,
+      playerScore: this.playerScore, oppScore: this.oppScore, outcome, fairDeal,
       summary:
         C.infoRow('成交价格', `${price} 元`) +
         C.infoRow('相比最高价节省', `${100 - price} 元`) +

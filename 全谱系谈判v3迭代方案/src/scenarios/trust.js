@@ -18,12 +18,15 @@ export class TrustGame extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = `投入 ${l.invested} 枚`;
+      const oText = `返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`信任博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
@@ -35,7 +38,7 @@ export class TrustGame extends BaseScenario {
         C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
         C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码') +
         this.peekControls())}
-      ${C.logBox('信任记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 

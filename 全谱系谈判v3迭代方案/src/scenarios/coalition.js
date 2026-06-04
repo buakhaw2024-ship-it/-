@@ -51,10 +51,14 @@ export class CoalitionGame extends BaseScenario {
 
   _render() {
     const s = this.stages[this.stage];
-    const logHtml = this.log.map((l) => `<div class="log-entry">[${l.stage}] ${l.feedback}</div>`).join('');
+    const logHtml = this.log.map((l) => {
+      const color = l.ps >= 15 ? 'var(--green)' : l.ps >= 5 ? 'var(--yellow)' : 'var(--red)';
+      return C.dialogBubble(`${l.feedback}（<span style="color:${color}">+${l.ps}分</span>）`, 'system', l.stage);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`联盟谈判 — ${s.title}`)}
+      ${C.stageProgress(this.stage, this.stages.length)}
       <div class="grid3" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '谈判积分')}
         ${C.scoreBox(this.allies, '当前盟友数', 'var(--green)')}
@@ -62,7 +66,7 @@ export class CoalitionGame extends BaseScenario {
       </div>
       ${C.hint(s.context)}
       ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
-      ${C.logBox('阶段记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 

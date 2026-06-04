@@ -19,12 +19,15 @@ export class PublicGoodsGame extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = `贡献 ${l.my} 枚`;
+      const oText = `贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`公共品博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的余额')}
         ${C.scoreBox(this.oppScore, `${opp.name} 余额`)}
@@ -36,7 +39,7 @@ export class PublicGoodsGame extends BaseScenario {
         C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
         C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益') +
         this.peekControls())}
-      ${C.logBox('贡献记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 

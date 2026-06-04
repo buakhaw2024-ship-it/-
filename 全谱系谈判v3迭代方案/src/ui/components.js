@@ -62,6 +62,39 @@ export const C = {
     return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
   },
 
+  // 对话气泡：who='ai'|'player'|'system'
+  dialogBubble(text, who = 'ai', label = '') {
+    if (!text) return '';
+    if (who === 'system') {
+      return `<div class="bubble-row"><div class="bubble bubble-system">${label ? `<div class="bubble-label">${label}</div>` : ''}<div class="bubble-text">${text}</div></div></div>`;
+    }
+    return `<div class="bubble-row bubble-row-${who}">
+      <div class="bubble bubble-${who}">
+        ${label ? `<div class="bubble-label">${label}</div>` : ''}
+        <div class="bubble-text">${text}</div>
+      </div>
+    </div>`;
+  },
+
+  // 回合时间线（圆点轨）
+  roundTimeline(log, total, current) {
+    const done = log ? log.length : 0;
+    const dots = Array.from({ length: total }, (_, i) => {
+      const cls = i < done ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
+      return `<div class="tl-dot ${cls}" title="第${i + 1}轮"></div>`;
+    }).join('');
+    return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮</div><div class="tl-dots">${dots}</div></div>`;
+  },
+
+  // 阶段进度条（用于危机/联盟等多阶段场景）
+  stageProgress(current, total) {
+    const dots = Array.from({ length: total }, (_, i) => {
+      const cls = i < current ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
+      return `<div class="tl-dot ${cls}" title="第${i + 1}阶段"></div>`;
+    }).join('');
+    return `<div class="round-timeline"><div class="tl-label">阶段${current + 1}/${total}</div><div class="tl-dots">${dots}</div></div>`;
+  },
+
   // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
   moodSparkline(series) {
     if (!series || !series.length) return '';

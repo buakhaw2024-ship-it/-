@@ -174,6 +174,47 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .boss-badge{display:inline-block;padding:2px 8px;border:1px solid var(--yellow);color:var(--yellow);font-size:10px;margin-bottom:6px;letter-spacing:1px}
 .active-diff{background:rgba(0,212,255,.15)!important;border-color:var(--cyan)!important;font-weight:bold}
 
+/* ── Negotiation table chrome ────────────────────────────────────────── */
+.nego-chrome{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;position:relative;overflow:hidden}
+.nego-chrome::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,212,255,.03),transparent 60%);pointer-events:none}
+.nego-avatar-section{text-align:center;min-width:76px}
+.nego-avatar-ring{width:58px;height:58px;border-radius:50%;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,var(--bg3) 60%,rgba(0,212,255,.08));box-shadow:0 0 16px rgba(0,212,255,.4),inset 0 0 10px rgba(0,212,255,.1);margin:0 auto 5px;animation:avatar-glow 3s ease-in-out infinite}
+.nego-avatar-ring.boss-ring{border-color:var(--yellow);box-shadow:0 0 20px rgba(255,215,0,.55),inset 0 0 10px rgba(255,215,0,.12);animation:boss-glow 2.5s ease-in-out infinite}
+.nego-avatar-emoji{font-size:27px;line-height:1;display:block}
+.nego-avatar-name{color:var(--white);font-size:11px;font-weight:bold;margin-top:2px;letter-spacing:.5px}
+.nego-avatar-type{color:var(--purple);font-size:9px;margin-top:1px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px}
+.nego-temp-section{flex:1;min-width:0}
+.nego-temp-label{color:var(--dim);font-size:10px;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}
+.nego-temp-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--red) 0%,var(--yellow) 50%,var(--green) 100%);position:relative;border:1px solid rgba(255,255,255,.06);box-shadow:0 0 8px rgba(0,0,0,.5)}
+.nego-temp-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:var(--white);border:2px solid var(--bg2);box-shadow:0 0 8px rgba(0,0,0,.7);transition:left .9s cubic-bezier(.25,.46,.45,.94)}
+.nego-temp-meta{color:var(--dim);font-size:10px;margin-top:5px;text-align:right}
+@keyframes avatar-glow{0%,100%{box-shadow:0 0 16px rgba(0,212,255,.4),inset 0 0 10px rgba(0,212,255,.1)}50%{box-shadow:0 0 26px rgba(0,212,255,.65),inset 0 0 14px rgba(0,212,255,.2)}}
+@keyframes boss-glow{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.55),inset 0 0 10px rgba(255,215,0,.12)}50%{box-shadow:0 0 32px rgba(255,215,0,.8),inset 0 0 18px rgba(255,215,0,.22)}}
+
+/* ── Dialogue bubbles ─────────────────────────────────────────────── */
+.bubble-log{margin:10px 0}
+.bubble-row{display:flex;margin:5px 0}
+.bubble-row-ai{justify-content:flex-start;padding-right:18%}
+.bubble-row-player{justify-content:flex-end;padding-left:18%}
+.bubble{padding:7px 11px;border-radius:8px;font-size:12px;line-height:1.5;max-width:100%}
+.bubble-ai{background:var(--bg3);border:1px solid var(--border);border-top-left-radius:2px;color:var(--text)}
+.bubble-player{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.22);border-top-right-radius:2px;color:var(--text);text-align:right}
+.bubble-system{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:3px;color:var(--text);font-size:11px;width:100%;padding:6px 10px}
+.bubble-label{font-size:9px;letter-spacing:.5px;margin-bottom:3px;font-weight:bold}
+.bubble-ai .bubble-label{color:var(--purple)}
+.bubble-player .bubble-label{color:var(--cyan);text-align:right}
+.bubble-system .bubble-label{color:var(--yellow);margin-bottom:2px}
+
+/* ── Round timeline ───────────────────────────────────────────────── */
+.round-timeline{display:flex;align-items:center;gap:10px;padding:6px 0 10px;border-bottom:1px solid rgba(42,58,90,.4);margin-bottom:10px}
+.tl-label{color:var(--dim);font-size:10px;letter-spacing:1px;min-width:55px;white-space:nowrap}
+.tl-dots{display:flex;gap:7px;align-items:center}
+.tl-dot{width:11px;height:11px;border-radius:50%;border:1px solid var(--border);transition:all .3s}
+.tl-done{background:var(--dim);border-color:var(--dim)}
+.tl-current{background:var(--cyan);border-color:var(--cyan);animation:pulse-dot 1.2s ease-in-out infinite}
+.tl-pending{background:transparent;border-color:var(--border)}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.5)}50%{box-shadow:0 0 0 5px rgba(0,212,255,0)}}
+
 </style>
 </head>
 <body>
@@ -1124,6 +1165,39 @@ const C = {
     return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
   },
 
+  // 对话气泡：who='ai'|'player'|'system'
+  dialogBubble(text, who = 'ai', label = '') {
+    if (!text) return '';
+    if (who === 'system') {
+      return `<div class="bubble-row"><div class="bubble bubble-system">${label ? `<div class="bubble-label">${label}</div>` : ''}<div class="bubble-text">${text}</div></div></div>`;
+    }
+    return `<div class="bubble-row bubble-row-${who}">
+      <div class="bubble bubble-${who}">
+        ${label ? `<div class="bubble-label">${label}</div>` : ''}
+        <div class="bubble-text">${text}</div>
+      </div>
+    </div>`;
+  },
+
+  // 回合时间线（圆点轨）
+  roundTimeline(log, total, current) {
+    const done = log ? log.length : 0;
+    const dots = Array.from({ length: total }, (_, i) => {
+      const cls = i < done ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
+      return `<div class="tl-dot ${cls}" title="第${i + 1}轮"></div>`;
+    }).join('');
+    return `<div class="round-timeline"><div class="tl-label">第${current + 1}/${total}轮</div><div class="tl-dots">${dots}</div></div>`;
+  },
+
+  // 阶段进度条（用于危机/联盟等多阶段场景）
+  stageProgress(current, total) {
+    const dots = Array.from({ length: total }, (_, i) => {
+      const cls = i < current ? 'tl-done' : i === current ? 'tl-current' : 'tl-pending';
+      return `<div class="tl-dot ${cls}" title="第${i + 1}阶段"></div>`;
+    }).join('');
+    return `<div class="round-timeline"><div class="tl-label">阶段${current + 1}/${total}</div><div class="tl-dots">${dots}</div></div>`;
+  },
+
   // 对手情绪曲线（信任/愤怒随回合演化）—— 内联 SVG
   moodSparkline(series) {
     if (!series || !series.length) return '';
@@ -1554,12 +1628,15 @@ class PrisonersDilemma extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | +${l.pScore} vs +${l.oScore}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
+      const oText = `${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`囚徒困境 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的分数')}
         ${C.scoreBox(this.oppScore, `${opp.name} 分数`)}
@@ -1569,7 +1646,7 @@ class PrisonersDilemma extends BaseScenario {
         C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
         C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
         this.peekControls())}
-      ${C.logBox('对局记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
@@ -1634,11 +1711,15 @@ class UltimatumGame extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[第${l.round}轮] 提案: 我${l.myOffer}/对方${l.theirOffer} → ${l.accepted ? '<span style="color:var(--green)">接受</span>' : '<span style="color:var(--red)">拒绝</span>'}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const res = l.accepted
+        ? `<span style="color:var(--green)">✓ 接受</span>`
+        : `<span style="color:var(--red)">✗ 拒绝</span>`;
+      return C.dialogBubble(`提案 我方 ${l.myOffer} / 对方 ${l.theirOffer} → ${res}`, 'system', `第${l.round}轮`);
+    }).join('');
 
     const head = `${C.gameHeader(`最后通牒博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
@@ -1652,13 +1733,13 @@ class UltimatumGame extends BaseScenario {
           C.actionBtn('propose', '60', '<b>[偏强]</b> 保留 60元，给对方 40元') +
           C.actionBtn('propose', '50', '<b>[公平]</b> 保留 50元，给对方 50元') +
           C.actionBtn('propose', '40', '<b>[让步]</b> 保留 40元，给对方 60元'))}
-        ${C.logBox('历史记录', logHtml)}`);
+        ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     } else if (this.pendingOffer == null) {
       // 接受者回合：先展示"对手思考中"，稍后生成报价
       this.emitRender(`${head}
         ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
         ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
-        ${C.logBox('历史记录', logHtml)}`);
+        ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
       setTimeout(() => {
         const { move } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-propose', round: this.round });
         this.pendingOffer = move;
@@ -1672,7 +1753,7 @@ class UltimatumGame extends BaseScenario {
         ${C.panel('您的决定',
           C.actionBtn('respond', 'accept', '<b>[接受]</b> 接受方案，各得所得') +
           C.actionBtn('respond', 'reject', '<b>[拒绝]</b> 拒绝方案，双方得 0'))}
-        ${C.logBox('历史记录', logHtml)}`);
+        ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     }
   }
 
@@ -1745,12 +1826,15 @@ class TrustGame extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 投入:${l.invested} 返还:${l.returned} 净收益:${l.myNet > 0 ? '+' : ''}${l.myNet}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = `投入 ${l.invested} 枚`;
+      const oText = `返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`信任博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
@@ -1762,7 +1846,7 @@ class TrustGame extends BaseScenario {
         C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
         C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码') +
         this.peekControls())}
-      ${C.logBox('信任记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
@@ -1826,12 +1910,15 @@ class BargainingGame extends BaseScenario {
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = `出价 ${l.my} 元`;
+      const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`商业谈判 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       ${C.panel('谈判状态',
         C.infoRow('商品真实价值', '<span style="color:var(--dim)">约 60 元（双方均未知）</span>') +
         C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
@@ -1844,7 +1931,7 @@ class BargainingGame extends BaseScenario {
         C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
         C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green') +
         this.peekControls())}
-      ${C.logBox('谈判记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
@@ -1952,12 +2039,14 @@ class CrisisNegotiation extends BaseScenario {
   _render() {
     const s = this.stages[this.stage];
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.stage}] ${l.feedback} <span style="color:var(--green)">+${l.ps}</span></div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const color = l.ps >= 10 ? 'var(--green)' : l.ps >= 0 ? 'var(--yellow)' : 'var(--red)';
+      return C.dialogBubble(`${l.feedback} <span style="color:${color}">${l.ps > 0 ? '+' : ''}${l.ps}分</span>`, 'system', l.stage);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
+      ${C.stageProgress(this.stage, this.stages.length)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '谈判积分')}
         ${C.scoreBox(Math.max(0, this.oppScore), '危机风险值', 'var(--red)')}
@@ -1965,7 +2054,7 @@ class CrisisNegotiation extends BaseScenario {
       ${C.hint(s.context, 'yellow')}
       ${C.hint(`对手档案：${opp.name} | ${opp.type} | ${opp.desc}`)}
       ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
-      ${C.logBox('阶段记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
@@ -2024,12 +2113,15 @@ class PublicGoodsGame extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 您贡献:${l.my} 对方贡献:${l.opp} 池总额:${l.pool} 各得:${l.share}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = `贡献 ${l.my} 枚`;
+      const oText = `贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`公共品博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的余额')}
         ${C.scoreBox(this.oppScore, `${opp.name} 余额`)}
@@ -2041,7 +2133,7 @@ class PublicGoodsGame extends BaseScenario {
         C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
         C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益') +
         this.peekControls())}
-      ${C.logBox('贡献记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
@@ -2130,10 +2222,14 @@ class CoalitionGame extends BaseScenario {
 
   _render() {
     const s = this.stages[this.stage];
-    const logHtml = this.log.map((l) => `<div class="log-entry">[${l.stage}] ${l.feedback}</div>`).join('');
+    const logHtml = this.log.map((l) => {
+      const color = l.ps >= 15 ? 'var(--green)' : l.ps >= 5 ? 'var(--yellow)' : 'var(--red)';
+      return C.dialogBubble(`${l.feedback}（<span style="color:${color}">+${l.ps}分</span>）`, 'system', l.stage);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`联盟谈判 — ${s.title}`)}
+      ${C.stageProgress(this.stage, this.stages.length)}
       <div class="grid3" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '谈判积分')}
         ${C.scoreBox(this.allies, '当前盟友数', 'var(--green)')}
@@ -2141,7 +2237,7 @@ class CoalitionGame extends BaseScenario {
       </div>
       ${C.hint(s.context)}
       ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
-      ${C.logBox('阶段记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 
@@ -2542,13 +2638,42 @@ renderOpponentSelect.afterRender = function () {
 
 /* ===== ui/screens/game-view.js ===== */
 // ui/screens/game-view.js — 对局屏
-// 渲染一个稳定容器 #game-root；监听 game:render 落地场景 HTML；
-// 用事件委托把 [data-game-action] 点击翻译成 player:action 事件。
-// （UI 只渲染与转发，不含任何场景逻辑。）
+// 渲染谈判桌外壳（对手头像 + 关系温度条），监听 game:render 落地场景 HTML，
+// 订阅 ai:decided 实时更新温度条；事件委托转发 player:action。
 
+
+const AVATAR_EMOJI = {
+  rational: '🧮', emotional: '🌊', aggressive: '🦅',
+  cooperative: '🤝', manipulative: '🎭', riskAverse: '🛡️', trumpBoss: '👑',
+};
+
+function calcTemp(mood) {
+  const raw = 50 + ((mood.trust || 0) - (mood.anger || 0)) * 50;
+  return Math.round(Math.min(100, Math.max(0, raw)));
+}
+
+function buildChrome(opp) {
+  const emoji = AVATAR_EMOJI[opp.id] || '🤝';
+  const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+  const typeLine = (opp.type || '').split('/')[0].trim();
+  return `<div class="nego-chrome">
+    <div class="nego-avatar-section">
+      <div class="${ringCls}"><span class="nego-avatar-emoji">${emoji}</span></div>
+      <div class="nego-avatar-name">${opp.name}</div>
+      <div class="nego-avatar-type">${typeLine}</div>
+    </div>
+    <div class="nego-temp-section">
+      <div class="nego-temp-label">⟺ 关系温度</div>
+      <div class="nego-temp-track">
+        <div class="nego-temp-marker" id="nego-temp-marker" style="left:50%"></div>
+      </div>
+      <div class="nego-temp-meta" id="nego-temp-meta">等待首轮出招…</div>
+    </div>
+  </div>`;
+}
 
 function renderGame() {
-  return `<div id="game-root"></div>`;
+  return `<div id="game-root"><div id="nego-chrome"></div><div id="game-content"></div></div>`;
 }
 
 let _inited = false;
@@ -2556,10 +2681,26 @@ function initGameView() {
   if (_inited) return;
   _inited = true;
 
-  // 场景发出的 HTML 落地到 #game-root
+  // 场景 HTML 落到 #game-content；首次渲染时同步补全对手头像
   EventBus.on(EVENTS.GAME_RENDER, ({ html }) => {
-    const root = document.getElementById('game-root');
-    if (root) root.innerHTML = html;
+    const chrome = document.getElementById('nego-chrome');
+    if (chrome && !chrome.children.length) {
+      const opp = Store.get('opponent');
+      if (opp) chrome.innerHTML = buildChrome(opp);
+    }
+    const content = document.getElementById('game-content');
+    if (content) content.innerHTML = html;
+  });
+
+  // AI 出招后实时更新温度条（marker 滑动）
+  EventBus.on(EVENTS.AI_DECIDED, ({ mood }) => {
+    if (!mood) return;
+    const temp = calcTemp(mood);
+    const marker = document.getElementById('nego-temp-marker');
+    const meta = document.getElementById('nego-temp-meta');
+    if (marker) marker.style.left = temp + '%';
+    if (meta) meta.textContent =
+      `信任 ${Math.round((mood.trust || 0) * 100)}% · 愤怒 ${Math.round((mood.anger || 0) * 100)}%`;
   });
 
   // 事件委托：仅响应 #game-root 内的动作按钮

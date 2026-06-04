@@ -25,12 +25,15 @@ export class PrisonersDilemma extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry"><span class="lbl">[第${l.round}轮]</span> 您: ${l.player === 'coop' ? '合作' : '背叛'} | ${opp.name}: ${l.opp === 'coop' ? '合作' : '背叛'} | +${l.pScore} vs +${l.oScore}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
+      const oText = `${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`囚徒困境 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的分数')}
         ${C.scoreBox(this.oppScore, `${opp.name} 分数`)}
@@ -40,7 +43,7 @@ export class PrisonersDilemma extends BaseScenario {
         C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
         C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
         this.peekControls())}
-      ${C.logBox('对局记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 

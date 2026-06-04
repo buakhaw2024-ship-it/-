@@ -51,12 +51,14 @@ export class CrisisNegotiation extends BaseScenario {
   _render() {
     const s = this.stages[this.stage];
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.stage}] ${l.feedback} <span style="color:var(--green)">+${l.ps}</span></div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const color = l.ps >= 10 ? 'var(--green)' : l.ps >= 0 ? 'var(--yellow)' : 'var(--red)';
+      return C.dialogBubble(`${l.feedback} <span style="color:${color}">${l.ps > 0 ? '+' : ''}${l.ps}分</span>`, 'system', l.stage);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
+      ${C.stageProgress(this.stage, this.stages.length)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '谈判积分')}
         ${C.scoreBox(Math.max(0, this.oppScore), '危机风险值', 'var(--red)')}
@@ -64,7 +66,7 @@ export class CrisisNegotiation extends BaseScenario {
       ${C.hint(s.context, 'yellow')}
       ${C.hint(`对手档案：${opp.name} | ${opp.type} | ${opp.desc}`)}
       ${C.panel('选择谈判策略', s.options.map((o, i) => C.actionBtn('stage', String(i), o.text)).join(''))}
-      ${C.logBox('阶段记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 

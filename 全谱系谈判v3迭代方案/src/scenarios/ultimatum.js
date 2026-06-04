@@ -24,11 +24,15 @@ export class UltimatumGame extends BaseScenario {
 
   _render() {
     const opp = this.opp;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[第${l.round}轮] 提案: 我${l.myOffer}/对方${l.theirOffer} → ${l.accepted ? '<span style="color:var(--green)">接受</span>' : '<span style="color:var(--red)">拒绝</span>'}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const res = l.accepted
+        ? `<span style="color:var(--green)">✓ 接受</span>`
+        : `<span style="color:var(--red)">✗ 拒绝</span>`;
+      return C.dialogBubble(`提案 我方 ${l.myOffer} / 对方 ${l.theirOffer} → ${res}`, 'system', `第${l.round}轮`);
+    }).join('');
 
     const head = `${C.gameHeader(`最后通牒博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
         ${C.scoreBox(this.oppScore, `${opp.name} 总分`)}
@@ -42,13 +46,13 @@ export class UltimatumGame extends BaseScenario {
           C.actionBtn('propose', '60', '<b>[偏强]</b> 保留 60元，给对方 40元') +
           C.actionBtn('propose', '50', '<b>[公平]</b> 保留 50元，给对方 50元') +
           C.actionBtn('propose', '40', '<b>[让步]</b> 保留 40元，给对方 60元'))}
-        ${C.logBox('历史记录', logHtml)}`);
+        ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     } else if (this.pendingOffer == null) {
       // 接受者回合：先展示"对手思考中"，稍后生成报价
       this.emitRender(`${head}
         ${C.hint(`总金额 ${TOTAL} 元待分配。<b>您是接受者</b>，${opp.name} 将提出方案。`)}
         ${C.hint(`${opp.name} 正在思考提案...`, 'yellow')}
-        ${C.logBox('历史记录', logHtml)}`);
+        ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
       setTimeout(() => {
         const { move } = OpponentAI.decide(this.opp.id, { kind: 'ultimatum-propose', round: this.round });
         this.pendingOffer = move;
@@ -62,7 +66,7 @@ export class UltimatumGame extends BaseScenario {
         ${C.panel('您的决定',
           C.actionBtn('respond', 'accept', '<b>[接受]</b> 接受方案，各得所得') +
           C.actionBtn('respond', 'reject', '<b>[拒绝]</b> 拒绝方案，双方得 0'))}
-        ${C.logBox('历史记录', logHtml)}`);
+        ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     }
   }
 

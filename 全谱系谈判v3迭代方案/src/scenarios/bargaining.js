@@ -26,12 +26,15 @@ export class BargainingGame extends BaseScenario {
   _render() {
     const opp = this.opp;
     const cur = this.myOffer || this.myAnchor;
-    const logHtml = this.log.map((l) =>
-      `<div class="log-entry">[${l.round}] 出价:${l.my} | 要价:${l.opp} | 差距:${l.gap}${l.reason ? `<br><span style="color:var(--dim)">↳ ${opp.name}：${l.reason}</span>` : ''}</div>`
-    ).join('');
+    const logHtml = this.log.map((l) => {
+      const pText = `出价 ${l.my} 元`;
+      const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+    }).join('');
 
     this.emitRender(`
       ${C.gameHeader(`商业谈判 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${C.roundTimeline(this.log, this.rounds, this.round)}
       ${C.panel('谈判状态',
         C.infoRow('商品真实价值', '<span style="color:var(--dim)">约 60 元（双方均未知）</span>') +
         C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
@@ -44,7 +47,7 @@ export class BargainingGame extends BaseScenario {
         C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
         C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green') +
         this.peekControls())}
-      ${C.logBox('谈判记录', logHtml)}
+      ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
   }
 

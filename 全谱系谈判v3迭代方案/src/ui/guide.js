@@ -390,12 +390,34 @@ function _finishTour() {
 
 function _addHelpBtn() {
   _rmHelp();
-  if (!_TOURS[_gScreen]) return;
+  const tourId = _gScreen;
+  if (!_TOURS[tourId]) return;
   _gHelp = document.createElement('button');
   _gHelp.className = 'guide-help-btn';
   _gHelp.textContent = '?';
-  _gHelp.title = '重看操作引导';
-  _gHelp.addEventListener('click', function () { _startTour(_gScreen); });
+  _gHelp.title = '操作引导';
+  _gHelp.addEventListener('click', function () {
+    if (tourId === 'game') {
+      // On game screen: read current scenario at click-time and prepend its tip
+      const sk = typeof Store !== 'undefined' && Store.get && Store.get('scenarioKey');
+      const tip = sk && _SCENARIO_TIPS[sk];
+      const steps = tip ? [tip, ..._TOURS['game']] : _TOURS['game'].slice();
+      if (_gActive) _cleanTour();
+      _gScreen = 'game';
+      _gSteps = steps;
+      _gActive = true;
+      _rmHelp();
+      _gDim = document.createElement('div');
+      _gDim.className = 'guide-dim';
+      document.body.appendChild(_gDim);
+      _gTip = document.createElement('div');
+      _gTip.className = 'guide-tooltip';
+      document.body.appendChild(_gTip);
+      _renderStep(0);
+    } else {
+      _startTour(tourId);
+    }
+  });
   document.body.appendChild(_gHelp);
 }
 
@@ -420,32 +442,20 @@ function _startTour(screenId) {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 // Called by router after each screen render.
-// Shows tour automatically on first visit; otherwise shows ? help button only.
-// params.scenarioKey is used on the game screen for per-scenario first-time tips.
-function showTour(screenId, params) {
+// Shows tour automatically on first visit for non-game screens.
+// Game screen NEVER auto-triggers — gameplay must not be interrupted.
+// ? button is always shown on game screen; clicking it shows scenario tip + general guide.
+function showTour(screenId) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
   _initInlineTips();
   _cleanTour();
   _rmHelp();
   _gScreen = screenId;
 
-  // Per-scenario strategy intro: shown once per scenario key, before the general game tour
+  // Game screen: show ? button only, never block gameplay with an overlay
   if (screenId === 'game') {
-    const sk = params && params.scenarioKey;
-    if (sk && _SCENARIO_TIPS[sk] && !_isDone('game-' + sk)) {
-      _gScreen = 'game-' + sk;
-      _gSteps = [_SCENARIO_TIPS[sk]];
-      _gActive = true;
-      _gDim = document.createElement('div');
-      _gDim.className = 'guide-dim';
-      document.body.appendChild(_gDim);
-      _gTip = document.createElement('div');
-      _gTip.className = 'guide-tooltip';
-      document.body.appendChild(_gTip);
-      // 600ms: wait for scenario.start() GAME_RENDER to populate game-content
-      setTimeout(function () { _renderStep(0); }, 600);
-      return;
-    }
+    _addHelpBtn();
+    return;
   }
 
   if (!_TOURS[screenId]) return;

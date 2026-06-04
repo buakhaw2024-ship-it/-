@@ -49,6 +49,6 @@ export const Router = {
     window.scrollTo(0, 0);
 
     // 启动屏幕引导（首次访问自动展示；之后显示 ? 按钮）
-    if (typeof showTour === 'function') showTour(screenId, { scenarioKey: Store.get('scenarioKey') });
+    if (typeof showTour === 'function') showTour(screenId);
   },
 };

@@ -160,6 +160,84 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
   .header h1{font-size:16px}
 }
 
+/* ===== Card Pool / Gacha ===== */
+/* Rarity colors */
+.rar-N{--rar:#9aa7c2;--rarBg:rgba(154,167,194,.12)}
+.rar-R{--rar:#00d4ff;--rarBg:rgba(0,212,255,.12)}
+.rar-SR{--rar:#c084fc;--rarBg:rgba(192,132,252,.14)}
+.rar-H{--rar:#ffd700;--rarBg:rgba(255,215,0,.16)}
+
+.rar-badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;letter-spacing:1px;border:1px solid var(--rar);color:var(--rar);background:var(--rarBg);font-weight:bold}
+
+/* Gacha overlay */
+.gacha-overlay{position:fixed;inset:0;background:rgba(5,8,18,.92);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;animation:gacha-fade .25s ease}
+@keyframes gacha-fade{from{opacity:0}to{opacity:1}}
+
+.gacha-stage{width:280px;height:380px;position:relative;perspective:1000px}
+
+.gacha-box{width:200px;height:200px;position:absolute;left:50%;top:90px;transform:translateX(-50%);background:linear-gradient(135deg,#1a2235,#0a0e1a);border:2px solid var(--rar,#00d4ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:80px;box-shadow:0 0 40px var(--rar,#00d4ff);animation:gacha-shake .4s ease-in-out 3}
+@keyframes gacha-shake{
+  0%,100%{transform:translateX(-50%) rotate(0)}
+  25%{transform:translateX(-50%) rotate(-6deg)}
+  75%{transform:translateX(-50%) rotate(6deg)}
+}
+
+.gacha-burst{position:absolute;left:50%;top:50%;width:0;height:0;border-radius:50%;background:radial-gradient(circle,var(--rar,#00d4ff) 0%,transparent 70%);transform:translate(-50%,-50%);animation:gacha-burst 0.6s ease-out forwards;animation-delay:1.2s;opacity:0;pointer-events:none}
+@keyframes gacha-burst{
+  0%{width:0;height:0;opacity:0}
+  50%{width:400px;height:400px;opacity:1}
+  100%{width:600px;height:600px;opacity:0}
+}
+
+.gacha-card{width:240px;height:340px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.3) rotateY(180deg);background:linear-gradient(160deg,var(--rarBg),var(--bg2));border:2px solid var(--rar);border-radius:10px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;opacity:0;box-shadow:0 0 40px var(--rar),inset 0 0 30px rgba(0,0,0,.4);animation:gacha-reveal 1s cubic-bezier(0.34,1.56,0.64,1) forwards;animation-delay:1.4s}
+@keyframes gacha-reveal{
+  0%{transform:translate(-50%,-50%) scale(0.3) rotateY(180deg);opacity:0}
+  60%{transform:translate(-50%,-50%) scale(1.1) rotateY(0);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(1) rotateY(0);opacity:1}
+}
+
+.gacha-emoji{font-size:72px;margin-bottom:10px;text-shadow:0 0 20px var(--rar)}
+.gacha-rarity{margin-bottom:6px}
+.gacha-title{color:var(--white);font-size:17px;font-weight:bold;letter-spacing:1px;text-align:center;margin-bottom:6px;text-shadow:0 0 10px var(--rar)}
+.gacha-series{color:var(--dim);font-size:11px;margin-bottom:10px}
+.gacha-flavor{color:var(--text);font-size:11px;line-height:1.6;text-align:center;font-style:italic;padding:0 8px}
+.gacha-dup{position:absolute;top:8px;right:8px;background:rgba(255,79,106,.2);border:1px solid var(--red);color:var(--red);font-size:10px;padding:2px 6px;border-radius:2px}
+
+.gacha-actions{position:absolute;bottom:-60px;left:50%;transform:translateX(-50%);display:flex;gap:10px;opacity:0;animation:gacha-fade-in 0.4s ease forwards;animation-delay:2.6s;white-space:nowrap}
+@keyframes gacha-fade-in{to{opacity:1}}
+
+/* Card book */
+.cardbook-series{margin-bottom:24px}
+.cardbook-series-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.cardbook-series-name{color:var(--cyan);font-size:13px;letter-spacing:1px}
+.cardbook-series-prog{color:var(--dim);font-size:11px}
+
+.cardbook-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.cb-card{aspect-ratio:3/4;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.cb-card:hover{transform:translateY(-2px);border-color:var(--rar,var(--cyan));box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.cb-card.owned{border-color:var(--rar);background:linear-gradient(160deg,var(--rarBg),var(--bg3))}
+.cb-card.locked{opacity:0.55;filter:grayscale(1)}
+.cb-emoji{font-size:36px;margin-top:8px;margin-bottom:6px}
+.cb-card.locked .cb-emoji{filter:blur(2px);opacity:0.6}
+.cb-name{color:var(--white);font-size:11px;font-weight:bold;text-align:center;line-height:1.3;margin-bottom:4px}
+.cb-card.locked .cb-name{color:var(--dim)}
+.cb-rar{font-size:9px}
+.cb-dup{position:absolute;top:4px;right:4px;background:var(--bg);border:1px solid var(--rar);color:var(--rar);font-size:9px;padding:1px 5px;border-radius:8px}
+
+.cardbook-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.cb-stat{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px;text-align:center}
+.cb-stat-num{font-size:18px;font-weight:bold}
+.cb-stat-lbl{font-size:10px;color:var(--dim);margin-top:2px;letter-spacing:1px}
+
+/* Detail modal */
+.cb-modal{position:fixed;inset:0;background:rgba(5,8,18,.85);z-index:999;display:flex;align-items:center;justify-content:center;animation:gacha-fade .2s ease}
+.cb-modal-inner{background:linear-gradient(160deg,var(--rarBg),var(--bg2));border:2px solid var(--rar);border-radius:10px;padding:24px;max-width:340px;width:90%;text-align:center;box-shadow:0 0 40px var(--rar)}
+.cb-modal-emoji{font-size:80px;margin-bottom:10px;text-shadow:0 0 20px var(--rar)}
+.cb-modal-title{color:var(--white);font-size:18px;font-weight:bold;letter-spacing:1px;margin-bottom:6px;text-shadow:0 0 10px var(--rar)}
+.cb-modal-series{color:var(--dim);font-size:11px;margin-bottom:10px}
+.cb-modal-flavor{color:var(--text);font-size:12px;line-height:1.7;font-style:italic;margin:12px 0 16px;padding:10px;background:rgba(0,0,0,.2);border-radius:4px}
+.cb-modal-meta{color:var(--dim);font-size:11px;margin-bottom:14px}
+
 /* Welcome screen */
 .welcome-logo{text-align:center;padding:40px 0 20px}
 .logo-art{color:var(--cyan);font-size:13px;line-height:1.4;text-shadow:0 0 15px rgba(0,212,255,.5)}
@@ -262,6 +340,7 @@ const SCREENS = {
   STRATEGY: 'strategy',
   PSYCHOLOGY: 'psychology',
   DASHBOARD: 'dashboard',
+  CARDBOOK: 'cardbook',
 };
 
 
@@ -1143,6 +1222,127 @@ const C = {
 };
 
 
+/* ===== cards/card-pool.js ===== */
+// cards/card-pool.js — 泡泡马特风格卡池（30 张 / 5 系列 / 4 稀有度）
+// 分布：普通 9 / 稀有 9 / 超稀有 7 / 隐藏 5
+
+const RARITY = {
+  N:  { label: '普通',   color: '#9aa7c2', weight: 55 },
+  R:  { label: '稀有',   color: '#00d4ff', weight: 28 },
+  SR: { label: '超稀有', color: '#c084fc', weight: 13 },
+  H:  { label: '隐藏',   color: '#ffd700', weight: 4  },
+};
+
+const CARD_POOL = [
+  // ── 系列 1：经典博弈论（6 张：N×2 R×2 SR×1 H×1）
+  { id:'gt-nash',     series:'classic',  rarity:'N',  emoji:'⚖️', name:'纳什均衡',     flavor:'没人能单方面改善——这就是均衡。' },
+  { id:'gt-pareto',   series:'classic',  rarity:'N',  emoji:'📈', name:'帕累托最优',   flavor:'不能让任何人变好而不让别人变差。' },
+  { id:'gt-schell',   series:'classic',  rarity:'R',  emoji:'📍', name:'谢林点',       flavor:'不需要沟通，就能凑到一起的那个点。' },
+  { id:'gt-iter-pd',  series:'classic',  rarity:'R',  emoji:'🔁', name:'重复囚徒困境', flavor:'当游戏会重复，背叛就有了代价。' },
+  { id:'gt-axelrod',  series:'classic',  rarity:'SR', emoji:'🏆', name:'阿克塞尔罗德锦标赛', flavor:'最简单的 TFT，竟然赢过所有复杂策略。' },
+  { id:'gt-vonneu',   series:'classic',  rarity:'H',  emoji:'🧠', name:'冯·诺伊曼极小极大', flavor:'在最坏情况里追求最好——零和博弈的根。' },
+
+  // ── 系列 2：谈判流派（6 张：N×2 R×2 SR×1 H×1）
+  { id:'ng-batna',    series:'school',   rarity:'N',  emoji:'🚪', name:'BATNA',        flavor:'你最好的替代方案，就是你的谈判底气。' },
+  { id:'ng-zopa',     series:'school',   rarity:'N',  emoji:'🎯', name:'ZOPA',         flavor:'可成交区间——双方底线之间的那道窄缝。' },
+  { id:'ng-harvard',  series:'school',   rarity:'R',  emoji:'🎓', name:'哈佛原则谈判', flavor:'对事不对人，关注利益而非立场。' },
+  { id:'ng-wharton',  series:'school',   rarity:'R',  emoji:'💎', name:'沃顿钻石模型', flavor:'目标、情境、关系、利益——四面闪光。' },
+  { id:'ng-fbi',      series:'school',   rarity:'SR', emoji:'🎙️', name:'FBI 战术共情', flavor:'重复对方最后三个词，世界都会向你倾斜。' },
+  { id:'ng-getmore',  series:'school',   rarity:'H',  emoji:'📜', name:'钻石十二条',   flavor:'每一次谈判，都是创造价值的机会。' },
+
+  // ── 系列 3：心理画像（6 张：N×2 R×2 SR×2）
+  { id:'pp-strat',    series:'profile',  rarity:'N',  emoji:'♟️', name:'战略家',       flavor:'冷静理智，落子之前已布好全盘。' },
+  { id:'pp-prag',     series:'profile',  rarity:'N',  emoji:'🛠️', name:'实用主义者',   flavor:'解决问题比定义问题更重要。' },
+  { id:'pp-medi',     series:'profile',  rarity:'R',  emoji:'🕊️', name:'调解者',       flavor:'让所有人都觉得自己赢了。' },
+  { id:'pp-comp',     series:'profile',  rarity:'R',  emoji:'⚔️', name:'竞争者',       flavor:'目标清晰，绝不为温和让出利益。' },
+  { id:'pp-diplo',    series:'profile',  rarity:'SR', emoji:'🌐', name:'外交家',       flavor:'灵活转换的不是立场，而是路径。' },
+  { id:'pp-analy',    series:'profile',  rarity:'SR', emoji:'🔬', name:'分析师',       flavor:'数据没说话之前，不下结论。' },
+
+  // ── 系列 4：对手原型（6 张：N×2 R×2 SR×1 H×1）
+  { id:'op-rational', series:'archetype',rarity:'N',  emoji:'🧮', name:'理性派',       flavor:'公式算得清楚，情绪算不进来。' },
+  { id:'op-emotion',  series:'archetype',rarity:'N',  emoji:'🌊', name:'情绪型',       flavor:'决定她出招的是温度，不是逻辑。' },
+  { id:'op-aggress',  series:'archetype',rarity:'R',  emoji:'🔥', name:'攻击型',       flavor:'每个让步都被解读为软弱。' },
+  { id:'op-coop',     series:'archetype',rarity:'R',  emoji:'🤝', name:'合作型',       flavor:'相信反复合作才能放大蛋糕。' },
+  { id:'op-manip',    series:'archetype',rarity:'SR', emoji:'🎭', name:'操纵型',       flavor:'先钓鱼养信任，再一次性收割。' },
+  { id:'op-trump',    series:'archetype',rarity:'H',  emoji:'👔', name:'极限交易型',   flavor:'锚定到离谱，让你以为公平就是接受。' },
+
+  // ── 系列 5：谈判招式（6 张：N×1 R×1 SR×2 H×2）
+  { id:'mv-anchor',   series:'move',     rarity:'N',  emoji:'⚓', name:'锚定',         flavor:'先抛一个数字，后面所有讨论都绕着它转。' },
+  { id:'mv-frame',    series:'move',     rarity:'R',  emoji:'🖼️', name:'框架重置',     flavor:'换个说法，损失瞬间变成获得。' },
+  { id:'mv-mirror',   series:'move',     rarity:'SR', emoji:'🪞', name:'镜像',         flavor:'你说"很难"，我说"很难？"——他就开始解释。' },
+  { id:'mv-silence',  series:'move',     rarity:'SR', emoji:'🤐', name:'刻意沉默',     flavor:'最贵的一句话，是不说话。' },
+  { id:'mv-labelno',  series:'move',     rarity:'H',  emoji:'🛑', name:'校准式"否"',    flavor:'让对方先说"不"，他才感到自己有掌控。' },
+  { id:'mv-bridge',   series:'move',     rarity:'H',  emoji:'🌉', name:'金桥让步',     flavor:'帮对方找一个体面收场的理由。' },
+];
+
+const SERIES_META = {
+  classic:   { name: '经典博弈论', icon: '⚖️', desc: '从纳什到冯·诺伊曼，理论的根。' },
+  school:    { name: '谈判流派',   icon: '🎓', desc: '哈佛、沃顿、FBI 的实战体系。' },
+  profile:   { name: '心理画像',   icon: '🪪', desc: '六种博弈人格，每个都是一面镜子。' },
+  archetype: { name: '对手原型',   icon: '🎭', desc: '游戏里那些让你头疼的人。' },
+  move:      { name: '谈判招式',   icon: '🎯', desc: '可立即上桌的战术工具箱。' },
+};
+
+const SERIES_ORDER = ['classic', 'school', 'profile', 'archetype', 'move'];
+
+function getCardById(id) { return CARD_POOL.find((c) => c.id === id); }
+
+
+/* ===== cards/card-store.js ===== */
+// cards/card-store.js — 卡片持久化 + 抽卡逻辑
+// player.cards = { owned: { id: count }, totalDraws: number }
+
+function freshCardState() { return { owned: {}, totalDraws: 0 }; }
+
+// 加权随机选稀有度
+function pickRarity() {
+  const total = Object.values(RARITY).reduce((a, b) => a + b.weight, 0);
+  let r = Math.random() * total;
+  for (const key of Object.keys(RARITY)) {
+    r -= RARITY[key].weight;
+    if (r <= 0) return key;
+  }
+  return 'N';
+}
+
+// 从某稀有度的卡池里均匀挑一张
+function pickCardFromRarity(rarity) {
+  const pool = CARD_POOL.filter((c) => c.rarity === rarity);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// 单次抽卡 → 返回 { card, isNew, count }
+function drawCard(player) {
+  if (!player.cards) player.cards = freshCardState();
+  const card = pickCardFromRarity(pickRarity());
+  const prev = player.cards.owned[card.id] || 0;
+  player.cards.owned[card.id] = prev + 1;
+  player.cards.totalDraws += 1;
+  savePlayer(player);
+  return { card, isNew: prev === 0, count: prev + 1 };
+}
+
+// 集卡册统计
+function cardStats(player) {
+  const owned = (player && player.cards && player.cards.owned) || {};
+  const ownedIds = Object.keys(owned);
+  const byRarity = { N: 0, R: 0, SR: 0, H: 0 };
+  ownedIds.forEach((id) => {
+    const c = getCardById(id);
+    if (c) byRarity[c.rarity] += 1;
+  });
+  const totalByRarity = { N: 0, R: 0, SR: 0, H: 0 };
+  CARD_POOL.forEach((c) => totalByRarity[c.rarity] += 1);
+  return {
+    ownedCount: ownedIds.length,
+    total: CARD_POOL.length,
+    byRarity,
+    totalByRarity,
+    totalDraws: (player && player.cards && player.cards.totalDraws) || 0,
+  };
+}
+
+
 /* ===== analytics/player-data.js ===== */
 // analytics/player-data.js — 玩家档案 + LocalStorage 持久化
 // 兼容 v2.0 存档：key = gts_player_<name>，字段 {name,sessions,total,wins,draws,losses}
@@ -1173,12 +1373,13 @@ function loadPlayer(name) {
       // 向后兼容：补齐 v3 可能新增的字段
       p.sessions = p.sessions || [];
       p.behaviorStats = { ...freshBehaviorStats(), ...(p.behaviorStats || {}) };
+      p.cards = { ...freshCardState(), ...(p.cards || {}) };
       return p;
     }
   } catch (e) {
     console.warn('[player-data] 读取存档失败，新建档案', e);
   }
-  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats() };
+  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats(), cards: freshCardState() };
 }
 
 function savePlayer(player) {
@@ -2312,6 +2513,13 @@ function initRecorder() {
 
     const replay = buildReplay(kind, rounds, opp, result);
 
+    // 卡池：每局结束抽一张
+    let cardDraw = null;
+    if (player) {
+      cardDraw = drawCard(player);
+      Store.set('player', player);
+    }
+
     Store.set('lastResult', {
       result,
       opp,
@@ -2319,6 +2527,7 @@ function initRecorder() {
       tips: opp ? getOpponentTips(opp.id) : [],
       tells: opp ? (PERSONALITY_TELLS[opp.id] || []) : [],
       replay,
+      cardDraw,
     });
   });
 }
@@ -2375,6 +2584,7 @@ const MENU = [
   ['③', '策略理论库', '策略卡 / 沟通技术 / 心理防御 / 六大宗师理论', 'nav', SCREENS.STRATEGY],
   ['④', '心理档案分析', '查看您的8维博弈心理画像', 'nav', SCREENS.PSYCHOLOGY],
   ['⑤', '训练成绩看板', '历史战绩、胜率统计、成长曲线', 'nav', SCREENS.DASHBOARD],
+  ['⑥', '集卡册', '每局开盒抽卡，30 张博弈知识收藏', 'nav', SCREENS.CARDBOOK],
 ];
 
 function renderMainMenu() {
@@ -2688,7 +2898,144 @@ renderResult.afterRender = function () {
     const key = keys[Math.floor(Math.random() * keys.length)];
     EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: 'random' });
   });
+
+  // 触发开盒动画（一次性，看完后清空，避免重渲染重复弹）
+  const data = Store.get('lastResult');
+  if (data && data.cardDraw) {
+    showGachaOverlay(data.cardDraw);
+    Store.set('lastResult', { ...data, cardDraw: null });
+  }
 };
+
+// 盲盒开盒动画：1.2s 抖盒子 → 0.6s 爆光 → 1s 翻牌 → 显示按钮
+function showGachaOverlay(draw) {
+  const { card, isNew, count } = draw;
+  const overlay = document.createElement('div');
+  overlay.className = 'gacha-overlay rar-' + card.rarity;
+  overlay.innerHTML = `
+    <div class="gacha-stage">
+      <div class="gacha-box">🎁</div>
+      <div class="gacha-burst"></div>
+      <div class="gacha-card">
+        ${isNew ? '' : `<div class="gacha-dup">×${count} 重复</div>`}
+        <div class="gacha-emoji">${card.emoji}</div>
+        <div class="gacha-rarity"><span class="rar-badge">${RARITY[card.rarity].label}</span></div>
+        <div class="gacha-title">${card.name}</div>
+        <div class="gacha-series">${SERIES_META[card.series].icon} ${SERIES_META[card.series].name}</div>
+        <div class="gacha-flavor">"${card.flavor}"</div>
+      </div>
+      <div class="gacha-actions">
+        <button class="btn btn-sm" id="gacha-book">📖 集卡册</button>
+        <button class="btn btn-sm btn-green" id="gacha-close">关闭 ✓</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector('#gacha-close').addEventListener('click', close);
+  overlay.querySelector('#gacha-book').addEventListener('click', () => {
+    close();
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.CARDBOOK, params: {} });
+  });
+}
+
+
+/* ===== ui/screens/cardbook.js ===== */
+// ui/screens/cardbook.js — 集卡册：按系列分组，未拥有的卡显示剪影
+
+function renderCardBook() {
+  const p = Store.get('player') || { cards: freshCardState() };
+  const stats = cardStats(p);
+  const owned = p.cards.owned || {};
+  const pct = Math.round(stats.ownedCount / stats.total * 100);
+
+  const rarKeys = ['N', 'R', 'SR', 'H'];
+  const statBoxes = rarKeys.map((k) => `
+    <div class="cb-stat rar-${k}">
+      <div class="cb-stat-num" style="color:${RARITY[k].color}">${stats.byRarity[k]}/${stats.totalByRarity[k]}</div>
+      <div class="cb-stat-lbl">${RARITY[k].label}</div>
+    </div>`).join('');
+
+  const seriesBlocks = SERIES_ORDER.map((sk) => {
+    const meta = SERIES_META[sk];
+    const cards = CARD_POOL.filter((c) => c.series === sk);
+    const ownedHere = cards.filter((c) => owned[c.id]).length;
+    const cells = cards.map((c) => {
+      const cnt = owned[c.id] || 0;
+      const isOwned = cnt > 0;
+      const cls = `cb-card rar-${c.rarity} ${isOwned ? 'owned' : 'locked'}`;
+      return `
+        <div class="${cls}" data-cid="${c.id}">
+          ${cnt > 1 ? `<div class="cb-dup">×${cnt}</div>` : ''}
+          <div class="cb-emoji">${isOwned ? c.emoji : '❓'}</div>
+          <div class="cb-name">${isOwned ? c.name : '未解锁'}</div>
+          <div class="cb-rar"><span class="rar-badge">${RARITY[c.rarity].label}</span></div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="cardbook-series">
+        <div class="cardbook-series-head">
+          <div class="cardbook-series-name">${meta.icon} ${meta.name}</div>
+          <div class="cardbook-series-prog">${ownedHere} / ${cards.length}</div>
+        </div>
+        ${C.hint(meta.desc)}
+        <div class="cardbook-grid">${cells}</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="flex-between">
+      <div class="section-title">📖 集卡册</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="color:var(--cyan);font-size:13px">收集进度</div>
+        <div style="color:var(--white);font-size:13px"><b>${stats.ownedCount}</b> / ${stats.total}　<span style="color:var(--dim)">（已抽 ${stats.totalDraws} 次）</span></div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill bar-cyan" style="width:${pct}%"></div></div>
+      <div class="cardbook-stats" style="margin-top:14px">${statBoxes}</div>
+    </div>
+    ${seriesBlocks}
+  `;
+}
+
+renderCardBook.afterRender = function () {
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+
+  document.querySelectorAll('.cb-card').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-cid');
+      const p = Store.get('player') || { cards: freshCardState() };
+      const cnt = (p.cards.owned || {})[id] || 0;
+      if (cnt === 0) return; // 未解锁不显详情
+      showCardDetail(id, cnt);
+    });
+  });
+};
+
+function showCardDetail(id, count) {
+  const c = getCardById(id);
+  if (!c) return;
+  const modal = document.createElement('div');
+  modal.className = 'cb-modal rar-' + c.rarity;
+  modal.innerHTML = `
+    <div class="cb-modal-inner">
+      <div class="cb-modal-emoji">${c.emoji}</div>
+      <div><span class="rar-badge">${RARITY[c.rarity].label}</span></div>
+      <div class="cb-modal-title" style="margin-top:8px">${c.name}</div>
+      <div class="cb-modal-series">${SERIES_META[c.series].icon} ${SERIES_META[c.series].name}</div>
+      <div class="cb-modal-flavor">"${c.flavor}"</div>
+      <div class="cb-modal-meta">已收集 × ${count}</div>
+      <button class="btn btn-sm" id="cb-modal-close">关闭 ✓</button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('#cb-modal-close').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
 
 
 /* ===== ui/screens/strategy-lib.js ===== */
@@ -2973,6 +3320,7 @@ function boot() {
   Router.register(SCREENS.STRATEGY, renderStrategyLib);
   Router.register(SCREENS.PSYCHOLOGY, renderPsychology);
   Router.register(SCREENS.DASHBOARD, renderDashboard);
+  Router.register(SCREENS.CARDBOOK, renderCardBook);
 
   // 初始化对局视图（game:render 落地 + 动作委托）
   initGameView();

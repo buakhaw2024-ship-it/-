@@ -351,6 +351,13 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 @keyframes menu-badge-pulse{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
 .menu-new-badge{display:inline-block;background:rgba(255,215,0,.15);border:1px solid var(--yellow);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:8px;margin-left:6px;animation:menu-badge-pulse 1.4s ease-in-out infinite;vertical-align:middle}
 
+/* ── 跨局记忆徽章（opponent-select 卡片） ─────────────────────────────────── */
+.rep-badge{font-size:10px;color:var(--dim);text-align:center;margin:4px 0;padding:3px 6px;background:rgba(192,132,252,.06);border:1px solid rgba(192,132,252,.18);border-radius:2px;letter-spacing:.3px}
+.rep-alert{display:inline-block;margin-left:6px;padding:0 4px;border-radius:2px;font-weight:bold;font-size:9px}
+.rep-alert.hot{color:var(--red);background:rgba(255,79,106,.12);border:1px solid rgba(255,79,106,.4)}
+.rep-alert.warm{color:var(--yellow);background:rgba(255,215,0,.10);border:1px solid rgba(255,215,0,.35)}
+.rep-alert.cold{color:var(--cyan);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25)}
+
 /* ── UI 交互引导系统 ─────────────────────────────────────────────────────── */
 /* dim 层：无 selector 时提供全屏遮罩；有 spotlight 时透明（spotlight 自带暗化） */
 .guide-dim{position:fixed;inset:0;z-index:8999;pointer-events:none;transition:background .22s}

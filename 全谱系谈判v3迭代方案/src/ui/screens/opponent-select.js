@@ -7,7 +7,21 @@ import { OPPONENTS, TRUMP_BOSS, PERSONALITY_TELLS } from '../../data/opponents.j
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
 import { DIFFICULTIES, getDifficultyLabel } from '../../engine/difficulty.js';
 import { canUnlockBoss, isGrandMaster } from '../../data/ranks.js';
+import { loadReputation, applyReputation } from '../../engine/reputation.js';
 import { C } from '../components.js';
+
+// 把 reputation 数据转成对玩家可读的徽章 HTML
+function repBadge(oppId) {
+  const rep = loadReputation(oppId);
+  if (rep.games < 2) return '';
+  const { openerBias } = applyReputation(oppId, rep);
+  const wrText = rep.wins > 0 ? `${Math.round(rep.wins / rep.games * 100)}%` : '0%';
+  let alert = '';
+  if (openerBias > 0.15) alert = '<span class="rep-alert hot">🔥 已警惕</span>';
+  else if (openerBias > 0.05) alert = '<span class="rep-alert warm">⚠ 已建档</span>';
+  else if (openerBias < -0.05) alert = '<span class="rep-alert cold">💤 略松懈</span>';
+  return `<div class="rep-badge">交手 ${rep.games} 次 · 胜率 ${wrText}${alert}</div>`;
+}
 
 function buildOpponentCard(o, difficulty, player) {
   const isBoss = !!o.boss;
@@ -32,6 +46,7 @@ function buildOpponentCard(o, difficulty, player) {
       ${isBoss ? `<div class="boss-badge${badgeCls}" style="display:block;text-align:center;margin-bottom:4px">${badgeText}</div>` : ''}
       <div class="opp-name" style="text-align:center">${o.name}</div>
       <div class="opp-type" style="text-align:center">${o.type}</div>
+      ${repBadge(o.id)}
       <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
       ${isEasy ? `<div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoLine}</div>

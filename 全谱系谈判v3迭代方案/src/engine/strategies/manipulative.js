@@ -5,6 +5,7 @@ import { chance } from '../util.js';
 
 export default function manipulative(ctx, persona, mem, mood) {
   const exposed = mem.exposureScore >= 2;
+  const repBias = mem.reputationBias || 0;  // 你爱合作 → 它提前收网
 
   switch (ctx.kind) {
     case 'pd': {
@@ -13,8 +14,10 @@ export default function manipulative(ctx, persona, mem, mood) {
           ? { move: 'defect', reason: '已被识破，改打常规以牙还牙' }
           : { move: 'coop', reason: '伪装失效，转常规互惠' };
       }
-      return ctx.round < 2
-        ? { move: 'coop', reason: '放长线：先合作骗取信任' }
+      // 跨局记忆：你历史高合作率，钓鱼期缩短（从 2 轮提前到 1 轮就收网）
+      const trapRound = repBias > 0.15 ? 1 : 2;
+      return ctx.round < trapRound
+        ? { move: 'coop', reason: repBias > 0.15 ? '你已被建档，缩短钓鱼期' : '放长线：先合作骗取信任' }
         : { move: 'defect', reason: '收网：背刺获利' };
     }
     case 'trust-return': {

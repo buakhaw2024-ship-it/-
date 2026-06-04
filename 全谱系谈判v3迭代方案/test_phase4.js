@@ -598,6 +598,70 @@ console.log('\n[v4Pro-4] 蚕食场景接入');
   Store.set('difficulty', 'medium');
 }
 
+// ─── Test v4Pro-5: reputation bias 扩散到 aggressive / manipulative ────────────
+console.log('\n[v4Pro-5] reputation 扩散到多策略');
+{
+  const { OpponentAI, Memory, Store, updateReputation, loadReputation, applyReputation } = G;
+
+  // 清理 reputation 残留
+  for (const k of Object.keys(lsStore)) {
+    if (k.startsWith('gts_reputation_')) delete lsStore[k];
+  }
+
+  // 模拟玩家连续 5 局高合作率 + 全胜对 aggressive
+  for (let i = 0; i < 5; i++) {
+    updateReputation('aggressive', { coopRate: 0.85, aggression: 0.1, avgConcession: 7 }, 'win');
+  }
+  Store.set('difficulty', 'medium');
+  OpponentAI.reset('aggressive');
+  const memAgg = Memory.get('aggressive');
+  assert(memAgg.reputationBias > 0.15, `aggressive 装载 bias>0.15 (=${memAgg.reputationBias.toFixed(2)})`);
+
+  // manipulative：同样的连胜应缩短钓鱼期
+  for (let i = 0; i < 5; i++) {
+    updateReputation('manipulative', { coopRate: 0.85, aggression: 0.1, avgConcession: 7 }, 'win');
+  }
+  OpponentAI.reset('manipulative');
+  const memMan = Memory.get('manipulative');
+  assert(memMan.reputationBias > 0.15, `manipulative 装载 bias>0.15 (=${memMan.reputationBias.toFixed(2)})`);
+
+  // 反向：玩家全输的情况下 bias 应该是负的（对手松懈）
+  for (const k of Object.keys(lsStore)) {
+    if (k.startsWith('gts_reputation_')) delete lsStore[k];
+  }
+  for (let i = 0; i < 4; i++) {
+    updateReputation('rational', { coopRate: 0.3, aggression: 0.7, avgConcession: 3 }, 'lose');
+  }
+  const repLow = loadReputation('rational');
+  const effLow = applyReputation('rational', repLow);
+  assert(effLow.openerBias < 0, `lose+low coop → bias<0 (=${effLow.openerBias.toFixed(2)})`);
+}
+
+// ─── Test v4Pro-6: reputation 徽章渲染 ────────────────────────────────────────
+console.log('\n[v4Pro-6] 跨局记忆徽章 UI');
+{
+  // 清理并测试 <2 场没有徽章
+  for (const k of Object.keys(lsStore)) {
+    if (k.startsWith('gts_reputation_')) delete lsStore[k];
+  }
+  const { updateReputation, loadReputation, applyReputation } = G;
+  const rep0 = loadReputation('emotional');
+  assert(rep0.games === 0, '初始 games=0');
+
+  // 1 场：仍 < 2，不显示徽章
+  updateReputation('emotional', { coopRate: 0.5, aggression: 0.5, avgConcession: 5 }, 'win');
+  const rep1 = loadReputation('emotional');
+  const eff1 = applyReputation('emotional', rep1);
+  assert(eff1.openerBias === 0, '1 场仍 bias=0');
+
+  // 2+ 场：徽章应该被生成
+  updateReputation('emotional', { coopRate: 0.8, aggression: 0.2, avgConcession: 8 }, 'win');
+  updateReputation('emotional', { coopRate: 0.8, aggression: 0.2, avgConcession: 8 }, 'win');
+  const rep3 = loadReputation('emotional');
+  assert(rep3.games === 3, '累计 3 场');
+  assert(rep3.wins === 3, '全胜 wins=3');
+}
+
 // ─── 汇总 ─────────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(52)}`);
 console.log(`结果：${passed} 通过 / ${failed} 失败`);

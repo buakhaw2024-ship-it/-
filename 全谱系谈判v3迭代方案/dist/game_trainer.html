@@ -358,6 +358,13 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 @keyframes menu-badge-pulse{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
 .menu-new-badge{display:inline-block;background:rgba(255,215,0,.15);border:1px solid var(--yellow);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:8px;margin-left:6px;animation:menu-badge-pulse 1.4s ease-in-out infinite;vertical-align:middle}
 
+/* ── 跨局记忆徽章（opponent-select 卡片） ─────────────────────────────────── */
+.rep-badge{font-size:10px;color:var(--dim);text-align:center;margin:4px 0;padding:3px 6px;background:rgba(192,132,252,.06);border:1px solid rgba(192,132,252,.18);border-radius:2px;letter-spacing:.3px}
+.rep-alert{display:inline-block;margin-left:6px;padding:0 4px;border-radius:2px;font-weight:bold;font-size:9px}
+.rep-alert.hot{color:var(--red);background:rgba(255,79,106,.12);border:1px solid rgba(255,79,106,.4)}
+.rep-alert.warm{color:var(--yellow);background:rgba(255,215,0,.10);border:1px solid rgba(255,215,0,.35)}
+.rep-alert.cold{color:var(--cyan);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25)}
+
 /* ── UI 交互引导系统 ─────────────────────────────────────────────────────── */
 /* dim 层：无 selector 时提供全屏遮罩；有 spotlight 时透明（spotlight 自带暗化） */
 .guide-dim{position:fixed;inset:0;z-index:8999;pointer-events:none;transition:background .22s}
@@ -1134,12 +1141,14 @@ function emotional(ctx, persona, mem, mood) {
 
 function aggressive(ctx, persona, mem, mood) {
   const cracked = mood.confidence < 0.35; // 被合理反压压垮
+  const repBias = mem.reputationBias || 0;  // 跨局记忆：你越爱合作，钢铁王越爱背叛
 
   switch (ctx.kind) {
     case 'pd': {
       if (cracked && ctx.round > 0) return { move: 'coop', reason: '气势被你压住，转向合作' };
-      return chance(0.78)
-        ? { move: 'defect', reason: '鹰派本能：施压背叛' }
+      const defectChance = clamp(0.78 + repBias * 0.7, 0.5, 0.95);
+      return chance(defectChance)
+        ? { move: 'defect', reason: repBias > 0.1 ? '记得你的套路，提前布防' : '鹰派本能：施压背叛' }
         : { move: 'coop', reason: '偶尔试探性合作' };
     }
     case 'trust-return': {
@@ -1147,6 +1156,11 @@ function aggressive(ctx, persona, mem, mood) {
       return { move: Math.round(ctx.tripled * frac), reason: cracked ? '底气受挫，略作返还' : '强硬：返还极少' };
     }
     case 'bargain-counter': {
+      // 跨局记忆：开局锚定也吃 repBias（+0~+5 元）
+      if (ctx.round === 0 && repBias > 0) {
+        const anchor = Math.round(clamp(ctx.currentOppOffer + repBias * 10, ctx.currentOppOffer, ctx.currentOppOffer + 8));
+        return { move: anchor, reason: '已对你建档，开局再加码' };
+      }
       const red = cracked ? 12 : 3 + (chance(0.5) ? 2 : 0); // 破绽：confidence 低 → 大幅让步
       return {
         move: Math.max(ctx.trueVal, Math.round(ctx.currentOppOffer - red)),
@@ -1215,6 +1229,7 @@ function cooperative(ctx, persona, mem, mood) {
 
 function manipulative(ctx, persona, mem, mood) {
   const exposed = mem.exposureScore >= 2;
+  const repBias = mem.reputationBias || 0;  // 你爱合作 → 它提前收网
 
   switch (ctx.kind) {
     case 'pd': {
@@ -1223,8 +1238,10 @@ function manipulative(ctx, persona, mem, mood) {
           ? { move: 'defect', reason: '已被识破，改打常规以牙还牙' }
           : { move: 'coop', reason: '伪装失效，转常规互惠' };
       }
-      return ctx.round < 2
-        ? { move: 'coop', reason: '放长线：先合作骗取信任' }
+      // 跨局记忆：你历史高合作率，钓鱼期缩短（从 2 轮提前到 1 轮就收网）
+      const trapRound = repBias > 0.15 ? 1 : 2;
+      return ctx.round < trapRound
+        ? { move: 'coop', reason: repBias > 0.15 ? '你已被建档，缩短钓鱼期' : '放长线：先合作骗取信任' }
         : { move: 'defect', reason: '收网：背刺获利' };
     }
     case 'trust-return': {
@@ -3497,6 +3514,19 @@ renderScenarioSelect.afterRender = function () {
 // ui/screens/opponent-select.js — 对手选择屏（含难度选择 + Trump Boss 解锁）
 
 
+// 把 reputation 数据转成对玩家可读的徽章 HTML
+function repBadge(oppId) {
+  const rep = loadReputation(oppId);
+  if (rep.games < 2) return '';
+  const { openerBias } = applyReputation(oppId, rep);
+  const wrText = rep.wins > 0 ? `${Math.round(rep.wins / rep.games * 100)}%` : '0%';
+  let alert = '';
+  if (openerBias > 0.15) alert = '<span class="rep-alert hot">🔥 已警惕</span>';
+  else if (openerBias > 0.05) alert = '<span class="rep-alert warm">⚠ 已建档</span>';
+  else if (openerBias < -0.05) alert = '<span class="rep-alert cold">💤 略松懈</span>';
+  return `<div class="rep-badge">交手 ${rep.games} 次 · 胜率 ${wrText}${alert}</div>`;
+}
+
 function buildOpponentCard(o, difficulty, player) {
   const isBoss = !!o.boss;
   const isEasy = difficulty === 'easy';
@@ -3520,6 +3550,7 @@ function buildOpponentCard(o, difficulty, player) {
       ${isBoss ? `<div class="boss-badge${badgeCls}" style="display:block;text-align:center;margin-bottom:4px">${badgeText}</div>` : ''}
       <div class="opp-name" style="text-align:center">${o.name}</div>
       <div class="opp-type" style="text-align:center">${o.type}</div>
+      ${repBadge(o.id)}
       <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
       ${isEasy ? `<div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoLine}</div>
@@ -4240,7 +4271,7 @@ const _TOURS = {
     {
       selector: '#diff-btns',
       title: '训练难度（5 档）',
-      body: '<b>初级</b>：显示对手弱点，辅助信息完整<br><b>中级</b>：显示行为信号，需自行判断<br><b>高级</b>：信息封锁，完全依赖观察<br><b>终局挑战</b>：宗师级专属，AI 最强参数<br><b style="color:#ff4f6a">地狱级</b>：让步空间压至 45%，难度无上限，Boss 无豁免（需宗师级）',
+      body: '<b>初级</b>：显示对手弱点，辅助信息完整<br><b>中级</b>：显示行为信号，需自行判断<br><b>高级</b>：信息封锁 + <span style="color:#ff4f6a">情绪伪装</span> + <span style="color:#ff4f6a">中途加码</span>启用<br><b>终局挑战</b>：宗师级专属，AI 最强参数<br><b style="color:#ff4f6a">地狱级</b>：让步空间压至 45%，蚕食 3 次/局，伪装强度最大',
       position: 'bottom',
     },
     {
@@ -4249,12 +4280,22 @@ const _TOURS = {
       body: '<b>陈逻辑</b>（理性·Skullpanda）— 数学最优，策略稳健<br><b>林敏感</b>（情绪·Crybaby）— 情绪波动，可被激将<br><b>钢铁王</b>（强硬·Molly）— 强硬开场，让步极少<br><b>和谐李</b>（合作·Dimoo）— 追求共赢，善于倾听<br><b>影子张</b>（操控·Pucky）— 善用信息不对称<br><b>稳健吴</b>（风险规避·Hirono）— 规避极端，稳健推进<br><b>极限交易者</b>（隐藏 Boss）— 需宗师级 + 终局挑战解锁',
       position: 'right',
     },
+    {
+      title: '🧠 对手会记住你（v4Pro 跨局记忆）',
+      body: '<b>每个对手独立存档</b>，记录与你的交手次数、胜率、合作率和上局结果。<br>卡片上的徽章告诉你它对你的认知：<br><span style="color:#00d4ff">💤 略松懈</span>：你最近输给它，开局放松<br><span style="color:#ffd700">⚠ 已建档</span>：识别出你的模式<br><span style="color:#ff4f6a">🔥 已警惕</span>：你赢得太多次了，开局立刻加码<br><b>策略提示</b>：偶尔变换打法，避免对手摸清你的套路。',
+      position: 'center',
+    },
   ],
 
   game: [
     {
       title: '⚡ 对局进行中 · 核心操作说明',
-      body: '• <b>上方对手区</b>：头像 + 情绪温度计（红→黄→绿，越绿越友好）<br>• <b>圆点进度条</b>：当前轮次，实心=已完成<br>• <b>对话气泡</b>：AI 的言行是重要线索<br>• <b>下方选择区</b>：每轮点击选择你的策略<br><b>关键</b>：关注对手情绪走势，在恰当时机让步或强硬。',
+      body: '• <b>上方对手区</b>：头像 + 情绪温度计（红→黄→绿，越绿越友好）<br>• <b>圆点进度条</b>：当前轮次，实心=已完成<br>• <b>对话气泡</b>：AI 的言行是重要线索<br>• <b>🔍 识破对手</b>（每局 2 次）：查看对手内部情绪<br><b>注意</b>：高级以上难度，对手会<span style="color:#ff4f6a">伪装情绪</span>误导你的读心。',
+      position: 'center',
+    },
+    {
+      title: '⚠ 警惕中途加码（v4Pro 动态蚕食）',
+      body: '高级以上难度的 <b>Boss / 钢铁王 / 影子张</b> 会在中期突然抛出新条件：<br>• <b>砍价</b>：要求额外保证金<br>• <b>危机</b>：要求把合作伙伴拉进来<br>• <b>联盟</b>：引入第三方利益相关者<br><b>拒绝</b>守住底线但有代价；<b>接受</b>让对方得逞，后续更难谈成。<br>每局难度上限：初/中级 0 次 · 高级 1 次 · 终局 2 次 · 地狱 3 次。',
       position: 'center',
     },
   ],

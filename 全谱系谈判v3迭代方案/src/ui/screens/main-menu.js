@@ -3,7 +3,7 @@
 import { EventBus } from '../../core/event-bus.js';
 import { EVENTS, SCREENS } from '../../core/events.js';
 import { Store } from '../../core/store.js';
-import { getRank } from '../../data/ranks.js';
+import { getRank, isGrandMaster, canUnlockBoss } from '../../data/ranks.js';
 import { SCENARIO_META } from '../../data/scenarios.meta.js';
 
 const MENU = [
@@ -16,6 +16,7 @@ const MENU = [
 
 export function renderMainMenu() {
   const p = Store.get('player') || { name: '训练员', total: 0, wins: 0 };
+  const difficulty = Store.get('difficulty') || 'medium';
   const rank = getRank(p.total, p.wins);
   const wr = p.total > 0 ? Math.round(p.wins / p.total * 100) : 0;
 
@@ -25,11 +26,19 @@ export function renderMainMenu() {
       <div class="menu-text"><b>${title}</b><span>${sub}</span></div>
     </div>`).join('');
 
+  let bossHint = '';
+  if (canUnlockBoss(p, difficulty)) {
+    bossHint = `<div class="hint hint-yellow" style="font-size:11px;text-align:center">🔓 <b>终局挑战已开启</b>：在场景训练中选择「终局挑战」难度挑战隐藏 Boss。</div>`;
+  } else if (isGrandMaster(p)) {
+    bossHint = `<div class="hint hint-cyan" style="font-size:11px;text-align:center">🏆 <b>宗师级</b>达成！进入场景训练并选择「终局挑战」难度解锁隐藏 Boss。</div>`;
+  }
+
   return `
     <div class="header">
       <h1>◆ 全谱系博弈演练系统 ◆</h1>
       <div class="sub">训练员: ${p.name}  |  军衔: ${rank}  |  总场次: ${p.total}  |  胜率: ${wr}%</div>
     </div>
+    ${bossHint}
     <div id="main-menu-items">${items}</div>
   `;
 }

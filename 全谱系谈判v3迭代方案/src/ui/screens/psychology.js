@@ -3,7 +3,7 @@
 import { EventBus } from '../../core/event-bus.js';
 import { EVENTS, SCREENS } from '../../core/events.js';
 import { Store } from '../../core/store.js';
-import { computeProfile, getProfileType, hasEnoughData } from '../../analytics/psych-analyzer.js';
+import { computeProfile, getProfileType, hasEnoughData, detectWeakPoints } from '../../analytics/psych-analyzer.js';
 import { PSYCH_DIMENSIONS } from '../../data/ranks.js';
 import { C } from '../components.js';
 
@@ -24,6 +24,10 @@ export function renderPsychology() {
   const profile = computeProfile(player);
   const bars = PSYCH_DIMENSIONS.map((d) => C.bar(d.label, profile[d.key] || 0, d.color)).join('');
   const pt = getProfileType(profile);
+  const weak = detectWeakPoints(profile);
+  const weakHtml = weak.length
+    ? weak.map((w) => C.hint(`⚠ ${w}`, 'yellow')).join('')
+    : C.hint('暂未发现明显短板，继续积累训练样本。', 'green');
 
   return `${head}
     ${C.panel('博弈心理类型', `
@@ -32,6 +36,7 @@ export function renderPsychology() {
         <div style="color:var(--dim);font-size:12px;margin-top:6px">${pt.desc}</div>
       </div>`)}
     ${C.panel('8维心理向量分析（基于真实决策序列）', bars)}
+    ${C.panel('当前短板', weakHtml)}
     ${C.panel('成长建议', pt.advice.map((a) => C.hint(`• ${a}`)).join(''))}
     ${C.hint(`样本：${player.behaviorStats.games} 局 / ${player.behaviorStats.totalMoves} 次决策`, 'cyan')}
   `;

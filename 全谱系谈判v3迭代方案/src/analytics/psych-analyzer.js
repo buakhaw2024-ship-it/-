@@ -103,5 +103,18 @@ export function hasEnoughData(totalSessions) {
   return totalSessions >= 2;
 }
 
+// 基于 v3 全比例模型的短板检测（阈值针对真实决策比例校准，非 0.5 基线）
+export function detectWeakPoints(profile) {
+  if (!profile) return [];
+  const weak = [];
+  if ((profile.assert || 0) < 0.30)                                   weak.push('主张强度不足');
+  if ((profile.depth || 0) < 0.45)                                    weak.push('策略深度不足');
+  if ((profile.adapt || 0) < 0.40)                                    weak.push('策略适配不足');
+  if ((profile.risk || 0) < 0.20)                                     weak.push('风险承受偏低');
+  if ((profile.emotion || 0) < 0.35)                                  weak.push('情绪调节不足');
+  if ((profile.fairness || 0) > 0.75 && (profile.assert || 0) < 0.30) weak.push('公平敏感偏高，可能过度让步');
+  return weak;
+}
+
 // 兼容旧入口名（recorder 调用）
 export const PsychAnalyzer = { accumulate, computeProfile, getProfileType, hasEnoughData };

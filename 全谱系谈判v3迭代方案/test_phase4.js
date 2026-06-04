@@ -22,8 +22,9 @@ const inner = m[1]
 const expose = `
 ;(function(){
   var names = ['buildReplay','loadPlayer','accumulate','computeProfile',
-               'getProfileType','hasEnoughData','EventBus','EVENTS','Store',
-               'OPPONENTS','C','SCENARIO_REGISTRY',
+               'getProfileType','hasEnoughData','detectWeakPoints',
+               'EventBus','EVENTS','Store',
+               'OPPONENTS','C','SCENARIO_REGISTRY','SCENARIO_META',
                'getDifficultyMod','applyDifficulty','canUnlockBoss','isGrandMaster',
                'getRank','TRUMP_BOSS'];
   for(var i=0;i<names.length;i++){
@@ -337,6 +338,59 @@ console.log('\n[10] TRUMP_BOSS + canUnlockBoss');
   assert(!canUnlockBoss(gmPlayer, 'medium'),                '宗师+中级 → 不解锁');
   assert( canUnlockBoss(gmPlayer, 'extreme'),               '宗师+终局 → 解锁');
   assert(!canUnlockBoss(null, 'extreme'),                   'null player → 不解锁');
+}
+
+// ─── Test 11: detectWeakPoints ────────────────────────────────────────────────
+console.log('\n[11] detectWeakPoints');
+{
+  const { detectWeakPoints } = G;
+
+  // No data → no weak points
+  assert(detectWeakPoints(null).length === 0, 'null profile → empty');
+
+  // Low assert
+  const lowAssert = { assert:0.20, depth:0.55, adapt:0.50, risk:0.25, emotion:0.45, fairness:0.50 };
+  assert(detectWeakPoints(lowAssert).includes('主张强度不足'), 'low assert → 主张强度不足');
+
+  // Low depth
+  const lowDepth = { assert:0.35, depth:0.35, adapt:0.50, risk:0.30, emotion:0.50, fairness:0.50 };
+  assert(detectWeakPoints(lowDepth).includes('策略深度不足'), 'low depth → 策略深度不足');
+
+  // Good profile → no weak points
+  const strong = { assert:0.50, depth:0.60, adapt:0.55, risk:0.35, emotion:0.60, fairness:0.60 };
+  assert(detectWeakPoints(strong).length === 0, 'strong profile → no weak points');
+
+  // fairness trap
+  const trap = { assert:0.20, depth:0.55, adapt:0.50, risk:0.30, emotion:0.50, fairness:0.80 };
+  const tw = detectWeakPoints(trap);
+  assert(tw.includes('公平敏感偏高，可能过度让步'), 'fairness trap detected');
+}
+
+// ─── Test 12: recorder enriches session fields ────────────────────────────────
+console.log('\n[12] recorder — session 包含 scenarioKey / opponentId / difficulty');
+{
+  const { EventBus, EVENTS, Store } = G;
+  Store.set('difficulty', 'hard');
+  const player = loadPlayer('test_rec');
+  Store.set('player', player);
+
+  let captured = null;
+  EventBus.on(EVENTS.GAME_START, () => {}); // already registered by runner
+
+  // Manually fire game:end with minimal result
+  EventBus.emit(EVENTS.GAME_END, {
+    result: { kind:'prisoners', rounds:[], playerScore:10, oppScore:8, outcome:'win', summary:'' }
+  });
+
+  const lr = Store.get('lastResult');
+  assert(lr !== null, 'lastResult 存在');
+
+  // Check that session was added with new fields
+  const savedPlayer = Store.get('player');
+  const lastSess = savedPlayer && savedPlayer.sessions.slice(-1)[0];
+  assert(lastSess && lastSess.difficulty === 'hard', 'session.difficulty = hard');
+  assert(lastSess && 'scenarioKey' in lastSess, 'session.scenarioKey 字段存在');
+  assert(lastSess && 'opponentId' in lastSess, 'session.opponentId 字段存在');
 }
 
 // ─── 汇总 ─────────────────────────────────────────────────────────────────────

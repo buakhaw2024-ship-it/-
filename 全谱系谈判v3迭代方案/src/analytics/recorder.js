@@ -26,8 +26,11 @@ export function initRecorder() {
       accumulate(player, kind, rounds, result, opp);
       addSession(player, {
         time: new Date().toLocaleString('zh-CN'),
+        scenarioKey,
         scenario: scenarioName,
+        opponentId: opp ? opp.id : 'unknown',
         opponent: opp ? opp.type : '—',
+        difficulty: Store.get('difficulty') || 'medium',
         playerScore: result.playerScore,
         oppScore: result.oppScore,
         outcome: result.outcome,

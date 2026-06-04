@@ -380,3 +380,36 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 /* 右下角 ? 浮动按钮 */
 @keyframes guide-help-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.45)}70%{box-shadow:0 0 0 8px rgba(0,212,255,0)}}
 .guide-help-btn{position:fixed;bottom:20px;right:20px;width:36px;height:36px;border-radius:50%;background:var(--bg2);border:1.5px solid var(--cyan);color:var(--cyan);font-size:16px;font-weight:bold;cursor:pointer;z-index:8990;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .2s;animation:guide-help-pulse 2.8s ease-in-out infinite;box-shadow:0 0 10px rgba(0,212,255,.2)}
+
+/* ── 内联 ℹ 提示按钮 + 浮窗 ────────────────────────────────────────────────── */
+.info-tip-btn{background:none;border:1px solid rgba(0,212,255,.4);color:rgba(0,212,255,.7);font-size:9px;font-weight:bold;cursor:pointer;border-radius:50%;width:14px;height:14px;padding:0;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:4px;transition:all .15s;line-height:1}
+.info-tip-btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 6px rgba(0,212,255,.3)}
+.inline-tip-pop{position:fixed;z-index:9100;background:var(--bg2);border:1px solid var(--cyan);border-radius:6px;padding:12px 14px 10px;max-width:280px;min-width:200px;font-size:11px;line-height:1.7;color:var(--text);box-shadow:0 4px 24px rgba(0,0,0,.7),0 0 12px rgba(0,212,255,.15);font-family:'Courier New',monospace}
+.inline-tip-close{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0;line-height:1;font-family:inherit;transition:color .15s}
+.inline-tip-close:hover{color:var(--text)}
+
+/* ── 新手训练路径推荐（主菜单） ──────────────────────────────────────────────── */
+.training-path-callout{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:10px 14px;margin-bottom:10px}
+.tp-title{color:var(--cyan);font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:7px}
+.tp-steps{display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.tp-step{font-size:10px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--dim)}
+.tp-step.tp-now{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.1);font-weight:bold}
+.tp-step.tp-done{border-color:rgba(0,255,159,.35);color:var(--green);background:rgba(0,255,159,.06)}
+.tp-step.tp-dim{color:var(--dim);opacity:.5}
+.tp-arrow{color:var(--dim);font-size:10px}
+.tp-hint{color:var(--dim);font-size:10px;line-height:1.5}
+
+/* ── 军衔下一级提示（成绩看板） ────────────────────────────────────────────── */
+.rank-next-hint{font-size:10px;color:var(--dim);text-align:center;padding:5px 8px 10px;letter-spacing:.3px}
+.rank-next-icon{color:var(--yellow);margin-right:5px}
+
+/* ── 心理类型对照表（心理档案屏） ───────────────────────────────────────────── */
+.type-ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:4px}
+.type-ref-card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:8px 10px;transition:border-color .15s}
+.type-ref-card.type-ref-active{border-color:var(--cyan);background:rgba(0,212,255,.06);box-shadow:0 0 8px rgba(0,212,255,.1)}
+.type-ref-name{font-size:12px;font-weight:bold;margin-bottom:3px}
+.type-ref-trait{font-size:10px;color:var(--text);margin-bottom:3px}
+.type-ref-cond{font-size:9px;color:var(--dim);line-height:1.4}
+
+/* ── 集卡册解锁条件提示 ─────────────────────────────────────────────────────── */
+.album-card-cond{font-size:8px;color:rgba(255,215,0,.6);line-height:1.4;margin-top:3px;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}

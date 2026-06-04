@@ -11,6 +11,71 @@ function _markDone(id) {
   try { localStorage.setItem(_GUIDE_KEY + id, '1'); } catch (e) {}
 }
 
+// ── 内联上下文提示（小浮窗，对应说明书中的 ℹ 标注）────────────────────────────
+const _INLINE_TIPS = {
+  temp: [
+    '<b>关系温度计</b>：实时反映对手对你的情绪态度。',
+    '<span style="color:#ff4f6a">● 红端（0）</span> 愤怒强烈，强烈倾向拒绝',
+    '<span style="color:#ffd700">● 中间（50）</span> 中立观望，可谈判',
+    '<span style="color:#00ff9f">● 绿端（100）</span> 信任高涨，倾向接受',
+    '<small style="color:#4a6080">计算：信任值 − 愤怒值 → 位置<br>⚠ 高级以上：对手会<b style="color:#ff4f6a">伪装情绪</b>，显示值可能不准确！</small>',
+  ].join('<br>'),
+
+  rounds: [
+    '<b>回合进度条</b>：显示当前对局所处轮次。',
+    '● <b>实心点</b> = 已完成的回合',
+    '● <b>空心点</b> = 即将进行的回合',
+    '<small style="color:#4a6080">各场景回合数 3~7 轮不等。<br>最后 1~2 轮是<b>关键决策窗口</b>，对手此时策略往往转变。</small>',
+  ].join('<br>'),
+
+  peek: [
+    '<b>识破对手</b>：消耗 1 次机会查看 AI 内部情绪。',
+    '每局限用 <b style="color:#00d4ff">2 次</b>，用完即止。',
+    '<small style="color:#4a6080">⚠ 高级以上：对手会<b style="color:#ff4f6a">伪装情绪</b>，<br>显示数据可能与真实值相反！<br>出现"⚠ 疑似伪装"时需批判性判断。</small>',
+  ].join('<br>'),
+};
+
+// ── 内联提示浮窗状态 ─────────────────────────────────────────────────────────
+let _iPop = null;
+
+function _closeIPop() {
+  if (_iPop && _iPop.parentNode) _iPop.parentNode.removeChild(_iPop);
+  _iPop = null;
+}
+
+function showInlineTip(anchorEl, tipKey) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+  if (_iPop && _iPop.getAttribute('data-tip-key') === tipKey) { _closeIPop(); return; }
+  _closeIPop();
+  const html = _INLINE_TIPS[tipKey];
+  if (!html) return;
+  _iPop = document.createElement('div');
+  _iPop.className = 'inline-tip-pop';
+  _iPop.setAttribute('data-tip-key', tipKey);
+  _iPop.innerHTML = `<button class="inline-tip-close" aria-label="关闭">✕</button>${html}`;
+  document.body.appendChild(_iPop);
+  const r = anchorEl.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const PW = 280, PH = 150;
+  let left = r.left, top = r.bottom + 8;
+  if (left + PW > vw - 8) left = vw - PW - 8;
+  if (left < 8) left = 8;
+  if (top + PH > vh - 8) top = r.top - PH - 8;
+  Object.assign(_iPop.style, { left: left + 'px', top: top + 'px' });
+  _iPop.querySelector('.inline-tip-close').onclick = _closeIPop;
+}
+
+let _inlineTipsInited = false;
+function _initInlineTips() {
+  if (_inlineTipsInited || typeof document === 'undefined' || !document.addEventListener) return;
+  _inlineTipsInited = true;
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest && e.target.closest('.info-tip-btn[data-itip]');
+    if (btn) { e.stopPropagation(); showInlineTip(btn, btn.getAttribute('data-itip')); return; }
+    if (_iPop && !(e.target.closest && e.target.closest('.inline-tip-pop'))) _closeIPop();
+  });
+}
+
 // ── Tour 内容（对应说明书各章节）──────────────────────────────────────────────
 const _TOURS = {
   welcome: [
@@ -132,8 +197,20 @@ const _TOURS = {
   result: [
     {
       title: '📊 对局结果 · 解读与卡牌奖励',
-      body: '• <b>结局标签</b>：胜利 / 失败 / 平局 / 合作共赢<br>• <b>关键指标</b>：报价/得分 + 对话轮次复盘<br>• <b>战绩更新</b>：军衔、胜率实时同步<br>• <b>卡牌解锁</b>：若满足条件将触发盲盒开箱动画 🎁<br>• 地狱级对局另有<b>地狱印章</b>（通过/失败）标注。',
+      body: '• <b>结局标签</b>：胜利 / 失败 / 平局 / 合作共赢<br>• <b>得分对比</b>：你的得分 vs 对手得分<br>• <b>战绩更新</b>：军衔 · 胜率实时同步，卡牌解锁检查<br>• 地狱级另有<b>地狱印章</b>（通过/失败）标注<br>• <b>卡牌解锁</b>：若满足条件触发盲盒开箱动画 🎁',
       position: 'center',
+    },
+    {
+      selector: '.bar-wrap',
+      title: '逐回合复盘 · 得分条含义',
+      body: '每条进度条对应一个回合的综合决策质量（0-100 分）：<br><span style="color:#00ff9f">■ 绿（≥70）</span> 优秀 &nbsp;<span style="color:#ffd700">■ 黄（50-69）</span> 中等 &nbsp;<span style="color:#ff4f6a">■ 红（&lt;50）</span> 需改进<br>条右侧数字是本轮得分，旁边的文字是关键行为标注。<br>★ 正向转折点 &nbsp;·&nbsp; ⚠ 负向转折点',
+      position: 'top',
+    },
+    {
+      selector: '[data-action="quick"]',
+      title: '下一步 · 快速提升建议',
+      body: '• <b>再来一局</b>：随机分配，快速积累训练局数<br>• <b>查看心理档案</b>：10 局后可得到准确 8 维画像<br>• <b>对手记忆</b>（v4Pro）：再战同一对手时注意徽章变化<br>• 对特定场景失败时，先查阅<b>策略理论库</b>对应宗师理论',
+      position: 'top',
     },
   ],
 
@@ -309,6 +386,7 @@ function _startTour(screenId) {
 // Shows tour automatically on first visit; otherwise shows ? help button only.
 function showTour(screenId) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+  _initInlineTips();
   _cleanTour();
   _rmHelp();
   _gScreen = screenId;

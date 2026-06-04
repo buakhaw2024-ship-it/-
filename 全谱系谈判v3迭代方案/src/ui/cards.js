@@ -195,6 +195,18 @@ function buildCardAvatar(oppId) {
   return `<span style="font-size:28px">${emojiMap[oppId] || '🤝'}</span>`;
 }
 
+// ─── 解锁条件提示（SSR/SP 锁定卡片显示条件文字）─────────────────────────────
+const CARD_HINTS = {
+  'ssr_boss_1':    '击败极限交易者 1 次',
+  'ssr_master':    '累计胜利 15 次',
+  'ssr_hell_1':    '地狱难度胜利 1 次',
+  'ssr_purecoop':  '公共品博弈纯合作通关 3 次',
+  'ssr_tft_chain': '囚徒困境 TfT 策略胜利 3 次',
+  'ssr_read_pro':  '正确识破对手情绪 5 次',
+  'sp_hell_boss':  '地狱难度 + Boss + 纯合作通关',
+  'sp_legend':     '30 局 · 胜率≥80% · 见全 7 类对手',
+};
+
 // ─── 集卡册屏幕 ───────────────────────────────────────────────────────────────
 export function renderCardAlbum() {
   const player = Store.get('player');
@@ -211,12 +223,17 @@ export function renderCardAlbum() {
     const items = cards.map((c) => {
       const unlocked = owned.includes(c.id);
       const dim = !unlocked;
+      const hintText = CARD_HINTS[c.id];
+      const condHtml = (!unlocked && hintText)
+        ? `<div class="album-card-cond">${hintText}</div>` : '';
+      const titleAttr = unlocked ? c.flavor : (hintText ? `🔓 解锁条件：${hintText}` : '条件待发现');
       return `<div class="album-card ${unlocked ? 'album-card-owned' : 'album-card-locked'}"
                    style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}"
-                   title="${unlocked ? c.flavor : '???'}">
+                   title="${titleAttr}">
         <div class="album-card-rarity">${rc.label}</div>
         <div class="album-card-avatar">${dim ? '<span style="font-size:22px;opacity:.3">🔒</span>' : buildCardAvatar(c.opp)}</div>
         <div class="album-card-name">${unlocked ? c.name : '???'}</div>
+        ${condHtml}
       </div>`;
     }).join('');
     const ownedCount = cards.filter((c) => owned.includes(c.id)).length;

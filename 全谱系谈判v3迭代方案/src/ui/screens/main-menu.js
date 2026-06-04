@@ -42,12 +42,25 @@ export function renderMainMenu() {
     bossHint = `<div class="hint hint-cyan" style="font-size:11px;text-align:center">🏆 <b>宗师级</b>达成！进入场景训练并选择「终局挑战」难度解锁隐藏 Boss。</div>`;
   }
 
+  // 新手训练路径推荐（前 3 局显示）
+  const pathSteps = ['① 囚徒困境', '② 最后通牒', '③ 信任博弈', '④ 砍价谈判', '⑤ 宗师级'];
+  const currentStep = Math.min(p.total, 4);
+  const newUserPath = p.total < 4 ? `
+    <div class="training-path-callout">
+      <div class="tp-title">📍 推荐新手训练路径</div>
+      <div class="tp-steps">${pathSteps.map((s, i) =>
+        `<span class="tp-step ${i === currentStep ? 'tp-now' : i < currentStep ? 'tp-done' : 'tp-dim'}">${s}</span>${i < 4 ? '<span class="tp-arrow">→</span>' : ''}`
+      ).join('')}</div>
+      <div class="tp-hint">从 <b>初级难度</b> 开始，逐步熟悉各场景与对手策略。完成 2 场后查看<b>心理档案</b>了解自己的谈判类型。</div>
+    </div>` : '';
+
   return `
     <div class="header">
       <h1>◆ 全谱系博弈演练系统 ◆</h1>
       <div class="sub">训练员: ${p.name}  |  军衔: ${rank}  |  总场次: ${p.total}  |  胜率: ${wr}%</div>
     </div>
     ${bossHint}
+    ${newUserPath}
     <div id="main-menu-items">${items}</div>
   `;
 }

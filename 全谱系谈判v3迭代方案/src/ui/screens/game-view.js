@@ -27,7 +27,7 @@ function buildChrome(opp) {
       <div class="nego-avatar-type">${typeLine}</div>
     </div>
     <div class="nego-temp-section">
-      <div class="nego-temp-label">⟺ 关系温度</div>
+      <div class="nego-temp-label">⟺ 关系温度 <button class="info-tip-btn" data-itip="temp" title="什么是关系温度？">ℹ</button></div>
       <div class="nego-temp-track">
         <div class="nego-temp-marker" id="nego-temp-marker" style="left:50%"></div>
       </div>

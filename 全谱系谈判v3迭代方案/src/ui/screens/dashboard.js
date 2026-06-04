@@ -10,6 +10,18 @@ import { computeProfile, detectWeakPoints } from '../../analytics/psych-analyzer
 import { DIFFICULTIES, getDifficultyLabel } from '../../engine/difficulty.js';
 import { C } from '../components.js';
 
+function nextRankHint(total, wins) {
+  const wr = total > 0 ? wins / total : 0;
+  const pct = Math.round(wr * 100);
+  if (total === 0)  return '完成首局训练晋升 学员';
+  if (total < 5)   return `还差 ${5 - total} 场训练 → 谈判官（需胜率≥60%）`;
+  if (total < 10)  return `总局数 ${total}/10 + 胜率≥60%（当前 ${pct}%）→ 谈判官`;
+  if (total < 20)  return `总局数 ${total}/20 + 胜率≥70%（当前 ${pct}%）→ 策略师`;
+  if (total < 30)  return `总局数 ${total}/30 + 胜率≥75%（当前 ${pct}%）→ 博弈大师`;
+  if (wr < 0.8)    return `胜率达 80% 晋升 宗师级（当前 ${pct}%，差 ${Math.ceil((0.8 * total - wins))} 胜）`;
+  return '🏆 已达顶级军衔 · Boss + 地狱难度全解锁';
+}
+
 function winRate(sessions, filterFn) {
   const sub = sessions.filter(filterFn);
   if (!sub.length) return null;
@@ -94,10 +106,13 @@ export function renderDashboard() {
       <div class="section-title">▶ 训练成绩看板</div>
       <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
     </div>
-    <div class="grid3" style="margin-bottom:16px">
+    <div class="grid3" style="margin-bottom:8px">
       ${C.scoreBox(p.total, '总训练场次')}
       ${C.scoreBox(`${wr}%`, '综合胜率', 'var(--green)')}
       ${C.scoreBox(rank, '当前军衔', 'var(--yellow)')}
+    </div>
+    <div class="rank-next-hint">
+      <span class="rank-next-icon">↑</span>${nextRankHint(p.total, p.wins)}
     </div>
     ${C.panel('战绩统计', `
       <div class="grid3">

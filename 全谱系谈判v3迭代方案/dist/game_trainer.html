@@ -388,6 +388,39 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 @keyframes guide-help-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.45)}70%{box-shadow:0 0 0 8px rgba(0,212,255,0)}}
 .guide-help-btn{position:fixed;bottom:20px;right:20px;width:36px;height:36px;border-radius:50%;background:var(--bg2);border:1.5px solid var(--cyan);color:var(--cyan);font-size:16px;font-weight:bold;cursor:pointer;z-index:8990;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .2s;animation:guide-help-pulse 2.8s ease-in-out infinite;box-shadow:0 0 10px rgba(0,212,255,.2)}
 
+/* ── 内联 ℹ 提示按钮 + 浮窗 ────────────────────────────────────────────────── */
+.info-tip-btn{background:none;border:1px solid rgba(0,212,255,.4);color:rgba(0,212,255,.7);font-size:9px;font-weight:bold;cursor:pointer;border-radius:50%;width:14px;height:14px;padding:0;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:4px;transition:all .15s;line-height:1}
+.info-tip-btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 6px rgba(0,212,255,.3)}
+.inline-tip-pop{position:fixed;z-index:9100;background:var(--bg2);border:1px solid var(--cyan);border-radius:6px;padding:12px 14px 10px;max-width:280px;min-width:200px;font-size:11px;line-height:1.7;color:var(--text);box-shadow:0 4px 24px rgba(0,0,0,.7),0 0 12px rgba(0,212,255,.15);font-family:'Courier New',monospace}
+.inline-tip-close{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0;line-height:1;font-family:inherit;transition:color .15s}
+.inline-tip-close:hover{color:var(--text)}
+
+/* ── 新手训练路径推荐（主菜单） ──────────────────────────────────────────────── */
+.training-path-callout{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:10px 14px;margin-bottom:10px}
+.tp-title{color:var(--cyan);font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:7px}
+.tp-steps{display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.tp-step{font-size:10px;padding:2px 8px;border-radius:2px;border:1px solid var(--border);color:var(--dim)}
+.tp-step.tp-now{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.1);font-weight:bold}
+.tp-step.tp-done{border-color:rgba(0,255,159,.35);color:var(--green);background:rgba(0,255,159,.06)}
+.tp-step.tp-dim{color:var(--dim);opacity:.5}
+.tp-arrow{color:var(--dim);font-size:10px}
+.tp-hint{color:var(--dim);font-size:10px;line-height:1.5}
+
+/* ── 军衔下一级提示（成绩看板） ────────────────────────────────────────────── */
+.rank-next-hint{font-size:10px;color:var(--dim);text-align:center;padding:5px 8px 10px;letter-spacing:.3px}
+.rank-next-icon{color:var(--yellow);margin-right:5px}
+
+/* ── 心理类型对照表（心理档案屏） ───────────────────────────────────────────── */
+.type-ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:4px}
+.type-ref-card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:8px 10px;transition:border-color .15s}
+.type-ref-card.type-ref-active{border-color:var(--cyan);background:rgba(0,212,255,.06);box-shadow:0 0 8px rgba(0,212,255,.1)}
+.type-ref-name{font-size:12px;font-weight:bold;margin-bottom:3px}
+.type-ref-trait{font-size:10px;color:var(--text);margin-bottom:3px}
+.type-ref-cond{font-size:9px;color:var(--dim);line-height:1.4}
+
+/* ── 集卡册解锁条件提示 ─────────────────────────────────────────────────────── */
+.album-card-cond{font-size:8px;color:rgba(255,215,0,.6);line-height:1.4;margin-top:3px;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
 </style>
 </head>
 <body>
@@ -3246,6 +3279,18 @@ function buildCardAvatar(oppId) {
   return `<span style="font-size:28px">${emojiMap[oppId] || '🤝'}</span>`;
 }
 
+// ─── 解锁条件提示（SSR/SP 锁定卡片显示条件文字）─────────────────────────────
+const CARD_HINTS = {
+  'ssr_boss_1':    '击败极限交易者 1 次',
+  'ssr_master':    '累计胜利 15 次',
+  'ssr_hell_1':    '地狱难度胜利 1 次',
+  'ssr_purecoop':  '公共品博弈纯合作通关 3 次',
+  'ssr_tft_chain': '囚徒困境 TfT 策略胜利 3 次',
+  'ssr_read_pro':  '正确识破对手情绪 5 次',
+  'sp_hell_boss':  '地狱难度 + Boss + 纯合作通关',
+  'sp_legend':     '30 局 · 胜率≥80% · 见全 7 类对手',
+};
+
 // ─── 集卡册屏幕 ───────────────────────────────────────────────────────────────
 function renderCardAlbum() {
   const player = Store.get('player');
@@ -3262,12 +3307,17 @@ function renderCardAlbum() {
     const items = cards.map((c) => {
       const unlocked = owned.includes(c.id);
       const dim = !unlocked;
+      const hintText = CARD_HINTS[c.id];
+      const condHtml = (!unlocked && hintText)
+        ? `<div class="album-card-cond">${hintText}</div>` : '';
+      const titleAttr = unlocked ? c.flavor : (hintText ? `🔓 解锁条件：${hintText}` : '条件待发现');
       return `<div class="album-card ${unlocked ? 'album-card-owned' : 'album-card-locked'}"
                    style="--card-color:${rc.color};--card-glow:${rc.glow};--card-bg:${rc.bg}"
-                   title="${unlocked ? c.flavor : '???'}">
+                   title="${titleAttr}">
         <div class="album-card-rarity">${rc.label}</div>
         <div class="album-card-avatar">${dim ? '<span style="font-size:22px;opacity:.3">🔒</span>' : buildCardAvatar(c.opp)}</div>
         <div class="album-card-name">${unlocked ? c.name : '???'}</div>
+        ${condHtml}
       </div>`;
     }).join('');
     const ownedCount = cards.filter((c) => owned.includes(c.id)).length;
@@ -3449,12 +3499,25 @@ function renderMainMenu() {
     bossHint = `<div class="hint hint-cyan" style="font-size:11px;text-align:center">🏆 <b>宗师级</b>达成！进入场景训练并选择「终局挑战」难度解锁隐藏 Boss。</div>`;
   }
 
+  // 新手训练路径推荐（前 3 局显示）
+  const pathSteps = ['① 囚徒困境', '② 最后通牒', '③ 信任博弈', '④ 砍价谈判', '⑤ 宗师级'];
+  const currentStep = Math.min(p.total, 4);
+  const newUserPath = p.total < 4 ? `
+    <div class="training-path-callout">
+      <div class="tp-title">📍 推荐新手训练路径</div>
+      <div class="tp-steps">${pathSteps.map((s, i) =>
+        `<span class="tp-step ${i === currentStep ? 'tp-now' : i < currentStep ? 'tp-done' : 'tp-dim'}">${s}</span>${i < 4 ? '<span class="tp-arrow">→</span>' : ''}`
+      ).join('')}</div>
+      <div class="tp-hint">从 <b>初级难度</b> 开始，逐步熟悉各场景与对手策略。完成 2 场后查看<b>心理档案</b>了解自己的谈判类型。</div>
+    </div>` : '';
+
   return `
     <div class="header">
       <h1>◆ 全谱系博弈演练系统 ◆</h1>
       <div class="sub">训练员: ${p.name}  |  军衔: ${rank}  |  总场次: ${p.total}  |  胜率: ${wr}%</div>
     </div>
     ${bossHint}
+    ${newUserPath}
     <div id="main-menu-items">${items}</div>
   `;
 }
@@ -3719,7 +3782,7 @@ function buildChrome(opp) {
       <div class="nego-avatar-type">${typeLine}</div>
     </div>
     <div class="nego-temp-section">
-      <div class="nego-temp-label">⟺ 关系温度</div>
+      <div class="nego-temp-label">⟺ 关系温度 <button class="info-tip-btn" data-itip="temp" title="什么是关系温度？">ℹ</button></div>
       <div class="nego-temp-track">
         <div class="nego-temp-marker" id="nego-temp-marker" style="left:50%"></div>
       </div>
@@ -4034,6 +4097,24 @@ function renderPsychology() {
     ? weak.map((w) => C.hint(`⚠ ${w}`, 'yellow')).join('')
     : C.hint('暂未发现明显短板，继续积累训练样本。', 'green');
 
+  // 6 种类型对照表 — 帮助玩家理解当前类型及晋级方向
+  const TYPE_DEFS = [
+    { name:'战略家',    cond:'策略深度>60 + 主张强度>50',  trait:'冷静理智，全局规划',   color:'var(--cyan)'   },
+    { name:'调解者',    cond:'合作倾向>70 + 公平敏感>60',  trait:'化解冲突，关系维护',   color:'var(--green)'  },
+    { name:'竞争者',    cond:'主张强度>60 + 风险承受>50',  trait:'目标明确，争取最大化', color:'var(--red)'    },
+    { name:'外交家',    cond:'适应灵活>60 + 情绪调节>60',  trait:'灵活切换，多情境适应', color:'var(--yellow)' },
+    { name:'分析师',    cond:'策略深度>50 + 风险承受<40',  trait:'谨慎周密，数据导向',   color:'var(--purple)' },
+    { name:'实用主义者', cond:'其他情况',                  trait:'务实平衡，情境最优',   color:'var(--dim)'    },
+  ];
+  const typeGrid = TYPE_DEFS.map((t) => {
+    const isMe = t.name === pt.name;
+    return `<div class="type-ref-card ${isMe ? 'type-ref-active' : ''}">
+      <div class="type-ref-name" style="color:${t.color}">${isMe ? '▶ ' : ''}${t.name}</div>
+      <div class="type-ref-trait">${t.trait}</div>
+      <div class="type-ref-cond">${t.cond}</div>
+    </div>`;
+  }).join('');
+
   return `${head}
     ${C.panel('博弈心理类型', `
       <div style="text-align:center;padding:12px 0">
@@ -4043,6 +4124,10 @@ function renderPsychology() {
     ${C.panel('8维心理向量分析（基于真实决策序列）', bars)}
     ${C.panel('当前短板', weakHtml)}
     ${C.panel('成长建议', pt.advice.map((a) => C.hint(`• ${a}`)).join(''))}
+    <div class="panel">
+      <div class="panel-title">6 种心理类型对照 <span style="color:var(--dim);font-size:10px">▶ 标注为当前类型</span></div>
+      <div class="type-ref-grid">${typeGrid}</div>
+    </div>
     ${C.hint(`样本：${player.behaviorStats.games} 局 / ${player.behaviorStats.totalMoves} 次决策`, 'cyan')}
   `;
 }
@@ -4057,6 +4142,18 @@ renderPsychology.afterRender = function () {
 /* ===== ui/screens/dashboard.js ===== */
 // ui/screens/dashboard.js — 训练成绩看板（场景/对手胜率 + 短板分析）
 
+
+function nextRankHint(total, wins) {
+  const wr = total > 0 ? wins / total : 0;
+  const pct = Math.round(wr * 100);
+  if (total === 0)  return '完成首局训练晋升 学员';
+  if (total < 5)   return `还差 ${5 - total} 场训练 → 谈判官（需胜率≥60%）`;
+  if (total < 10)  return `总局数 ${total}/10 + 胜率≥60%（当前 ${pct}%）→ 谈判官`;
+  if (total < 20)  return `总局数 ${total}/20 + 胜率≥70%（当前 ${pct}%）→ 策略师`;
+  if (total < 30)  return `总局数 ${total}/30 + 胜率≥75%（当前 ${pct}%）→ 博弈大师`;
+  if (wr < 0.8)    return `胜率达 80% 晋升 宗师级（当前 ${pct}%，差 ${Math.ceil((0.8 * total - wins))} 胜）`;
+  return '🏆 已达顶级军衔 · Boss + 地狱难度全解锁';
+}
 
 function winRate(sessions, filterFn) {
   const sub = sessions.filter(filterFn);
@@ -4142,10 +4239,13 @@ function renderDashboard() {
       <div class="section-title">▶ 训练成绩看板</div>
       <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
     </div>
-    <div class="grid3" style="margin-bottom:16px">
+    <div class="grid3" style="margin-bottom:8px">
       ${C.scoreBox(p.total, '总训练场次')}
       ${C.scoreBox(`${wr}%`, '综合胜率', 'var(--green)')}
       ${C.scoreBox(rank, '当前军衔', 'var(--yellow)')}
+    </div>
+    <div class="rank-next-hint">
+      <span class="rank-next-icon">↑</span>${nextRankHint(p.total, p.wins)}
     </div>
     ${C.panel('战绩统计', `
       <div class="grid3">
@@ -4180,6 +4280,71 @@ function _isDone(id) {
 }
 function _markDone(id) {
   try { localStorage.setItem(_GUIDE_KEY + id, '1'); } catch (e) {}
+}
+
+// ── 内联上下文提示（小浮窗，对应说明书中的 ℹ 标注）────────────────────────────
+const _INLINE_TIPS = {
+  temp: [
+    '<b>关系温度计</b>：实时反映对手对你的情绪态度。',
+    '<span style="color:#ff4f6a">● 红端（0）</span> 愤怒强烈，强烈倾向拒绝',
+    '<span style="color:#ffd700">● 中间（50）</span> 中立观望，可谈判',
+    '<span style="color:#00ff9f">● 绿端（100）</span> 信任高涨，倾向接受',
+    '<small style="color:#4a6080">计算：信任值 − 愤怒值 → 位置<br>⚠ 高级以上：对手会<b style="color:#ff4f6a">伪装情绪</b>，显示值可能不准确！</small>',
+  ].join('<br>'),
+
+  rounds: [
+    '<b>回合进度条</b>：显示当前对局所处轮次。',
+    '● <b>实心点</b> = 已完成的回合',
+    '● <b>空心点</b> = 即将进行的回合',
+    '<small style="color:#4a6080">各场景回合数 3~7 轮不等。<br>最后 1~2 轮是<b>关键决策窗口</b>，对手此时策略往往转变。</small>',
+  ].join('<br>'),
+
+  peek: [
+    '<b>识破对手</b>：消耗 1 次机会查看 AI 内部情绪。',
+    '每局限用 <b style="color:#00d4ff">2 次</b>，用完即止。',
+    '<small style="color:#4a6080">⚠ 高级以上：对手会<b style="color:#ff4f6a">伪装情绪</b>，<br>显示数据可能与真实值相反！<br>出现"⚠ 疑似伪装"时需批判性判断。</small>',
+  ].join('<br>'),
+};
+
+// ── 内联提示浮窗状态 ─────────────────────────────────────────────────────────
+let _iPop = null;
+
+function _closeIPop() {
+  if (_iPop && _iPop.parentNode) _iPop.parentNode.removeChild(_iPop);
+  _iPop = null;
+}
+
+function showInlineTip(anchorEl, tipKey) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+  if (_iPop && _iPop.getAttribute('data-tip-key') === tipKey) { _closeIPop(); return; }
+  _closeIPop();
+  const html = _INLINE_TIPS[tipKey];
+  if (!html) return;
+  _iPop = document.createElement('div');
+  _iPop.className = 'inline-tip-pop';
+  _iPop.setAttribute('data-tip-key', tipKey);
+  _iPop.innerHTML = `<button class="inline-tip-close" aria-label="关闭">✕</button>${html}`;
+  document.body.appendChild(_iPop);
+  const r = anchorEl.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const PW = 280, PH = 150;
+  let left = r.left, top = r.bottom + 8;
+  if (left + PW > vw - 8) left = vw - PW - 8;
+  if (left < 8) left = 8;
+  if (top + PH > vh - 8) top = r.top - PH - 8;
+  Object.assign(_iPop.style, { left: left + 'px', top: top + 'px' });
+  _iPop.querySelector('.inline-tip-close').onclick = _closeIPop;
+}
+
+let _inlineTipsInited = false;
+function _initInlineTips() {
+  if (_inlineTipsInited || typeof document === 'undefined' || !document.addEventListener) return;
+  _inlineTipsInited = true;
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest && e.target.closest('.info-tip-btn[data-itip]');
+    if (btn) { e.stopPropagation(); showInlineTip(btn, btn.getAttribute('data-itip')); return; }
+    if (_iPop && !(e.target.closest && e.target.closest('.inline-tip-pop'))) _closeIPop();
+  });
 }
 
 // ── Tour 内容（对应说明书各章节）──────────────────────────────────────────────
@@ -4303,8 +4468,20 @@ const _TOURS = {
   result: [
     {
       title: '📊 对局结果 · 解读与卡牌奖励',
-      body: '• <b>结局标签</b>：胜利 / 失败 / 平局 / 合作共赢<br>• <b>关键指标</b>：报价/得分 + 对话轮次复盘<br>• <b>战绩更新</b>：军衔、胜率实时同步<br>• <b>卡牌解锁</b>：若满足条件将触发盲盒开箱动画 🎁<br>• 地狱级对局另有<b>地狱印章</b>（通过/失败）标注。',
+      body: '• <b>结局标签</b>：胜利 / 失败 / 平局 / 合作共赢<br>• <b>得分对比</b>：你的得分 vs 对手得分<br>• <b>战绩更新</b>：军衔 · 胜率实时同步，卡牌解锁检查<br>• 地狱级另有<b>地狱印章</b>（通过/失败）标注<br>• <b>卡牌解锁</b>：若满足条件触发盲盒开箱动画 🎁',
       position: 'center',
+    },
+    {
+      selector: '.bar-wrap',
+      title: '逐回合复盘 · 得分条含义',
+      body: '每条进度条对应一个回合的综合决策质量（0-100 分）：<br><span style="color:#00ff9f">■ 绿（≥70）</span> 优秀 &nbsp;<span style="color:#ffd700">■ 黄（50-69）</span> 中等 &nbsp;<span style="color:#ff4f6a">■ 红（&lt;50）</span> 需改进<br>条右侧数字是本轮得分，旁边的文字是关键行为标注。<br>★ 正向转折点 &nbsp;·&nbsp; ⚠ 负向转折点',
+      position: 'top',
+    },
+    {
+      selector: '[data-action="quick"]',
+      title: '下一步 · 快速提升建议',
+      body: '• <b>再来一局</b>：随机分配，快速积累训练局数<br>• <b>查看心理档案</b>：10 局后可得到准确 8 维画像<br>• <b>对手记忆</b>（v4Pro）：再战同一对手时注意徽章变化<br>• 对特定场景失败时，先查阅<b>策略理论库</b>对应宗师理论',
+      position: 'top',
     },
   ],
 
@@ -4480,6 +4657,7 @@ function _startTour(screenId) {
 // Shows tour automatically on first visit; otherwise shows ? help button only.
 function showTour(screenId) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+  _initInlineTips();
   _cleanTour();
   _rmHelp();
   _gScreen = screenId;

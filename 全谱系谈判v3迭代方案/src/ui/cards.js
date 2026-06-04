@@ -189,28 +189,10 @@ export function renderBoxOpenModal(newCards, onClose) {
 }
 
 function buildCardAvatar(oppId) {
-  // 泡泡马特官方产品图（远程，会破坏离线性；加载失败时回退到内置 SVG）
-  const POPMART = {
-    rational:    'https://m.media-amazon.com/images/I/71LIWMNf3EL._SL1500_.jpg',
-    emotional:   'https://m.media-amazon.com/images/I/71R9h2dcLYL._AC_UL800_QL65_.jpg',
-    aggressive:  'https://ae01.alicdn.com/kf/Sd992577a0eaf470281ef42e01d346aadI.jpg',
-    cooperative: 'https://cbu01.alicdn.com/img/ibank/O1CN018YRZkY23ZFzOK5gFj_!!2208180757269-0-cib.jpg',
-    manipulative:'https://m.media-amazon.com/images/I/71F3aXLPOPL._AC_UL800_QL65_.jpg',
-    riskAverse:  'https://img.lazcdn.com/g/p/81601368ea846d11a6f84bc1765a05e6.jpg_720x720q80.jpg',
-    trumpBoss:   'https://prod-eurasian-res.popmart.com/default/20240514_154131_770062_____05_____1200x1235.jpg',
-  };
-  const url = POPMART[oppId];
-  const svgInner = (typeof avatarSvg === 'function')
-    ? avatarSvg(oppId)
-    : `<span style="font-size:28px">${({rational:'🧮',emotional:'🌊',aggressive:'🦅',cooperative:'🤝',manipulative:'🎭',riskAverse:'🛡️',trumpBoss:'👑'})[oppId] || '🤝'}</span>`;
-  if (url) {
-    // img 在 fallback 之上；img 加载失败后 onerror 移除自己，自然露出 SVG
-    return `<div class="box-card-svg">
-      <div class="box-card-fallback">${svgInner}</div>
-      <img class="box-card-img" src="${url}" loading="lazy" alt="popmart" onerror="this.remove()">
-    </div>`;
-  }
-  return `<div class="box-card-svg">${svgInner}</div>`;
+  // 纯内联 SVG，无远程资源，离线友好
+  if (typeof avatarSvg === 'function') return `<div class="box-card-svg">${avatarSvg(oppId)}</div>`;
+  const emojiMap = { rational:'🧮', emotional:'🌊', aggressive:'🦅', cooperative:'🤝', manipulative:'🎭', riskAverse:'🛡️', trumpBoss:'👑' };
+  return `<span style="font-size:28px">${emojiMap[oppId] || '🤝'}</span>`;
 }
 
 // ─── 集卡册屏幕 ───────────────────────────────────────────────────────────────

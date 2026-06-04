@@ -80,6 +80,19 @@ export const C = {
     return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
   },
 
+  // 将情绪状态映射为直觉表情（用于 AI 气泡标签）
+  moodEmoji(mood) {
+    if (!mood) return '';
+    const { trust = 0, anger = 0, patience = 0, confidence = 0 } = mood;
+    if (anger > 0.72) return '😠';
+    if (anger > 0.50 && trust < 0.40) return '😤';
+    if (trust > 0.72) return '😊';
+    if (trust > 0.50 && anger < 0.35) return '🤝';
+    if (patience < 0.25) return '⏰';
+    if (confidence > 0.75) return '😎';
+    return '🤔';
+  },
+
   // 对话气泡：who='ai'|'player'|'system'
   dialogBubble(text, who = 'ai', label = '') {
     if (!text) return '';

@@ -40,7 +40,7 @@ export function initGameView() {
   if (_inited) return;
   _inited = true;
 
-  // 场景 HTML 落到 #game-content；首次渲染时同步补全对手头像
+  // 场景 HTML 落到 #game-content；首次渲染时同步补全对手头像；对话区自动滚底
   EventBus.on(EVENTS.GAME_RENDER, ({ html }) => {
     const chrome = document.getElementById('nego-chrome');
     if (chrome && !chrome.children.length) {
@@ -48,7 +48,11 @@ export function initGameView() {
       if (opp) chrome.innerHTML = buildChrome(opp);
     }
     const content = document.getElementById('game-content');
-    if (content) content.innerHTML = html;
+    if (content) {
+      content.innerHTML = html;
+      const log = content.querySelector('.bubble-log');
+      if (log) log.scrollTop = log.scrollHeight;
+    }
   });
 
   // AI 出招后实时更新温度条（marker 滑动）
@@ -59,7 +63,7 @@ export function initGameView() {
     const meta = document.getElementById('nego-temp-meta');
     if (marker) marker.style.left = temp + '%';
     if (meta) meta.textContent =
-      `信任 ${Math.round((mood.trust || 0) * 100)}% · 愤怒 ${Math.round((mood.anger || 0) * 100)}%`;
+      `${C.moodEmoji(mood)}  信任 ${Math.round((mood.trust || 0) * 100)}% · 愤怒 ${Math.round((mood.anger || 0) * 100)}%`;
   });
 
   // 事件委托：仅响应 #game-root 内的动作按钮

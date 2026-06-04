@@ -21,7 +21,7 @@ export class TrustGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = `投入 ${l.invested} 枚`;
       const oText = `返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`

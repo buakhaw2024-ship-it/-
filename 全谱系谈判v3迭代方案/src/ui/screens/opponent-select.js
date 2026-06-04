@@ -22,9 +22,10 @@ function buildOpponentCard(o, difficulty, player) {
 
   return `
     <div class="opp-card${isBoss ? ' boss-card' : ''}" data-opp="${o.id}">
-      ${isBoss ? '<div class="boss-badge">隐藏 BOSS</div>' : ''}
-      <div class="opp-name">${o.name}</div>
-      <div class="opp-type">${o.type}</div>
+      <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
+      ${isBoss ? '<div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>' : ''}
+      <div class="opp-name" style="text-align:center">${o.name}</div>
+      <div class="opp-type" style="text-align:center">${o.type}</div>
       <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
       ${isEasy ? `<div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoLine}</div>

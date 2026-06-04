@@ -28,7 +28,7 @@ export class PrisonersDilemma extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
       const oText = `${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`

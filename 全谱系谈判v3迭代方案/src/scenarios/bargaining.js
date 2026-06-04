@@ -29,7 +29,7 @@ export class BargainingGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = `出价 ${l.my} 元`;
       const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`

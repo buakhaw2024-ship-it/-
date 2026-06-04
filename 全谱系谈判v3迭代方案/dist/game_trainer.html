@@ -215,6 +215,14 @@ body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;
 .tl-pending{background:transparent;border-color:var(--border)}
 @keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.5)}50%{box-shadow:0 0 0 5px rgba(0,212,255,0)}}
 
+/* ── Bubble slide-in (last bubble only, on each re-render) ────────── */
+.bubble-log { max-height: 260px; overflow-y: auto; }
+.bubble-row:last-child { animation: bubble-in .22s ease-out; }
+@keyframes bubble-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Opponent avatar in selection cards ───────────────────────────── */
+.opp-card-avatar { text-align:center; margin-bottom:6px; }
+
 </style>
 </head>
 <body>
@@ -1183,6 +1191,19 @@ const C = {
     return `<div class="panel"><div class="panel-title">${title}</div><div class="log">${entriesHtml}</div></div>`;
   },
 
+  // 将情绪状态映射为直觉表情（用于 AI 气泡标签）
+  moodEmoji(mood) {
+    if (!mood) return '';
+    const { trust = 0, anger = 0, patience = 0, confidence = 0 } = mood;
+    if (anger > 0.72) return '😠';
+    if (anger > 0.50 && trust < 0.40) return '😤';
+    if (trust > 0.72) return '😊';
+    if (trust > 0.50 && anger < 0.35) return '🤝';
+    if (patience < 0.25) return '⏰';
+    if (confidence > 0.75) return '😎';
+    return '🤔';
+  },
+
   // 对话气泡：who='ai'|'player'|'system'
   dialogBubble(text, who = 'ai', label = '') {
     if (!text) return '';
@@ -1649,7 +1670,7 @@ class PrisonersDilemma extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
       const oText = `${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`
@@ -1847,7 +1868,7 @@ class TrustGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = `投入 ${l.invested} 枚`;
       const oText = `返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`
@@ -1931,7 +1952,7 @@ class BargainingGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = `出价 ${l.my} 元`;
       const oText = `要价 ${l.opp} 元（差距 ${l.gap} 元）${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`
@@ -2134,7 +2155,7 @@ class PublicGoodsGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = `贡献 ${l.my} 枚`;
       const oText = `贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`
@@ -2565,9 +2586,10 @@ function buildOpponentCard(o, difficulty, player) {
 
   return `
     <div class="opp-card${isBoss ? ' boss-card' : ''}" data-opp="${o.id}">
-      ${isBoss ? '<div class="boss-badge">隐藏 BOSS</div>' : ''}
-      <div class="opp-name">${o.name}</div>
-      <div class="opp-type">${o.type}</div>
+      <div class="opp-card-avatar">${C.avatarBadge(o, 38)}</div>
+      ${isBoss ? '<div class="boss-badge" style="display:block;text-align:center;margin-bottom:4px">隐藏 BOSS</div>' : ''}
+      <div class="opp-name" style="text-align:center">${o.name}</div>
+      <div class="opp-type" style="text-align:center">${o.type}</div>
       <div class="opp-desc" style="margin:4px 0">${o.desc}</div>
       ${isEasy ? `<div style="font-size:10px;color:var(--yellow)">弱点：${o.weakness}</div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--dim)">${infoLine}</div>
@@ -2693,7 +2715,7 @@ function initGameView() {
   if (_inited) return;
   _inited = true;
 
-  // 场景 HTML 落到 #game-content；首次渲染时同步补全对手头像
+  // 场景 HTML 落到 #game-content；首次渲染时同步补全对手头像；对话区自动滚底
   EventBus.on(EVENTS.GAME_RENDER, ({ html }) => {
     const chrome = document.getElementById('nego-chrome');
     if (chrome && !chrome.children.length) {
@@ -2701,7 +2723,11 @@ function initGameView() {
       if (opp) chrome.innerHTML = buildChrome(opp);
     }
     const content = document.getElementById('game-content');
-    if (content) content.innerHTML = html;
+    if (content) {
+      content.innerHTML = html;
+      const log = content.querySelector('.bubble-log');
+      if (log) log.scrollTop = log.scrollHeight;
+    }
   });
 
   // AI 出招后实时更新温度条（marker 滑动）
@@ -2712,7 +2738,7 @@ function initGameView() {
     const meta = document.getElementById('nego-temp-meta');
     if (marker) marker.style.left = temp + '%';
     if (meta) meta.textContent =
-      `信任 ${Math.round((mood.trust || 0) * 100)}% · 愤怒 ${Math.round((mood.anger || 0) * 100)}%`;
+      `${C.moodEmoji(mood)}  信任 ${Math.round((mood.trust || 0) * 100)}% · 愤怒 ${Math.round((mood.anger || 0) * 100)}%`;
   });
 
   // 事件委托：仅响应 #game-root 内的动作按钮

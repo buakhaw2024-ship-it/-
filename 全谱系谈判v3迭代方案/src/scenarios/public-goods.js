@@ -22,7 +22,7 @@ export class PublicGoodsGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       const pText = `贡献 ${l.my} 枚`;
       const oText = `贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）${l.reason ? ' — ' + l.reason : ''}`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', opp.name);
+      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
     this.emitRender(`

@@ -116,15 +116,18 @@ export function renderBoxOpenModal(newCards, onClose) {
         ${hiddenCount > 0 ? `本局解锁 ${newCards.length} 张，抽出最稀有一张` : '点击盲盒开启'}
       </div>
 
-      <!-- 盲盒 -->
+      <!-- 盲盒（泡泡马特风格包装）-->
       <div class="gift-box-wrap" id="bm-box" style="--card-color:${rc.color};--card-glow:${rc.glow}">
         <div class="gift-box-particles" id="bm-particles">${particles}</div>
+        <div class="gift-box-brand">全谱系盲盒 · 系列 I</div>
         <div class="gift-box-lid" id="bm-lid">
           <div class="gift-box-ribbon-h"></div>
           <div class="gift-box-ribbon-knot">✦</div>
         </div>
         <div class="gift-box-body">
           <div class="gift-box-ribbon-v"></div>
+          <div class="gift-box-question">?</div>
+          <div class="gift-box-series">SECRET</div>
           <div class="gift-box-rarity-label" style="color:${rc.color}">${RARITY_NAMES[card.rarity] || card.rarity}</div>
         </div>
         <div class="gift-box-hint">点击开盒</div>
@@ -186,10 +189,28 @@ export function renderBoxOpenModal(newCards, onClose) {
 }
 
 function buildCardAvatar(oppId) {
-  // inline SVG from avatars module (already loaded in scope)
-  if (typeof avatarSvg === 'function') return `<div class="box-card-svg">${avatarSvg(oppId)}</div>`;
-  const emojiMap = { rational:'🧮', emotional:'🌊', aggressive:'🦅', cooperative:'🤝', manipulative:'🎭', riskAverse:'🛡️', trumpBoss:'👑' };
-  return `<span style="font-size:28px">${emojiMap[oppId] || '🤝'}</span>`;
+  // 泡泡马特官方产品图（远程，会破坏离线性；加载失败时回退到内置 SVG）
+  const POPMART = {
+    rational:    'https://m.media-amazon.com/images/I/71LIWMNf3EL._SL1500_.jpg',
+    emotional:   'https://m.media-amazon.com/images/I/71R9h2dcLYL._AC_UL800_QL65_.jpg',
+    aggressive:  'https://ae01.alicdn.com/kf/Sd992577a0eaf470281ef42e01d346aadI.jpg',
+    cooperative: 'https://cbu01.alicdn.com/img/ibank/O1CN018YRZkY23ZFzOK5gFj_!!2208180757269-0-cib.jpg',
+    manipulative:'https://m.media-amazon.com/images/I/71F3aXLPOPL._AC_UL800_QL65_.jpg',
+    riskAverse:  'https://img.lazcdn.com/g/p/81601368ea846d11a6f84bc1765a05e6.jpg_720x720q80.jpg',
+    trumpBoss:   'https://prod-eurasian-res.popmart.com/default/20240514_154131_770062_____05_____1200x1235.jpg',
+  };
+  const url = POPMART[oppId];
+  const svgInner = (typeof avatarSvg === 'function')
+    ? avatarSvg(oppId)
+    : `<span style="font-size:28px">${({rational:'🧮',emotional:'🌊',aggressive:'🦅',cooperative:'🤝',manipulative:'🎭',riskAverse:'🛡️',trumpBoss:'👑'})[oppId] || '🤝'}</span>`;
+  if (url) {
+    // img 在 fallback 之上；img 加载失败后 onerror 移除自己，自然露出 SVG
+    return `<div class="box-card-svg">
+      <div class="box-card-fallback">${svgInner}</div>
+      <img class="box-card-img" src="${url}" loading="lazy" alt="popmart" onerror="this.remove()">
+    </div>`;
+  }
+  return `<div class="box-card-svg">${svgInner}</div>`;
 }
 
 // ─── 集卡册屏幕 ───────────────────────────────────────────────────────────────

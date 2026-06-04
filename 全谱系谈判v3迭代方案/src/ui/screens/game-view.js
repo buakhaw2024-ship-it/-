@@ -5,11 +5,7 @@
 import { EventBus } from '../../core/event-bus.js';
 import { EVENTS } from '../../core/events.js';
 import { Store } from '../../core/store.js';
-
-const AVATAR_EMOJI = {
-  rational: '🧮', emotional: '🌊', aggressive: '🦅',
-  cooperative: '🤝', manipulative: '🎭', riskAverse: '🛡️', trumpBoss: '👑',
-};
+import { C } from '../components.js';
 
 function calcTemp(mood) {
   const raw = 50 + ((mood.trust || 0) - (mood.anger || 0)) * 50;
@@ -17,12 +13,11 @@ function calcTemp(mood) {
 }
 
 function buildChrome(opp) {
-  const emoji = AVATAR_EMOJI[opp.id] || '🤝';
   const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
   const typeLine = (opp.type || '').split('/')[0].trim();
   return `<div class="nego-chrome">
     <div class="nego-avatar-section">
-      <div class="${ringCls}"><span class="nego-avatar-emoji">${emoji}</span></div>
+      <div class="${ringCls}"><span class="nego-avatar-emoji">${C.avatarEmoji(opp.id)}</span></div>
       <div class="nego-avatar-name">${opp.name}</div>
       <div class="nego-avatar-type">${typeLine}</div>
     </div>

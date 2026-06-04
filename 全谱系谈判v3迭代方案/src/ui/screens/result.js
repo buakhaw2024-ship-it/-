@@ -62,8 +62,18 @@ export function renderResult() {
       C.panel('改进建议', replay.advice.map((a) => C.hint(`• ${a}`)).join(''));
   }
 
+  const avatarHead = opp ? `
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 14px">
+      ${C.avatarBadge(opp, 40)}
+      <div style="text-align:left">
+        <div style="color:var(--white);font-size:13px;font-weight:bold">${opp.name}</div>
+        <div style="color:var(--purple);font-size:10px">${opp.type}</div>
+      </div>
+    </div>` : '';
+
   return `
     <div class="header"><h1>${scenarioName} — 训练结束</h1></div>
+    ${avatarHead}
     <div class="grid2" style="margin-bottom:12px">
       ${C.scoreBox(result.playerScore, '您的得分')}
       ${C.scoreBox(result.oppScore, `${opp ? opp.name : '对手'} 得分`)}

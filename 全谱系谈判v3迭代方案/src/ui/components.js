@@ -3,6 +3,24 @@
 // 由 game-view 的事件委托翻译成 player:action 事件。
 
 export const C = {
+  // 对手头像 emoji 映射（无外部图片，纯 Unicode）
+  avatarEmoji(oppId) {
+    const MAP = {
+      rational: '🧮', emotional: '🌊', aggressive: '🦅',
+      cooperative: '🤝', manipulative: '🎭', riskAverse: '🛡️', trumpBoss: '👑',
+    };
+    return MAP[oppId] || '🤝';
+  },
+
+  // 独立头像徽章（结果屏等处复用）
+  avatarBadge(opp, size = 44) {
+    if (!opp) return '';
+    const ringCls = opp.boss ? 'nego-avatar-ring boss-ring' : 'nego-avatar-ring';
+    return `<div class="${ringCls}" style="width:${size}px;height:${size}px">
+      <span class="nego-avatar-emoji" style="font-size:${Math.round(size * 0.46)}px">${this.avatarEmoji(opp.id)}</span>
+    </div>`;
+  },
+
   panel(title, body) {
     return `<div class="panel"><div class="panel-title">${title}</div>${body}</div>`;
   },

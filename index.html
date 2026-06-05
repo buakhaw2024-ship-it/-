@@ -691,6 +691,245 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
   .arc-row{flex-direction:column}
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   技能盲盒系统 · Skill Blindbox
+   泡泡马特 Q 版风 + 镭射边框 + 女性参与者友好审美
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 稀有度色板（N/R/SR/SSR/UR）─────────────────────────────────────── */
+:root{
+  --sk-n:#8ecfff;     --sk-n-glow:rgba(142,207,255,.45);  --sk-n-bg:rgba(142,207,255,.08);
+  --sk-r:#3aa7ff;     --sk-r-glow:rgba(58,167,255,.5);    --sk-r-bg:rgba(58,167,255,.08);
+  --sk-sr:#ffd166;    --sk-sr-glow:rgba(255,209,102,.55); --sk-sr-bg:rgba(255,209,102,.1);
+  --sk-ssr:#c084fc;   --sk-ssr-glow:rgba(192,132,252,.6); --sk-ssr-bg:rgba(192,132,252,.12);
+  --sk-ur:#f6c453;    --sk-ur-glow:rgba(246,196,83,.7);   --sk-ur-bg:rgba(246,196,83,.14);
+  --sk-soft-pink:#ffb6d1;
+  --sk-soft-mint:#a8e6cf;
+}
+
+/* ── 主标签条 ──────────────────────────────────────────────────────── */
+.sk-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px}
+.sk-tab{padding:9px 18px;cursor:pointer;color:var(--dim);font-size:12px;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none}
+.sk-tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.sk-tab:hover{color:var(--text)}
+.sk-tab .sk-tab-badge{display:inline-block;background:var(--purple);color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:bold;letter-spacing:0}
+
+/* ── 顶部状态条（碎片 + 卡包 + 收集） ───────────────────────────────── */
+.sk-status-bar{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(135deg,rgba(192,132,252,.05),rgba(255,209,102,.04));border:1px solid var(--border);border-radius:6px;margin-bottom:12px;font-size:12px;align-items:center}
+.sk-status-item{display:flex;align-items:center;gap:6px;padding:2px 8px}
+.sk-status-item b{color:var(--white);font-size:13px}
+.sk-status-shard{color:var(--purple)}
+.sk-status-pack{color:var(--sr,#ffd166)}
+.sk-status-pity{color:var(--dim);font-size:10px;margin-left:auto}
+
+/* ── 卡片本体（Q 版头像 + 镭射边框 + 三段式） ──────────────────────── */
+@keyframes sk-foil-rotate{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+@keyframes sk-card-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes sk-shine{0%{transform:translateX(-100%) skewX(-15deg)}50%,100%{transform:translateX(200%) skewX(-15deg)}}
+@keyframes sk-pulse-ur{0%,100%{box-shadow:0 0 18px var(--card-glow,rgba(246,196,83,.5)),0 0 0 1px var(--card-color,#f6c453)}50%{box-shadow:0 0 32px var(--card-glow,rgba(246,196,83,.8)),0 0 0 2px var(--card-color,#f6c453)}}
+
+.sk-card{
+  position:relative;background:linear-gradient(160deg,var(--bg2) 0%,var(--bg3) 100%);
+  border:1.5px solid var(--card-color,var(--border));border-radius:10px;
+  padding:10px 8px 8px;text-align:center;overflow:hidden;
+  transition:all .25s;
+  --card-color:var(--sk-n);--card-glow:var(--sk-n-glow);--card-bg:var(--sk-n-bg);
+}
+.sk-card[data-rarity="N"]  { --card-color:var(--sk-n);--card-glow:var(--sk-n-glow);--card-bg:var(--sk-n-bg); }
+.sk-card[data-rarity="R"]  { --card-color:var(--sk-r);--card-glow:var(--sk-r-glow);--card-bg:var(--sk-r-bg); }
+.sk-card[data-rarity="SR"] { --card-color:var(--sk-sr);--card-glow:var(--sk-sr-glow);--card-bg:var(--sk-sr-bg); }
+.sk-card[data-rarity="SSR"]{ --card-color:var(--sk-ssr);--card-glow:var(--sk-ssr-glow);--card-bg:var(--sk-ssr-bg); }
+.sk-card[data-rarity="UR"] { --card-color:var(--sk-ur);--card-glow:var(--sk-ur-glow);--card-bg:var(--sk-ur-bg); }
+
+.sk-card::before{
+  /* 镭射 foil 层 */
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.16;mix-blend-mode:screen;
+  background:conic-gradient(from 0deg,rgba(255,107,138,.5),rgba(255,215,0,.5),rgba(136,224,192,.5),rgba(107,184,216,.5),rgba(192,132,252,.5),rgba(255,107,138,.5));
+}
+.sk-card[data-rarity="SSR"]::before, .sk-card[data-rarity="UR"]::before{ animation:sk-foil-rotate 8s linear infinite; opacity:.22 }
+.sk-card[data-rarity="UR"]{ animation:sk-pulse-ur 2.6s ease-in-out infinite, sk-card-float 3s ease-in-out infinite }
+.sk-card-owned{ box-shadow:0 0 12px var(--card-glow) }
+.sk-card-locked{ opacity:.5; filter:grayscale(.55) }
+
+.sk-card-rarity{
+  position:relative;z-index:1;display:inline-block;
+  padding:1px 8px;border-radius:8px;
+  font-size:9px;font-weight:bold;letter-spacing:1.5px;color:#0a0e1a;
+  background:var(--card-color);
+  margin-bottom:4px;
+}
+.sk-card-name{position:relative;z-index:1;color:var(--white);font-size:12px;font-weight:bold;margin-bottom:4px;letter-spacing:.5px}
+.sk-card-no{position:relative;z-index:1;color:var(--dim);font-size:9px;letter-spacing:1px;margin-bottom:6px}
+.sk-card-series{position:relative;z-index:1;color:var(--card-color);font-size:9px;margin-bottom:4px;letter-spacing:.5px}
+
+.sk-card-avatar{
+  position:relative;z-index:1;height:64px;display:flex;align-items:center;justify-content:center;margin:4px 0;
+}
+.sk-card-avatar .sk-chibi{
+  width:60px;height:60px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff5e6 0%,#ffe0b3 35%,var(--card-color) 100%);
+  display:flex;align-items:center;justify-content:center;font-size:30px;
+  border:2px solid var(--card-color);
+  box-shadow:0 0 14px var(--card-glow), inset 0 -8px 14px rgba(0,0,0,.18);
+  position:relative;
+}
+.sk-card-avatar .sk-chibi::after{
+  content:'';position:absolute;top:14%;left:18%;width:28%;height:18%;border-radius:50%;
+  background:rgba(255,255,255,.45);transform:rotate(-20deg);
+}
+.sk-card-locked .sk-card-avatar .sk-chibi{ background:radial-gradient(circle,#2a3a5a 0%,#1a2235 100%);color:var(--dim) }
+
+.sk-card-effect{
+  position:relative;z-index:1;color:var(--text);font-size:10.5px;line-height:1.5;
+  padding:5px 6px;background:rgba(0,0,0,.18);border-radius:4px;margin:5px 0 4px;min-height:32px;
+  text-align:left;
+}
+.sk-card-adapt{
+  position:relative;z-index:1;color:var(--dim);font-size:9.5px;line-height:1.5;
+  padding:4px 6px;border-top:1px dashed rgba(255,255,255,.08);margin-top:4px;
+  text-align:left;font-style:italic;
+}
+.sk-card-flavor{position:relative;z-index:1;font-size:9.5px;color:var(--dim);font-style:italic;margin-top:4px;line-height:1.5;min-height:24px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sk-card-dupcount{position:absolute;top:6px;right:8px;background:rgba(0,0,0,.55);color:var(--card-color);font-size:9px;padding:1px 5px;border-radius:8px;z-index:2;font-weight:bold}
+
+/* ── 卡片网格 ──────────────────────────────────────────────────────── */
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.sk-section-head{color:var(--card-color,var(--cyan));font-size:11px;letter-spacing:2px;margin:6px 0 8px;font-weight:bold;display:flex;justify-content:space-between;align-items:center}
+.sk-section-head .sk-section-prog{color:var(--dim);font-size:10px;font-weight:normal}
+
+/* ── 卡组配置（loadout） ───────────────────────────────────────────── */
+.sk-loadout-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;padding:14px;background:linear-gradient(135deg,rgba(0,212,255,.04),rgba(192,132,252,.04));border:1px dashed rgba(0,212,255,.3);border-radius:8px}
+.sk-loadout-slot{min-height:120px;border:1.5px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--dim);font-size:11px;padding:8px;transition:all .2s;cursor:pointer}
+.sk-loadout-slot.empty:hover{border-color:var(--cyan);background:rgba(0,212,255,.04)}
+.sk-loadout-slot.filled{border-style:solid;padding:0;cursor:pointer}
+.sk-loadout-slot.filled:hover{transform:translateY(-2px)}
+.sk-loadout-slot .sk-card{height:100%}
+.sk-loadout-tip{font-size:11px;color:var(--dim);margin-bottom:10px;padding:0 4px;line-height:1.6}
+.sk-loadout-tip b{color:var(--yellow)}
+
+.sk-card[data-loadout-pick="0"]::after{content:'';position:absolute;inset:-3px;border:2px solid var(--cyan);border-radius:11px;pointer-events:none;animation:sk-card-float 2s ease-in-out infinite}
+.sk-card[data-loadout-pick="1"]::after{content:'✓';position:absolute;top:6px;left:8px;background:var(--cyan);color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;z-index:3}
+
+/* ── 卡包（盲盒礼盒） ──────────────────────────────────────────────── */
+.sk-packs-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:18px}
+.sk-pack{
+  position:relative;cursor:pointer;border:1.5px solid var(--card-color,var(--sk-n));
+  border-radius:10px;padding:14px 10px;text-align:center;
+  background:linear-gradient(180deg,var(--card-bg,var(--sk-n-bg)) 0%,var(--bg2) 100%);
+  transition:all .2s;
+  --card-color:var(--sk-n);--card-bg:var(--sk-n-bg);--card-glow:var(--sk-n-glow);
+}
+.sk-pack[data-pack="basic"]   { --card-color:var(--sk-n);  --card-bg:var(--sk-n-bg);  --card-glow:var(--sk-n-glow) }
+.sk-pack[data-pack="advanced"]{ --card-color:var(--sk-sr); --card-bg:var(--sk-sr-bg); --card-glow:var(--sk-sr-glow) }
+.sk-pack[data-pack="hidden"]  { --card-color:var(--sk-ssr);--card-bg:var(--sk-ssr-bg);--card-glow:var(--sk-ssr-glow) }
+.sk-pack[data-pack="mythic"]  { --card-color:var(--sk-ur); --card-bg:var(--sk-ur-bg); --card-glow:var(--sk-ur-glow) }
+.sk-pack[data-pack="daily"]   { --card-color:var(--sk-soft-pink); --card-bg:rgba(255,182,209,.07); --card-glow:rgba(255,182,209,.4) }
+.sk-pack:hover{transform:translateY(-2px);box-shadow:0 0 18px var(--card-glow)}
+
+.sk-pack-icon{
+  width:60px;height:78px;margin:0 auto 8px;border-radius:8px 8px 4px 4px;
+  background:linear-gradient(135deg,var(--card-color) 0%,rgba(0,0,0,.4) 100%);
+  position:relative;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 14px var(--card-glow), inset 0 -4px 8px rgba(0,0,0,.25);
+  overflow:hidden;
+}
+.sk-pack-icon::before{
+  content:'';position:absolute;top:50%;left:0;right:0;height:8px;background:rgba(255,255,255,.25);
+  transform:translateY(-50%);
+}
+.sk-pack-icon::after{
+  content:'✦';position:absolute;color:rgba(255,255,255,.95);font-size:18px;z-index:1;
+  text-shadow:0 0 8px rgba(0,0,0,.5);
+}
+.sk-pack-shine{position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.25) 50%,transparent 70%);animation:sk-shine 3.5s linear infinite}
+.sk-pack-name{color:var(--white);font-size:12px;font-weight:bold;margin-bottom:3px;letter-spacing:.5px}
+.sk-pack-reason{color:var(--dim);font-size:10px;margin-bottom:8px}
+.sk-pack-action{font-size:10px;color:var(--card-color);letter-spacing:1px;font-weight:bold;animation:box-hint-blink 1.4s ease-in-out infinite}
+
+/* ── 开包模态：复用 box-modal-overlay & 增强 ─────────────────────── */
+.sk-open-modal{ max-width:540px !important; width:96% !important; padding:20px 18px !important }
+.sk-open-title{color:var(--cyan);font-size:14px;font-weight:bold;letter-spacing:2px;margin-bottom:4px;text-align:center}
+.sk-open-sub{color:var(--dim);font-size:11px;text-align:center;margin-bottom:14px}
+.sk-open-revealed{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:10px 0 14px}
+.sk-open-revealed .sk-card{width:130px;animation:card-flip-in .55s cubic-bezier(.34,1.56,.64,1) both}
+.sk-open-revealed .sk-card:nth-child(2){animation-delay:.08s}
+.sk-open-revealed .sk-card:nth-child(3){animation-delay:.16s}
+.sk-open-revealed .sk-card:nth-child(4){animation-delay:.24s}
+.sk-open-revealed .sk-card:nth-child(5){animation-delay:.32s}
+.sk-open-tag-new{display:inline-block;background:rgba(0,255,159,.18);color:var(--green);font-size:9px;padding:1px 6px;border-radius:8px;letter-spacing:1px;margin-left:4px;border:1px solid rgba(0,255,159,.4)}
+.sk-open-tag-dup{display:inline-block;background:rgba(192,132,252,.18);color:var(--purple);font-size:9px;padding:1px 6px;border-radius:8px;letter-spacing:1px;margin-left:4px;border:1px solid rgba(192,132,252,.4)}
+.sk-open-shard-bonus{text-align:center;color:var(--purple);font-size:12px;margin:6px 0 10px}
+.sk-open-shard-bonus b{color:#fff}
+
+/* ── 局内卡牌面板 ─────────────────────────────────────────────────── */
+.sk-ingame-panel{background:linear-gradient(180deg,rgba(192,132,252,.06),rgba(0,212,255,.02));border:1px solid rgba(192,132,252,.3);border-radius:6px;padding:10px 12px;margin:10px 0;position:relative}
+.sk-ingame-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sk-ingame-title{color:var(--purple);font-size:11px;letter-spacing:2px;font-weight:bold}
+.sk-ingame-empty{font-size:11px;color:var(--dim);padding:6px;text-align:center;font-style:italic}
+.sk-ingame-cards{display:flex;gap:8px;flex-wrap:wrap}
+.sk-mini-card{
+  flex:1;min-width:110px;max-width:160px;
+  background:linear-gradient(160deg,var(--bg2),var(--bg3));
+  border:1.5px solid var(--card-color,var(--sk-n));border-radius:6px;padding:7px 8px;
+  cursor:pointer;transition:all .2s;position:relative;
+  --card-color:var(--sk-n);--card-glow:var(--sk-n-glow);
+}
+.sk-mini-card[data-rarity="N"]  { --card-color:var(--sk-n);  --card-glow:var(--sk-n-glow) }
+.sk-mini-card[data-rarity="R"]  { --card-color:var(--sk-r);  --card-glow:var(--sk-r-glow) }
+.sk-mini-card[data-rarity="SR"] { --card-color:var(--sk-sr); --card-glow:var(--sk-sr-glow) }
+.sk-mini-card[data-rarity="SSR"]{ --card-color:var(--sk-ssr);--card-glow:var(--sk-ssr-glow) }
+.sk-mini-card[data-rarity="UR"] { --card-color:var(--sk-ur); --card-glow:var(--sk-ur-glow) }
+.sk-mini-card:hover{transform:translateY(-2px);box-shadow:0 0 10px var(--card-glow)}
+.sk-mini-card.used{opacity:.35;filter:grayscale(.7);cursor:not-allowed}
+.sk-mini-card.used:hover{transform:none;box-shadow:none}
+.sk-mini-rarity{display:inline-block;background:var(--card-color);color:#0a0e1a;font-size:8.5px;padding:0 5px;border-radius:6px;font-weight:bold;letter-spacing:1px}
+.sk-mini-name{color:var(--white);font-size:11px;font-weight:bold;margin:3px 0}
+.sk-mini-effect{color:var(--dim);font-size:9.5px;line-height:1.45;min-height:24px}
+.sk-mini-used-badge{position:absolute;top:4px;right:6px;font-size:9px;color:var(--dim);background:rgba(0,0,0,.45);padding:0 5px;border-radius:6px}
+
+/* ── 对手适应条 ───────────────────────────────────────────────────── */
+.sk-adapt-bar{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:6px 0 10px}
+.sk-adapt-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:11px;color:var(--dim);letter-spacing:1px}
+.sk-adapt-head b{color:var(--purple)}
+.sk-adapt-toggle{font-size:14px;color:var(--cyan);transition:transform .2s}
+.sk-adapt-bar.open .sk-adapt-toggle{transform:rotate(180deg)}
+.sk-adapt-body{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.sk-adapt-bar.open .sk-adapt-body{display:block}
+.sk-adapt-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:10.5px}
+.sk-adapt-row .sk-adapt-label{flex:0 0 80px;color:var(--text)}
+.sk-adapt-row .sk-adapt-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.sk-adapt-row .sk-adapt-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .5s}
+.sk-adapt-row .sk-adapt-val{flex:0 0 28px;text-align:right;color:var(--purple);font-weight:bold;font-size:10px}
+.sk-adapt-msg{font-size:10.5px;color:var(--dim);font-style:italic;margin:6px 0 0;padding:5px 8px;background:rgba(192,132,252,.06);border-left:2px solid var(--purple);border-radius:0 3px 3px 0;line-height:1.6}
+
+/* ── 卡牌效果飞行提示 ─────────────────────────────────────────────── */
+@keyframes sk-toast-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes sk-toast-out{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-12px)}}
+.sk-toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9300;background:var(--bg2);border:1.5px solid var(--card-color,var(--cyan));border-radius:8px;padding:12px 18px;min-width:260px;max-width:80%;box-shadow:0 8px 28px rgba(0,0,0,.6),0 0 18px var(--card-glow,rgba(0,212,255,.3));animation:sk-toast-in .25s ease}
+.sk-toast.closing{animation:sk-toast-out .3s ease forwards}
+.sk-toast-card{font-size:11px;color:var(--card-color,var(--cyan));font-weight:bold;letter-spacing:1px;margin-bottom:4px}
+.sk-toast-effect{color:var(--white);font-size:12px;line-height:1.6;margin-bottom:6px}
+.sk-toast-adapt{color:var(--dim);font-size:10.5px;line-height:1.6;font-style:italic;padding-top:6px;border-top:1px dashed rgba(255,255,255,.1)}
+
+/* ── 结果页：本局卡牌使用复盘 ─────────────────────────────────────── */
+.sk-replay-panel{background:linear-gradient(135deg,rgba(192,132,252,.05),rgba(0,212,255,.03));border:1px solid rgba(192,132,252,.3);border-radius:6px;padding:12px 14px;margin:12px 0}
+.sk-replay-title{color:var(--purple);font-size:11px;letter-spacing:2px;margin-bottom:8px;font-weight:bold}
+.sk-replay-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:11px;align-items:center}
+.sk-replay-row:last-child{border-bottom:none}
+.sk-replay-rarity{flex:0 0 28px;font-weight:bold;font-size:10px;text-align:center;color:var(--card-color);padding:1px 4px;border-radius:6px;background:var(--card-bg);border:1px solid var(--card-color)}
+.sk-replay-name{flex:0 0 80px;color:var(--white);font-size:11px}
+.sk-replay-detail{flex:1;color:var(--text);font-size:10.5px;line-height:1.5}
+.sk-replay-empty{font-size:11px;color:var(--dim);font-style:italic;padding:4px}
+
+/* 移动端 */
+@media(max-width:600px){
+  .sk-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .sk-loadout-slots{grid-template-columns:repeat(3,1fr);gap:6px}
+  .sk-packs-row{grid-template-columns:repeat(2,1fr)}
+  .sk-card-name{font-size:11px}
+  .sk-card-effect,.sk-card-flavor{font-size:9.5px}
+}
+
 </style>
 </head>
 <body>
@@ -775,6 +1014,16 @@ const EVENTS = {
   OPPONENT_QUESTION_RESOLVED:   'opponent:question-resolved',
   HIDDEN_OBJECTIVE_PICKED:      'hidden-objective:picked',
   HIDDEN_OBJECTIVE_RESOLVED:    'hidden-objective:resolved',
+
+  // 技能盲盒系统
+  CARD_PACK_EARNED:    'card:pack-earned',
+  CARD_PACK_OPENED:    'card:pack-opened',
+  CARD_UNLOCKED:       'card:unlocked',
+  CARD_DUPLICATE:      'card:duplicate',
+  CARD_LOADOUT_CHANGED:'card:loadout-changed',
+  PLAYER_CARD_USED:    'card:used',
+  CARD_EFFECT_APPLIED: 'card:effect-applied',
+  OPPONENT_ADAPTED:    'opponent:adapted',
 };
 
 // 屏幕标识（router 使用）
@@ -789,6 +1038,8 @@ const SCREENS = {
   PSYCHOLOGY: 'psychology',
   DASHBOARD: 'dashboard',
   CARD_ALBUM: 'card-album',
+  // 技能盲盒系统（与 CARD_ALBUM 成就收藏并存；这是"谈判技能卡"系统）
+  SKILL_CARDS: 'skill-cards',
   // 谈判弧线模式
   ARC_SELECTION: 'arc-selection',
   ARC_BRIEFING: 'arc-briefing',
@@ -1734,6 +1985,14 @@ const OpponentAI = {
     if (!bossExempt) {
       move = applyDifficulty(ctx.kind, move, ctx, getDifficultyMod(difficulty));
     }
+    // 技能盲盒：对手适应轻量修正（5%–20%，不覆盖原性格）
+    if (typeof OpponentAdaptation !== 'undefined') {
+      const adapted = OpponentAdaptation.modifyAIMove(ctx.kind, move, ctx);
+      if (adapted) {
+        move = adapted.move;
+        if (adapted.note) reason = reason ? `${reason}；${adapted.note}` : adapted.note;
+      }
+    }
     const snapshot = { ...mood };
 
     EventBus.emit(EVENTS.AI_DECIDED, { opponentId, move, reason, mood: snapshot, kind: ctx.kind });
@@ -1780,16 +2039,27 @@ function loadPlayer(name) {
     const saved = localStorage.getItem(KEY_PREFIX + name);
     if (saved) {
       const p = JSON.parse(saved);
-      // 向后兼容：补齐 v3 可能新增的字段
+      // 向后兼容：补齐 v3 / 技能盲盒可能新增的字段
       p.sessions = p.sessions || [];
       p.behaviorStats = { ...freshBehaviorStats(), ...(p.behaviorStats || {}) };
       if (typeof p.cardShards !== 'number') p.cardShards = 0;
+      // 技能盲盒系统字段（不污染原有 cardCollection — 用 skill 前缀）
+      p.skillCardCollection = p.skillCardCollection || [];
+      p.skillCardDuplicates = p.skillCardDuplicates || {};
+      p.skillCardPacks = p.skillCardPacks || [];
+      p.skillCardLoadout = p.skillCardLoadout || [];
+      p.skillCardPity = p.skillCardPity || { total: 0, sinceSR: 0, sinceSSR: 0, sinceUR: 0 };
       return p;
     }
   } catch (e) {
     console.warn('[player-data] 读取存档失败，新建档案', e);
   }
-  return { name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0, behaviorStats: freshBehaviorStats(), cardShards: 0 };
+  return {
+    name, sessions: [], total: 0, wins: 0, draws: 0, losses: 0,
+    behaviorStats: freshBehaviorStats(), cardShards: 0,
+    skillCardCollection: [], skillCardDuplicates: {}, skillCardPacks: [],
+    skillCardLoadout: [], skillCardPity: { total: 0, sinceSR: 0, sinceSSR: 0, sinceUR: 0 }
+  };
 }
 
 function savePlayer(player) {
@@ -4716,6 +4986,20 @@ function initRunner() {
     const scenario = new meta.Class(opp);
     Store.patch({ scenarioKey, opponent: opp, activeScenario: scenario });
 
+    // 技能盲盒：加载本局卡组、重置已用记录与对手适应
+    const _player = Store.get('player');
+    if (_player && typeof SkillBlindBox !== 'undefined') {
+      SkillBlindBox.ensureCardState(_player);
+      Store.set('activeCardLoadout', (_player.skillCardLoadout || []).slice());
+    } else {
+      Store.set('activeCardLoadout', []);
+    }
+    Store.set('usedCardsThisGame', []);
+    Store.set('cardPlayLog', []);
+    if (typeof OpponentAdaptation !== 'undefined') {
+      Store.set('opponentAdaptation', OpponentAdaptation.fresh());
+    }
+
     // 先导航到对局屏（同步渲染 #game-root），再 start() 触发首次 game:render
     EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.GAME, params: {} });
     scenario.start();
@@ -4725,6 +5009,17 @@ function initRunner() {
     if (action.type === 'exit') {
       Store.set('activeScenario', null);
       EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MAIN, params: {} });
+      return;
+    }
+    // 技能卡使用：单独路由（不进入 scenario.handleAction）
+    if (action.type === 'use-card' && typeof SkillCardEffects !== 'undefined') {
+      const res = SkillCardEffects.use(action.value);
+      if (res && res.ok) {
+        const card = SkillBlindBox.getCard(action.value);
+        if (card && typeof showSkillCardToast === 'function') {
+          showSkillCardToast(card, res.effectResult, res.adaptResult);
+        }
+      }
       return;
     }
     const scenario = Store.get('activeScenario');
@@ -5173,6 +5468,11 @@ function initRecorder() {
       // 检查新卡解锁（在 accumulate 之后）
       const newCards = checkNewCards(player);
       if (newCards.length) unlockCards(player, newCards);
+
+      // 技能盲盒：标记每日首局供独立 listener 使用
+      result._isDailyFirst = isDailyFirst;
+      if (opp && opp.boss && result.outcome === 'win') result.bossWin = true;
+
       Store.set('player', player);
       if (newCards.length && typeof document !== 'undefined') {
         Store.set('pendingNewCards', newCards);
@@ -5273,6 +5573,7 @@ const MENU = [
   ['⑤', '训练成绩看板', '历史战绩、胜率统计、成长曲线', 'nav', SCREENS.DASHBOARD],
   ['⑥', '卡牌收藏册', '收集对局卡片，解锁稀有 SSR/SP 卡', 'nav', SCREENS.CARD_ALBUM],
   ['⑦', '谈判弧线模式', '7 条剧情弧线 · 5 阶段决策链 · 多分支结局', 'nav', SCREENS.ARC_SELECTION],
+  ['⑧', '技能盲盒 / 卡组', '开包 · 集卡册 · 卡组配置 · 对局出牌', 'nav', SCREENS.SKILL_CARDS],
 ];
 
 function renderMainMenu() {
@@ -5295,10 +5596,21 @@ function renderMainMenu() {
   else if (arcDone > 0 && arcDone < 7) arcBadge = `<span class="menu-new-badge">${arcDone}/7</span>`;
   else if (arcDone === 0) arcBadge = `<span class="menu-new-badge">NEW</span>`;
 
+  // 技能盲盒徽章（⑧ 菜单）
+  let skillBadge = '';
+  if (typeof SkillBlindBox !== 'undefined') {
+    const packCount = (p.skillCardPacks || []).length;
+    const skillOwned = (p.skillCardCollection || []).length;
+    if (packCount > 0) skillBadge = `<span class="menu-new-badge">📦 ${packCount} 包待开</span>`;
+    else if (skillOwned === 0) skillBadge = `<span class="menu-new-badge">NEW</span>`;
+    else if (skillOwned < SKILL_CARDS.length) skillBadge = `<span class="menu-new-badge">${skillOwned}/${SKILL_CARDS.length}</span>`;
+  }
+
   const items = MENU.map(([num, title, sub, act, target], i) => {
     let badge = '';
     if (i === 5) badge = cardNew;
     else if (i === 6) badge = arcBadge;
+    else if (i === 7) badge = skillBadge;
     return `<div class="menu-item" data-act="${act}" data-target="${target || ''}" data-idx="${i}">
       <div class="menu-num">${num}</div>
       <div class="menu-text"><b>${title}${badge}</b><span>${sub}</span></div>
@@ -5644,6 +5956,22 @@ function initGameView() {
       const log = content.querySelector('.bubble-log');
       if (log) log.scrollTop = log.scrollHeight;
     }
+    // 技能盲盒：在场景内容之后渲染卡牌面板 + 对手适应条
+    if (typeof renderInGameCardPanelInto === 'function') {
+      renderInGameCardPanelInto(document.getElementById('game-root'));
+    }
+  });
+
+  // 卡牌使用 / 适应变化后即时刷新面板
+  EventBus.on(EVENTS.PLAYER_CARD_USED, () => {
+    if (typeof renderInGameCardPanelInto === 'function') {
+      renderInGameCardPanelInto(document.getElementById('game-root'));
+    }
+  });
+  EventBus.on(EVENTS.OPPONENT_ADAPTED, () => {
+    if (typeof renderInGameCardPanelInto === 'function') {
+      renderInGameCardPanelInto(document.getElementById('game-root'));
+    }
   });
 
   // AI 出招后实时更新温度条（marker 滑动）
@@ -5803,6 +6131,8 @@ function renderResult() {
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
     ${shardsBlock}
+    ${typeof buildSkillPackEarnedPanelHtml === 'function' ? buildSkillPackEarnedPanelHtml() : ''}
+    ${typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : ''}
     ${C.panel('复盘分析', result.summary || '')}
     ${v2Blocks}
     ${replayPanel}
@@ -5825,6 +6155,12 @@ renderResult.afterRender = function () {
     const keys = Object.keys(SCENARIO_META);
     const key = keys[Math.floor(Math.random() * keys.length)];
     EventBus.emit(EVENTS.GAME_START, { scenarioKey: key, opponentId: 'random' });
+  });
+
+  // 技能盲盒：「去开包」按钮直跳卡包 Tab
+  const gotoPacks = document.querySelector('[data-sk-goto-packs]');
+  if (gotoPacks) gotoPacks.addEventListener('click', () => {
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.SKILL_CARDS, params: { tab: 'packs' } });
   });
 
   // 开盒动画：若 recorder 发现有新卡，延迟 600ms 后弹出
@@ -9479,6 +9815,1074 @@ const Arc = {
     } catch (e) {}
   }
 };
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   data/skill-cards.js — 谈判技能卡（唯一卡牌类型）
+   N(6) / R(5) / SR(4) / SSR(3) / UR(2) = 20 张
+   ════════════════════════════════════════════════════════════════════════════ */
+const SKILL_CARDS = [
+  /* ── N · 普通：基础谈判技巧 ──────────────────────────────────────── */
+  {
+    id: 'n_open_question', name: '开放式提问', rarity: 'N',
+    series: '信息获取系', no: 'N-001', emoji: '❓',
+    effect: { type: 'reveal_hint', target: 'hidden_need', amount: 1, text: '额外揭示对方 1 条隐藏需求线索。' },
+    adaptation: { attr: 'alertness', amount: 3, text: '对手察觉你在搜集信息，回答开始谨慎。' },
+    flavor: '问题比答案更接近真实底线。', tags: ['信息', '提问', '基础']
+  },
+  {
+    id: 'n_paraphrase', name: '复述确认', rarity: 'N',
+    series: '建立信任系', no: 'N-012', emoji: '💬',
+    effect: { type: 'mood', target: 'trust', amount: 8, text: '本轮信任值 +8，误解风险降低。' },
+    adaptation: { attr: 'defense', amount: 3, text: '对手开始判断你是否在引导其表态。' },
+    flavor: '先确认理解，再推动成交。', tags: ['信任', '沟通', '基础']
+  },
+  {
+    id: 'n_active_listen', name: '主动倾听', rarity: 'N',
+    series: '建立信任系', no: 'N-018', emoji: '👂',
+    effect: { type: 'mood', target: 'trust', amount: 5, text: '本轮信任值 +5，情绪风险 -5。' },
+    adaptation: { attr: 'defense', amount: 2, text: '对手感到被听见，但开始观察你的目的。' },
+    flavor: '会听的人，比会说的人更有力量。', tags: ['倾听', '关系', '基础']
+  },
+  {
+    id: 'n_clarify_goal', name: '明确目标', rarity: 'N',
+    series: '高阶博弈系', no: 'N-024', emoji: '🎯',
+    effect: { type: 'reveal_hint', target: 'hidden_need', amount: 1, text: '本轮锁定一个核心议题，避免被支线带跑。' },
+    adaptation: { attr: 'strategy', amount: 4, text: '对手开始反向锁定你的真实优先级。' },
+    flavor: '没有目标的谈判，是别人主场的谈判。', tags: ['框架', '战略', '基础']
+  },
+  {
+    id: 'n_silence', name: '沉默压力', rarity: 'N',
+    series: '冲突处理系', no: 'N-031', emoji: '🤫',
+    effect: { type: 'mood', target: 'anger', amount: -3, text: '本轮制造 3 秒沉默，让对方先开口。' },
+    adaptation: { attr: 'pressure', amount: 4, text: '对手意识到沉默战术，开始反向沉默。' },
+    flavor: '沉默是最便宜的战术，也是最难用对的。', tags: ['节奏', '基础']
+  },
+  {
+    id: 'n_summary', name: '阶段总结', rarity: 'N',
+    series: '高阶博弈系', no: 'N-045', emoji: '📋',
+    effect: { type: 'reveal_hint', target: 'progress', amount: 1, text: '本轮锁定已达成共识，防止反悔。' },
+    adaptation: { attr: 'defense', amount: 3, text: '对手对反悔成本提高，但开始更谨慎承诺。' },
+    flavor: '把已经谈成的，钉到桌上。', tags: ['框架', '共识', '基础']
+  },
+
+  /* ── R · 稀有：进阶战术 ──────────────────────────────────────────── */
+  {
+    id: 'r_batna', name: 'BATNA 分析', rarity: 'R',
+    series: '高阶博弈系', no: 'R-015', emoji: '⚖️',
+    effect: { type: 'reveal_batna', amount: 1, text: '查看对方替代方案强弱等级。' },
+    adaptation: { attr: 'strategy', amount: 6, text: '对手开始释放备选方案信号，真假需要验证。' },
+    flavor: '有退路，才有底气。', tags: ['BATNA', '信息', '战术']
+  },
+  {
+    id: 'r_need_discovery', name: '需求挖掘', rarity: 'R',
+    series: '信息获取系', no: 'R-028', emoji: '🔍',
+    effect: { type: 'reveal_hint', target: 'true_need', amount: 2, text: '额外获得 2 条需求线索。' },
+    adaptation: { attr: 'alertness', amount: 6, text: '对手意识到你正在追问真实需求。' },
+    flavor: '价格背后，通常藏着真正需求。', tags: ['信息', '需求', '战术']
+  },
+  {
+    id: 'r_anchor_first', name: '首发锚定', rarity: 'R',
+    series: '价格谈判系', no: 'R-037', emoji: '⚓',
+    effect: { type: 'anchor_first', amount: 1, text: '本轮报价获得首发锚定优势，谈判区间被拉向你的方向。' },
+    adaptation: { attr: 'bargaining', amount: 7, text: '对手警觉到锚定企图，开始用反锚回击。' },
+    flavor: '第一个数字，往往决定最后一个数字。', tags: ['锚定', '价格', '战术']
+  },
+  {
+    id: 'r_walk_away', name: 'Walk-Away 信号', rarity: 'R',
+    series: '价格谈判系', no: 'R-052', emoji: '🚪',
+    effect: { type: 'mood', target: 'confidence', amount: -10, text: '展示离桌意愿，对方信心 -10，让步意愿上升。' },
+    adaptation: { attr: 'bargaining', amount: 8, text: '对手开始评估你"真走还是假走"，并调整还价。' },
+    flavor: '能走的人，才能留下。', tags: ['BATNA', '价格', '战术']
+  },
+  {
+    id: 'r_objective_standard', name: '客观标准', rarity: 'R',
+    series: '高阶博弈系', no: 'R-061', emoji: '📐',
+    effect: { type: 'reveal_hint', target: 'fair_range', amount: 1, text: '引用第三方标准，将谈判范围收窄到公允区间。' },
+    adaptation: { attr: 'cognitiveResistance', amount: 7, text: '对手开始质疑你引用标准的中立性。' },
+    flavor: '让数据替你开口，比你开口更有力。', tags: ['原则', '公平', '战术']
+  },
+
+  /* ── SR · 超稀有：专业级局部逆转 ─────────────────────────────────── */
+  {
+    id: 'sr_concession_trade', name: '让步交换', rarity: 'SR',
+    series: '价格谈判系', no: 'SR-032', emoji: '🔄',
+    effect: { type: 'concession_guard', amount: 20, text: '本轮让步必须绑定交换条件，筹码损耗 -20%。' },
+    adaptation: { attr: 'bargaining', amount: 10, text: '对手开始提高交换条件，要求你给出更多筹码。' },
+    flavor: '没有交换的让步，就是白送。', tags: ['价格', '筹码', '让步']
+  },
+  {
+    id: 'sr_emotional_defusing', name: '情绪拆弹', rarity: 'SR',
+    series: '冲突处理系', no: 'SR-045', emoji: '💗',
+    effect: { type: 'mood', target: 'anger', amount: -15, text: '对方情绪风险 -15，并解锁缓和型话术。' },
+    adaptation: { attr: 'pressure', amount: 8, text: '对手从爆发转向冷处理或拖延。' },
+    flavor: '拆掉情绪，才看得见议题。', tags: ['情绪', '冲突', '降温']
+  },
+  {
+    id: 'sr_calibrated_question', name: '校准提问', rarity: 'SR',
+    series: '信息获取系', no: 'SR-058', emoji: '🎚️',
+    effect: { type: 'reveal_hint', target: 'true_need', amount: 2, text: '用「如何」「什么」开放问句撬出 2 条深层信息。' },
+    adaptation: { attr: 'alertness', amount: 9, text: '对手识破套问模式，开始反向校准你。' },
+    flavor: '让对方解决你的问题，比你直接讲更有效。', tags: ['信息', '提问', 'FBI']
+  },
+  {
+    id: 'sr_split_difference', name: '拒绝折中', rarity: 'SR',
+    series: '价格谈判系', no: 'SR-067', emoji: '🚫',
+    effect: { type: 'concession_guard', amount: 25, text: '拒绝"各退一步"诱饵，本轮筹码损耗 -25%。' },
+    adaptation: { attr: 'bargaining', amount: 11, text: '对手不再走折中路线，转向极端锚定再退。' },
+    flavor: '两个坏方案中间，是更坏的方案。', tags: ['价格', '陷阱', '战术']
+  },
+
+  /* ── SSR · 隐藏：专家级认知/节奏控制 ─────────────────────────────── */
+  {
+    id: 'ssr_frame_reframing', name: '框架重构', rarity: 'SSR',
+    series: '认知重塑系', no: 'SSR-066', emoji: '🔷',
+    effect: { type: 'reframe', amount: 1, text: '谈判僵局时可重置一次议题框架。' },
+    adaptation: { attr: 'cognitiveResistance', amount: 15, text: '对手察觉你正在重新定义问题，认知抵抗上升。' },
+    flavor: '不是解决问题，而是重新定义问题。', tags: ['框架', '认知', '逆转']
+  },
+  {
+    id: 'ssr_information_fog', name: '信息迷雾', rarity: 'SSR',
+    series: '高阶博弈系', no: 'SSR-077', emoji: '🌫️',
+    effect: { type: 'hide_intent', amount: 1, text: '隐藏本轮真实意图，降低对方读懂你策略的概率。' },
+    adaptation: { attr: 'strategy', amount: 12, text: '对手开始反向试探，信息真假混杂。' },
+    flavor: '不让对手知道你知道什么。', tags: ['信息', '迷雾', '防读心']
+  },
+  {
+    id: 'ssr_tactical_empathy', name: '战术同理心', rarity: 'SSR',
+    series: '认知重塑系', no: 'SSR-088', emoji: '🌸',
+    effect: { type: 'mood', target: 'trust', amount: 15, text: '精准标注对方情绪，信任 +15、防御 -10。' },
+    adaptation: { attr: 'defense', amount: 13, text: '对手识破"标注"技术，开始用更复杂情绪反制。' },
+    flavor: '让对方感到被理解，比让对方同意更难，也更有效。', tags: ['情绪', 'FBI', '高阶']
+  },
+
+  /* ── UR · 神话：终局级能力，限次 ─────────────────────────────────── */
+  {
+    id: 'ur_negotiation_master', name: '谈判大师', rarity: 'UR',
+    series: '终极大师系', no: 'UR-001', emoji: '👑',
+    effect: { type: 'master_hint', amount: 1, text: '关键节点获得一次大师级策略提示。' },
+    adaptation: { attr: 'strategy', amount: 20, text: '对手意识到你掌握全局节奏，开始全面防守。' },
+    flavor: '真正的谈判，不是赢过对方，而是创造双方都能接受的最优解。', tags: ['大师', '提示', '终局']
+  },
+  {
+    id: 'ur_endgame_control', name: '终局控制', rarity: 'UR',
+    series: '终极大师系', no: 'UR-002', emoji: '♛',
+    effect: { type: 'rollback_choice', amount: 1, phase: 'endgame', text: '最后三轮可撤回一次错误选择并重新决策。' },
+    adaptation: { attr: 'endgameDefense', amount: 20, text: '对手在最后阶段收紧条件，终局防守上升。' },
+    flavor: '终局不是收尾，是最后一次定义主动权。', tags: ['终局', '容错', '神话']
+  }
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   data/blindbox-config.js
+   ════════════════════════════════════════════════════════════════════════════ */
+const BLINDBOX_CONFIG = {
+  version: '1.0.0',
+  rarities: {
+    N:   { label: '普通', probability: 0.60, shards: 1,   color: '#8ecfff' },
+    R:   { label: '稀有', probability: 0.25, shards: 3,   color: '#3aa7ff' },
+    SR:  { label: '超稀有', probability: 0.10, shards: 10, color: '#ffd166' },
+    SSR: { label: '隐藏', probability: 0.04, shards: 30,  color: '#c084fc' },
+    UR:  { label: '神话', probability: 0.01, shards: 100, color: '#f6c453' }
+  },
+  packSize: 5,
+  pity: { srPlusEvery: 10, ssrPlusEvery: 50, urEvery: 100 },
+  loadoutLimit: 3,
+  cardUseLimitPerGame: 1,
+  packs: {
+    basic:    { name: '基础技能卡包', weightBoost: {} },
+    advanced: { name: '高阶技能卡包', weightBoost: { SR: 1.8, SSR: 1.2 } },
+    hidden:   { name: '隐藏探索包',   weightBoost: { SSR: 2.2, UR: 1.3 } },
+    mythic:   { name: '神话传说包',   weightBoost: { UR: 3.0, SSR: 1.5 } },
+    daily:    { name: '每日训练包',   weightBoost: { R: 1.2 } }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   engine/blindbox-system.js — 卡包奖励 / 抽卡 / 保底 / 开包
+   ════════════════════════════════════════════════════════════════════════════ */
+const SkillBlindBox = (() => {
+  const RARITY_ORDER = ['N', 'R', 'SR', 'SSR', 'UR'];
+  const RARITY_RANK  = { N: 1, R: 2, SR: 3, SSR: 4, UR: 5 };
+
+  function ensureCardState(player) {
+    if (!player) return null;
+    player.skillCardCollection = player.skillCardCollection || [];
+    player.skillCardDuplicates = player.skillCardDuplicates || {};
+    player.skillCardPacks      = player.skillCardPacks || [];
+    player.skillCardLoadout    = player.skillCardLoadout || [];
+    player.skillCardPity       = player.skillCardPity || { total: 0, sinceSR: 0, sinceSSR: 0, sinceUR: 0 };
+    return player;
+  }
+
+  // 基于本局结果计算奖励卡包
+  function calculateRewardPacks(result, player) {
+    const packs = [{ type: 'basic', reason: '完成训练' }];
+    if (result && result.outcome === 'win') packs.push({ type: 'basic', reason: '胜利奖励' });
+    const score = result && (result.score || result.playerScore || 0);
+    if (score >= 85) packs.push({ type: 'advanced', reason: '高分奖励 (≥85)' });
+    if (result && result.difficulty === 'hell' && result.outcome === 'win') {
+      packs.push({ type: 'hidden', reason: '地狱级胜利' });
+    }
+    if (result && result.bossWin) packs.push({ type: 'mythic', reason: '击败 Boss' });
+    // 每日首局加发"每日训练包"（与碎片每日加成同源标记）
+    if (player && result && result._isDailyFirst) {
+      packs.push({ type: 'daily', reason: '每日首局' });
+    }
+    return packs;
+  }
+
+  function addPacks(player, packs) {
+    ensureCardState(player);
+    if (!packs || !packs.length) return [];
+    packs.forEach((p) => player.skillCardPacks.push({ ...p, ts: Date.now() }));
+    savePlayer(player);
+    EventBus.emit(EVENTS.CARD_PACK_EARNED, { packs });
+    return packs;
+  }
+
+  function weightedPickRarity(packType, pity) {
+    const rarities = BLINDBOX_CONFIG.rarities;
+    const boost = (BLINDBOX_CONFIG.packs[packType] && BLINDBOX_CONFIG.packs[packType].weightBoost) || {};
+    let weights = Object.entries(rarities).map(([r, cfg]) => ({ rarity: r, w: cfg.probability * (boost[r] || 1) }));
+
+    // 保底覆盖：先处理最高保底
+    if ((pity.sinceUR + 1) >= BLINDBOX_CONFIG.pity.urEvery) return 'UR';
+    if ((pity.sinceSSR + 1) >= BLINDBOX_CONFIG.pity.ssrPlusEvery) {
+      weights = weights.filter((x) => RARITY_RANK[x.rarity] >= RARITY_RANK.SSR);
+    } else if ((pity.sinceSR + 1) >= BLINDBOX_CONFIG.pity.srPlusEvery) {
+      weights = weights.filter((x) => RARITY_RANK[x.rarity] >= RARITY_RANK.SR);
+    }
+
+    const sum = weights.reduce((s, x) => s + x.w, 0);
+    let roll = Math.random() * sum;
+    for (const x of weights) {
+      roll -= x.w;
+      if (roll <= 0) return x.rarity;
+    }
+    return weights[weights.length - 1].rarity;
+  }
+
+  function drawOne(player, packType) {
+    ensureCardState(player);
+    const rarity = weightedPickRarity(packType, player.skillCardPity);
+    const pool = SKILL_CARDS.filter((c) => c.rarity === rarity);
+    const card = pool[Math.floor(Math.random() * pool.length)]
+      || SKILL_CARDS[Math.floor(Math.random() * SKILL_CARDS.length)];
+
+    player.skillCardPity.total += 1;
+    player.skillCardPity.sinceSR  = RARITY_RANK[rarity] >= RARITY_RANK.SR  ? 0 : player.skillCardPity.sinceSR + 1;
+    player.skillCardPity.sinceSSR = RARITY_RANK[rarity] >= RARITY_RANK.SSR ? 0 : player.skillCardPity.sinceSSR + 1;
+    player.skillCardPity.sinceUR  = rarity === 'UR' ? 0 : player.skillCardPity.sinceUR + 1;
+
+    const isDup = player.skillCardCollection.includes(card.id);
+    if (isDup) {
+      const shard = BLINDBOX_CONFIG.rarities[card.rarity].shards;
+      player.skillCardDuplicates[card.id] = (player.skillCardDuplicates[card.id] || 0) + 1;
+      player.cardShards = (player.cardShards || 0) + shard;
+      EventBus.emit(EVENTS.CARD_DUPLICATE, { card, shard });
+      return { card, duplicate: true, shard };
+    }
+
+    player.skillCardCollection.push(card.id);
+    EventBus.emit(EVENTS.CARD_UNLOCKED, { card });
+    return { card, duplicate: false, shard: 0 };
+  }
+
+  function openPack(player, packIndex) {
+    ensureCardState(player);
+    const pack = player.skillCardPacks[packIndex];
+    if (!pack) return null;
+    const results = [];
+    for (let i = 0; i < BLINDBOX_CONFIG.packSize; i++) results.push(drawOne(player, pack.type));
+    player.skillCardPacks.splice(packIndex, 1);
+    savePlayer(player);
+    EventBus.emit(EVENTS.CARD_PACK_OPENED, { pack, results });
+    return { pack, results };
+  }
+
+  function pickRevealCard(results) {
+    const newCards = results.filter((r) => !r.duplicate).map((r) => r.card);
+    const candidates = newCards.length ? newCards : results.map((r) => r.card);
+    const best = Math.max.apply(null, candidates.map((c) => RARITY_RANK[c.rarity] || 1));
+    const top = candidates.filter((c) => (RARITY_RANK[c.rarity] || 1) === best);
+    return top[Math.floor(Math.random() * top.length)];
+  }
+
+  function getCard(id) { return SKILL_CARDS.find((c) => c.id === id); }
+  function hasCard(player, id) { ensureCardState(player); return player.skillCardCollection.includes(id); }
+
+  function setLoadout(player, ids) {
+    ensureCardState(player);
+    const owned = new Set(player.skillCardCollection);
+    const filtered = (ids || []).filter((id) => owned.has(id)).slice(0, BLINDBOX_CONFIG.loadoutLimit);
+    player.skillCardLoadout = filtered;
+    savePlayer(player);
+    EventBus.emit(EVENTS.CARD_LOADOUT_CHANGED, { loadout: filtered });
+    return filtered;
+  }
+
+  return {
+    RARITY_ORDER, RARITY_RANK,
+    ensureCardState, calculateRewardPacks, addPacks,
+    drawOne, openPack, pickRevealCard,
+    getCard, hasCard, setLoadout,
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   engine/opponent-adaptation.js — 对手适应系统
+   公式：稀有度基准 × 难度系数 × 重复使用修正(+20% per repeat)
+   ════════════════════════════════════════════════════════════════════════════ */
+const OpponentAdaptation = (() => {
+  const BASE = { N: 3, R: 6, SR: 10, SSR: 15, UR: 20 };
+  const DIFF = { easy: 0.5, medium: 1.0, hard: 1.3, extreme: 1.5, hell: 2.0 };
+  const ATTR_LABELS = {
+    alertness: '警觉值', defense: '防御值', bargaining: '议价值',
+    pressure: '压力值', strategy: '策略值',
+    cognitiveResistance: '认知抵抗', endgameDefense: '终局防守'
+  };
+  const TEXT_FALLBACK = {
+    alertness: '对手开始警觉你的信息搜集意图。',
+    defense: '对手开始提高防御，信任推进变慢。',
+    bargaining: '对手开始提高交换条件。',
+    pressure: '对手转入反向施压。',
+    strategy: '对手开始使用更复杂的策略。',
+    cognitiveResistance: '对手开始抵抗你的框架重构。',
+    endgameDefense: '对手在终局阶段收紧防守。'
+  };
+
+  function fresh() {
+    return {
+      alertness: 0, defense: 0, bargaining: 0,
+      pressure: 0, strategy: 0, cognitiveResistance: 0, endgameDefense: 0,
+      history: []
+    };
+  }
+
+  function apply(card, opponent, difficulty) {
+    difficulty = difficulty || Store.get('difficulty') || 'medium';
+    const cur = Store.get('opponentAdaptation') || fresh();
+    const state = { ...fresh(), ...cur, history: (cur.history || []).slice() };
+
+    const attr = card.adaptation.attr;
+    const repeated = state.history.filter((h) => h.attr === attr).length;
+    const base = card.adaptation.amount || BASE[card.rarity] || 3;
+    const multiplier = (DIFF[difficulty] || 1) * (1 + repeated * 0.2);
+    const amount = Math.round(base * multiplier);
+
+    state[attr] = Math.min(100, (state[attr] || 0) + amount);
+    state.history.push({ cardId: card.id, attr, amount, ts: Date.now() });
+    Store.set('opponentAdaptation', state);
+
+    const text = card.adaptation.text || TEXT_FALLBACK[attr] || '对手开始适应你的策略。';
+    EventBus.emit(EVENTS.OPPONENT_ADAPTED, { opponent, card, attr, amount, text, state });
+    return { attr, amount, text, state, label: ATTR_LABELS[attr] || attr };
+  }
+
+  // 在 OpponentAI.decide 返回 move 之后做轻量修正（5%–20%）
+  function modifyAIMove(kind, move, ctx) {
+    const state = Store.get('opponentAdaptation');
+    if (!state) return { move, note: '' };
+    let note = '';
+
+    switch (kind) {
+      case 'bargain-counter': {
+        if (typeof move !== 'number') break;
+        // 议价值越高 → 对手让步越小（每 25 点减让 1）
+        const harder = Math.round((state.bargaining || 0) / 25);
+        if (harder > 0 && ctx && typeof ctx.currentOppOffer === 'number') {
+          move = Math.min(ctx.currentOppOffer, move + harder);
+          note = '对手因你前几张卡的议价施压而提高让步成本';
+        }
+        break;
+      }
+      case 'ultimatum-respond': {
+        // 终局防守：让"接受"率轻微下降
+        if (typeof move !== 'boolean') break;
+        if ((state.endgameDefense || 0) > 30 && move === true && Math.random() < 0.18) {
+          move = false;
+          note = '对手在终局收紧条件，最后通牒接受度下降';
+        }
+        break;
+      }
+      case 'pd': {
+        // 防御值高 → 偏好背叛
+        if ((state.defense || 0) > 35 && move === 'coop' && Math.random() < 0.15) {
+          move = 'defect';
+          note = '对手防御上升，本轮转向背叛';
+        }
+        break;
+      }
+      case 'trust-return': {
+        if (typeof move !== 'number') break;
+        // 防御值高 → 返还压低
+        if ((state.defense || 0) > 30) {
+          const reduce = Math.round(((state.defense || 0) - 30) / 18);
+          move = Math.max(0, move - reduce);
+          if (reduce > 0) note = '对手防御提高，返还更保守';
+        }
+        break;
+      }
+      case 'ultimatum-propose': {
+        if (typeof move !== 'number') break;
+        // 压力值高 → 提案更极端
+        if ((state.pressure || 0) > 30) {
+          move = Math.max(20, Math.min(80, move + Math.round((state.pressure || 0) / 30)));
+          note = '对手反向施压，提案更激进';
+        }
+        break;
+      }
+      case 'pg-contribute': {
+        if (typeof move !== 'number') break;
+        if ((state.defense || 0) > 30) {
+          move = Math.max(0, move - 1);
+          note = '对手防御提高，贡献更保守';
+        }
+        break;
+      }
+    }
+    return { move, note };
+  }
+
+  function getState() { return Store.get('opponentAdaptation') || fresh(); }
+  function isEmpty() {
+    const s = getState();
+    const keys = ['alertness', 'defense', 'bargaining', 'pressure', 'strategy', 'cognitiveResistance', 'endgameDefense'];
+    return keys.every((k) => !s[k]);
+  }
+  function ATTR_LABEL(k) { return ATTR_LABELS[k] || k; }
+
+  return { fresh, apply, modifyAIMove, getState, isEmpty, ATTR_LABELS, ATTR_LABEL };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   engine/card-effects.js — 卡牌使用 & 效果应用
+   设计原则：卡牌提供谈判优势；不直接覆盖胜负；触发对手适应。
+   ════════════════════════════════════════════════════════════════════════════ */
+const SkillCardEffects = (() => {
+  function canUse(cardId) {
+    const loadout = Store.get('activeCardLoadout') || [];
+    if (!loadout.includes(cardId)) return { ok: false, reason: '本局未携带这张卡' };
+    const used = Store.get('usedCardsThisGame') || [];
+    if (used.includes(cardId)) return { ok: false, reason: '本局已使用' };
+    return { ok: true };
+  }
+
+  function use(cardId) {
+    const player = Store.get('player');
+    const scenario = Store.get('activeScenario');
+    const card = SKILL_CARDS.find((c) => c.id === cardId);
+    if (!player || !card) return { ok: false, reason: '无效卡牌' };
+    const gate = canUse(cardId);
+    if (!gate.ok) return gate;
+    if (!scenario) return { ok: false, reason: '当前不在对局中' };
+
+    const effectResult = applyEffect(card, scenario);
+    const adaptResult = OpponentAdaptation.apply(card, scenario.opp, Store.get('difficulty'));
+
+    const used = (Store.get('usedCardsThisGame') || []).slice();
+    used.push(cardId);
+    Store.set('usedCardsThisGame', used);
+
+    // 记录到当局复盘
+    const log = (Store.get('cardPlayLog') || []).slice();
+    log.push({ cardId, card, effectResult, adaptResult, ts: Date.now() });
+    Store.set('cardPlayLog', log);
+
+    EventBus.emit(EVENTS.CARD_EFFECT_APPLIED, { card, effectResult });
+    EventBus.emit(EVENTS.PLAYER_CARD_USED, { card, effectResult, adaptResult });
+
+    // 让场景重新渲染以反映新增的提示 / 状态
+    if (scenario && typeof scenario._render === 'function') {
+      try { scenario._render(); } catch (e) { /* 渲染失败也不影响卡牌效果 */ }
+    }
+    return { ok: true, effectResult, adaptResult };
+  }
+
+  function applyEffect(card, scenario) {
+    const e = card.effect;
+    scenario._cardHints = scenario._cardHints || [];
+    scenario._cardFlags = scenario._cardFlags || {};
+    switch (e.type) {
+      case 'reveal_hint': {
+        const hint = describeHint(e, scenario);
+        scenario._cardHints.push(hint);
+        return { text: hint, type: e.type };
+      }
+      case 'reveal_batna': {
+        const hint = '【BATNA 透视】对方替代方案强弱：' + estimateBatna(scenario.opp);
+        scenario._cardHints.push(hint);
+        return { text: hint, type: e.type };
+      }
+      case 'mood': {
+        if (scenario.opp && typeof Mood !== 'undefined') {
+          const id = scenario.opp.id;
+          const m = Mood.get(id) || {};
+          const delta = e.amount / 100;
+          if (e.target === 'anger')      m.anger      = clamp((m.anger || 0) + delta, 0, 1);
+          else if (e.target === 'trust') m.trust      = clamp((m.trust || 0) + delta, 0, 1);
+          else if (e.target === 'confidence') m.confidence = clamp((m.confidence || 0.5) + delta, 0, 1);
+          // Mood 没有直接 set，但 react 会写入；这里直接把 mood map 写入内部对象
+          // v4Pro 的 Mood.get 返回内部引用，所以直接修改即可生效。
+        }
+        return { text: e.text, type: e.type };
+      }
+      case 'concession_guard':
+        scenario._cardFlags.concessionGuard = true;
+        scenario._cardFlags.concessionGuardPct = e.amount || 20;
+        return { text: e.text, type: e.type };
+      case 'anchor_first':
+        scenario._cardFlags.anchorFirst = true;
+        return { text: e.text, type: e.type };
+      case 'reframe':
+        scenario._cardFlags.reframeAvailable = true;
+        return { text: e.text, type: e.type };
+      case 'hide_intent':
+        scenario._cardFlags.intentHidden = true;
+        return { text: e.text, type: e.type };
+      case 'rollback_choice':
+        scenario._cardFlags.rollbackAvailable = true;
+        scenario._cardFlags.rollbackPhase = e.phase || 'any';
+        return { text: e.text, type: e.type };
+      case 'master_hint':
+        scenario._cardHints.push('【大师提示】' + buildMasterHint(scenario));
+        return { text: e.text, type: e.type };
+      default:
+        return { text: e.text || '卡牌效果已应用', type: e.type };
+    }
+  }
+
+  function describeHint(e, scenario) {
+    const opp = scenario.opp || {};
+    if (e.target === 'hidden_need') {
+      const map = {
+        rational: '对方真正在意的是可执行性与数据自洽，价格弹性比表面大 8-12%。',
+        emotional: '对方真正在意的是被尊重与被听见，让步换情绪承认比换条款更划算。',
+        aggressive: '对方真正在意的是不被看低，强姿态背后愿意接受"对等"而非"妥协"。',
+        cooperative: '对方真正在意的是长期关系，可以用未来合作承诺替代当下让步。',
+        manipulative: '对方真正在意的是控制感，让其"以为是自己的主意"会显著推进。',
+        riskAverse: '对方真正在意的是退出机制，可控的风险共担比更高回报更打动它。',
+        trumpBoss: '对方真正在意的是叙事胜利，给一个公开台阶比私下让 10% 价格更有效。',
+      };
+      return '【需求线索】' + (map[opp.id] || '对方真实诉求与表面价格无关，先问"如果今天不签会怎样"。');
+    }
+    if (e.target === 'true_need') {
+      return '【需求挖掘】对方深层需求 ≠ 嘴上要求。本轮可深问两次：①真正成功的样子；②最不愿意妥协的一项。';
+    }
+    if (e.target === 'progress') {
+      return '【共识锁定】本轮起，已达成共识不可被对方"再考虑"轻易推翻。';
+    }
+    if (e.target === 'fair_range') {
+      return '【公允区间】基于第三方可比交易，公允价格区间已锁定。';
+    }
+    return '【线索】' + (e.text || '获得一条新的信息线索。');
+  }
+
+  function estimateBatna(opp) {
+    if (!opp) return '未知';
+    if (opp.assert > 0.75) return '强（不让步空间大）';
+    if (opp.risk < 0.35)   return '弱（避险型，BATNA 更虚）';
+    if (opp.boss)          return '极强（且会用 BATNA 制造叙事）';
+    return '中等（可以谈，但别让对方看见你急）';
+  }
+
+  function buildMasterHint(scenario) {
+    const opp = scenario.opp || {};
+    if (opp.id === 'trumpBoss') return '先质疑锚定依据，再亮 BATNA，最后用"客观标准 + 公开台阶"收尾。';
+    if (opp.id === 'aggressive') return '不要回应强硬本身，回应他强硬下的"真正怕失去什么"。';
+    if (opp.id === 'manipulative') return '把决定权交给对方："这两条你选一条，我都能接受。"';
+    if (opp.id === 'emotional') return '先标注情绪、再讨论事实："听起来你担心的是 X，对吗？"';
+    if (opp.id === 'cooperative') return '别只接对方的善意，必须把"承诺时间表"写到桌面上。';
+    if (opp.id === 'rational') return '用同一份数据反向解读：相同事实，你的故事 vs 他的故事。';
+    if (opp.id === 'riskAverse') return '把风险拆成"可控+可退出"两段，再用兜底机制换核心条款。';
+    return '先确认对方的优先级，再决定让什么、守什么。';
+  }
+
+  return { canUse, use, applyEffect };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ui/skill-cards-screen.js — 技能卡册 / 盲盒开包 / 卡组配置（三 Tab 单屏）
+   ════════════════════════════════════════════════════════════════════════════ */
+
+const SKILL_TAB_KEYS = ['album', 'packs', 'loadout'];
+const SKILL_RARITY_DISPLAY = ['UR', 'SSR', 'SR', 'R', 'N'];
+
+function renderSkillCards(params) {
+  params = params || {};
+  const player = SkillBlindBox.ensureCardState(Store.get('player') || { name: '训练员' });
+  const tab = SKILL_TAB_KEYS.includes(params.tab) ? params.tab : 'album';
+  const packCount = (player.skillCardPacks || []).length;
+  const owned = (player.skillCardCollection || []).length;
+  const shards = player.cardShards || 0;
+  const pity = player.skillCardPity || {};
+
+  const tabsHtml = `
+    <div class="sk-tabs">
+      <button class="sk-tab ${tab === 'album' ? 'active' : ''}" data-sk-tab="album">
+        集卡册 <span style="color:var(--dim);font-size:10px">${owned}/${SKILL_CARDS.length}</span>
+      </button>
+      <button class="sk-tab ${tab === 'packs' ? 'active' : ''}" data-sk-tab="packs">
+        盲盒开包 ${packCount ? `<span class="sk-tab-badge">${packCount}</span>` : ''}
+      </button>
+      <button class="sk-tab ${tab === 'loadout' ? 'active' : ''}" data-sk-tab="loadout">
+        卡组配置 <span style="color:var(--dim);font-size:10px">${(player.skillCardLoadout || []).length}/3</span>
+      </button>
+    </div>`;
+
+  const statusBar = `
+    <div class="sk-status-bar">
+      <div class="sk-status-item sk-status-pack">📦 待开卡包 <b>${packCount}</b></div>
+      <div class="sk-status-item">🎴 已收集 <b>${owned}/${SKILL_CARDS.length}</b></div>
+      <div class="sk-status-item sk-status-shard">💎 碎片 <b>${shards}</b></div>
+      <div class="sk-status-item sk-status-pity">SR 保底 ${pity.sinceSR || 0}/10 · SSR ${pity.sinceSSR || 0}/50 · UR ${pity.sinceUR || 0}/100</div>
+    </div>`;
+
+  let body = '';
+  if (tab === 'album') body = renderSkillAlbumTab(player);
+  else if (tab === 'packs') body = renderSkillPacksTab(player);
+  else body = renderSkillLoadoutTab(player);
+
+  return `
+    <div class="flex-between">
+      <div class="section-title">⑧ 技能盲盒 · 卡组</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>
+    ${tabsHtml}
+    ${statusBar}
+    <div id="sk-body">${body}</div>
+  `;
+}
+
+renderSkillCards.afterRender = function (params) {
+  params = params || {};
+  const back = document.querySelector('[data-nav]');
+  if (back) back.addEventListener('click', () =>
+    EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
+  document.querySelectorAll('[data-sk-tab]').forEach((b) => {
+    b.addEventListener('click', () => {
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.SKILL_CARDS, params: { tab: b.getAttribute('data-sk-tab') } });
+    });
+  });
+  bindSkillCardsTabEvents(params);
+};
+
+function bindSkillCardsTabEvents(params) {
+  // 开包
+  document.querySelectorAll('[data-sk-open-pack]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.getAttribute('data-sk-open-pack'), 10);
+      const player = Store.get('player');
+      const result = SkillBlindBox.openPack(player, idx);
+      if (!result) return;
+      Store.set('player', player);
+      renderSkillPackOpenModal(result, () => {
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.SKILL_CARDS, params: { tab: 'packs' } });
+      });
+    });
+  });
+  // 卡组选择
+  document.querySelectorAll('[data-sk-loadout-toggle]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-sk-loadout-toggle');
+      const player = Store.get('player');
+      const cur = (player.skillCardLoadout || []).slice();
+      const idx = cur.indexOf(id);
+      if (idx >= 0) cur.splice(idx, 1);
+      else if (cur.length < BLINDBOX_CONFIG.loadoutLimit) cur.push(id);
+      else {
+        // 已满 → 替换最早一张
+        cur.shift();
+        cur.push(id);
+      }
+      SkillBlindBox.setLoadout(player, cur);
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.SKILL_CARDS, params: { tab: 'loadout' } });
+    });
+  });
+  document.querySelectorAll('[data-sk-loadout-clear]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const player = Store.get('player');
+      SkillBlindBox.setLoadout(player, []);
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.SKILL_CARDS, params: { tab: 'loadout' } });
+    });
+  });
+}
+
+/* ── 集卡册 Tab ──────────────────────────────────────────────────── */
+function renderSkillAlbumTab(player) {
+  const owned = new Set(player.skillCardCollection || []);
+  const dups = player.skillCardDuplicates || {};
+  const sections = SKILL_RARITY_DISPLAY.map((rarity) => {
+    const group = SKILL_CARDS.filter((c) => c.rarity === rarity);
+    if (!group.length) return '';
+    const cfg = BLINDBOX_CONFIG.rarities[rarity];
+    const ownedCount = group.filter((c) => owned.has(c.id)).length;
+    const cards = group.map((c) => renderSkillCardTile(c, owned.has(c.id), dups[c.id] || 0)).join('');
+    return `
+      <div class="sk-section-head" style="--card-color:${cfg.color}">
+        ◆ ${rarity} · ${cfg.label}
+        <span class="sk-section-prog">${ownedCount} / ${group.length}</span>
+      </div>
+      <div class="sk-grid">${cards}</div>`;
+  }).join('');
+  return sections;
+}
+
+function renderSkillCardTile(card, isOwned, dupCount) {
+  const cfg = BLINDBOX_CONFIG.rarities[card.rarity];
+  const dupBadge = dupCount > 0 ? `<div class="sk-card-dupcount">×${dupCount + 1}</div>` : '';
+  if (!isOwned) {
+    return `<div class="sk-card sk-card-locked" data-rarity="${card.rarity}">
+      <div class="sk-card-rarity">${card.rarity}</div>
+      <div class="sk-card-no">${card.no}</div>
+      <div class="sk-card-avatar"><div class="sk-chibi">?</div></div>
+      <div class="sk-card-name">？？？</div>
+      <div class="sk-card-effect" style="color:var(--dim);font-style:italic;text-align:center">${cfg.label} 系列 · 继续训练解锁</div>
+    </div>`;
+  }
+  return `<div class="sk-card sk-card-owned" data-rarity="${card.rarity}" title="${card.flavor}">
+    ${dupBadge}
+    <div class="sk-card-rarity">${card.rarity}</div>
+    <div class="sk-card-no">${card.no}</div>
+    <div class="sk-card-series">${card.series}</div>
+    <div class="sk-card-avatar"><div class="sk-chibi">${card.emoji || '✦'}</div></div>
+    <div class="sk-card-name">${card.name}</div>
+    <div class="sk-card-effect">${card.effect.text}</div>
+    <div class="sk-card-adapt">↳ ${card.adaptation.text}</div>
+    <div class="sk-card-flavor">${card.flavor}</div>
+  </div>`;
+}
+
+/* ── 盲盒开包 Tab ────────────────────────────────────────────────── */
+function renderSkillPacksTab(player) {
+  const packs = player.skillCardPacks || [];
+  if (!packs.length) {
+    return `<div class="hint hint-yellow" style="margin-top:8px">
+      暂无卡包。<b>完成任意一局训练</b>即可获得「基础技能卡包」；胜利 / 高分 / 击败 Boss / 地狱级胜利会发放进阶卡包。
+    </div>`;
+  }
+  const tips = `<div class="hint hint-cyan" style="margin-bottom:10px;font-size:11px">
+    每包 5 张卡 · 重复卡自动转碎片（N=1/R=3/SR=10/SSR=30/UR=100） · 保底：10 包必出 SR+ / 50 包必出 SSR+ / 100 包必出 UR
+  </div>`;
+  const items = packs.map((p, i) => renderSkillPackTile(p, i)).join('');
+  return tips + `<div class="sk-packs-row">${items}</div>`;
+}
+
+function renderSkillPackTile(pack, index) {
+  const meta = BLINDBOX_CONFIG.packs[pack.type] || BLINDBOX_CONFIG.packs.basic;
+  return `<div class="sk-pack" data-pack="${pack.type}" data-sk-open-pack="${index}">
+    <div class="sk-pack-icon"><div class="sk-pack-shine"></div></div>
+    <div class="sk-pack-name">${meta.name}</div>
+    <div class="sk-pack-reason">${pack.reason || ''}</div>
+    <div class="sk-pack-action">▸ 点击开启</div>
+  </div>`;
+}
+
+/* ── 卡组配置 Tab ────────────────────────────────────────────────── */
+function renderSkillLoadoutTab(player) {
+  const owned = (player.skillCardCollection || []);
+  const loadout = (player.skillCardLoadout || []);
+  const slots = [0, 1, 2].map((i) => {
+    const id = loadout[i];
+    if (!id) return `<div class="sk-loadout-slot empty">+<br>空位</div>`;
+    const card = SkillBlindBox.getCard(id);
+    if (!card) return `<div class="sk-loadout-slot empty">（卡牌已失效）</div>`;
+    return `<div class="sk-loadout-slot filled" data-sk-loadout-toggle="${id}">${renderSkillCardMini(card)}</div>`;
+  }).join('');
+
+  const tip = `<div class="sk-loadout-tip">
+    每局最多携带 <b>3 张</b> 技能卡 · 每张每局最多使用 <b>1 次</b>。<br>
+    在对局界面点击卡牌即可触发效果，但对手会同步获得对应适应属性。
+  </div>`;
+  const slotsHtml = `<div class="sk-loadout-slots">${slots}</div>`;
+  const clearBtn = loadout.length ? `<div style="text-align:center;margin-bottom:14px"><button class="btn btn-red btn-sm" data-sk-loadout-clear>清空卡组</button></div>` : '';
+
+  if (!owned.length) {
+    return tip + slotsHtml + `<div class="hint hint-yellow">尚未拥有任何技能卡。先去「盲盒开包」开包获取吧。</div>`;
+  }
+
+  const ownedCards = SKILL_CARDS.filter((c) => owned.includes(c.id));
+  // 按稀有度排序
+  const ranked = ownedCards.slice().sort((a, b) =>
+    SkillBlindBox.RARITY_RANK[b.rarity] - SkillBlindBox.RARITY_RANK[a.rarity]);
+  const grid = ranked.map((c) => {
+    const isPicked = loadout.indexOf(c.id) >= 0;
+    return `<div data-sk-loadout-toggle="${c.id}" style="cursor:pointer">${renderSkillCardTile(c, true, (player.skillCardDuplicates || {})[c.id] || 0).replace('class="sk-card sk-card-owned"', `class="sk-card sk-card-owned" data-loadout-pick="${isPicked ? 1 : 0}"`)}</div>`;
+  }).join('');
+
+  return tip + slotsHtml + clearBtn + `<div class="sk-section-head">▸ 你拥有的技能卡<span class="sk-section-prog">点击加入/移除卡组</span></div><div class="sk-grid">${grid}</div>`;
+}
+
+function renderSkillCardMini(card) {
+  return `<div class="sk-mini-card" data-rarity="${card.rarity}" style="cursor:pointer;width:100%">
+    <div class="sk-mini-rarity">${card.rarity}</div>
+    <div class="sk-mini-name">${card.emoji || ''} ${card.name}</div>
+    <div class="sk-mini-effect">${card.effect.text}</div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ui/skill-pack-open-modal.js — 开包动画（震动 → 爆盖 → 粒子 → 翻卡）
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderSkillPackOpenModal(openResult, onClose) {
+  if (typeof document === 'undefined') return;
+  const overlay = document.createElement('div');
+  overlay.className = 'box-modal-overlay';
+  const reveal = SkillBlindBox.pickRevealCard(openResult.results);
+
+  const totalShards = openResult.results.reduce((s, r) => s + (r.shard || 0), 0);
+  const newCount = openResult.results.filter((r) => !r.duplicate).length;
+  const dupCount = openResult.results.length - newCount;
+
+  overlay.innerHTML = `
+    <div class="box-modal sk-open-modal">
+      <div class="sk-open-title">✦ 开启 · ${BLINDBOX_CONFIG.packs[openResult.pack.type].name} ✦</div>
+      <div class="sk-open-sub">本次获得 ${openResult.results.length} 张卡 · 新卡 ${newCount} 张 / 重复 ${dupCount} 张</div>
+      <div class="sk-open-revealed">
+        ${openResult.results.map((r) => renderRevealCard(r, reveal && r.card.id === reveal.id)).join('')}
+      </div>
+      ${totalShards > 0 ? `<div class="sk-open-shard-bonus">💎 重复卡转化为 <b>${totalShards}</b> 碎片</div>` : ''}
+      <div style="text-align:center;margin-top:6px">
+        <button class="btn btn-green" data-close>收下 ✓</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('[data-close]').addEventListener('click', () => {
+    overlay.remove();
+    if (typeof onClose === 'function') onClose();
+  });
+}
+
+function renderRevealCard(result, isReveal) {
+  const c = result.card;
+  const tag = result.duplicate
+    ? `<span class="sk-open-tag-dup">+${result.shard} 碎片</span>`
+    : `<span class="sk-open-tag-new">NEW</span>`;
+  return `<div class="sk-card sk-card-owned" data-rarity="${c.rarity}" style="${isReveal ? 'transform:scale(1.04)' : ''}">
+    <div class="sk-card-rarity">${c.rarity} ${tag}</div>
+    <div class="sk-card-no">${c.no}</div>
+    <div class="sk-card-avatar"><div class="sk-chibi">${c.emoji || '✦'}</div></div>
+    <div class="sk-card-name">${c.name}</div>
+    <div class="sk-card-effect">${c.effect.text}</div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ui/in-game-card-panel.js — 局内携带卡牌面板 + 对手适应条
+   挂在对局屏的 #game-content 之后，由 game:render 事件触发渲染
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderInGameCardPanelInto(rootEl) {
+  if (!rootEl) return;
+  // 找到/创建容器（位于 #game-content 之后）
+  let panelHost = document.getElementById('sk-ingame-host');
+  if (!panelHost) {
+    panelHost = document.createElement('div');
+    panelHost.id = 'sk-ingame-host';
+    const after = document.getElementById('game-content');
+    if (after && after.parentNode) after.parentNode.insertBefore(panelHost, after.nextSibling);
+    else rootEl.appendChild(panelHost);
+  }
+  const loadout = Store.get('activeCardLoadout') || [];
+  const used = Store.get('usedCardsThisGame') || [];
+  let html = '';
+
+  // 卡牌面板
+  if (!loadout.length) {
+    html += `<div class="sk-ingame-panel">
+      <div class="sk-ingame-head">
+        <div class="sk-ingame-title">▾ 技能卡组</div>
+        <span style="font-size:10px;color:var(--dim)">未配置（主菜单 ⑧ → 卡组配置）</span>
+      </div>
+      <div class="sk-ingame-empty">本局未携带技能卡。</div>
+    </div>`;
+  } else {
+    const cards = loadout.map((id) => {
+      const c = SkillBlindBox.getCard(id);
+      if (!c) return '';
+      const isUsed = used.includes(id);
+      return `<div class="sk-mini-card ${isUsed ? 'used' : ''}" data-rarity="${c.rarity}" data-sk-use="${c.id}" title="${c.effect.text}">
+        ${isUsed ? '<div class="sk-mini-used-badge">已用</div>' : ''}
+        <div class="sk-mini-rarity">${c.rarity}</div>
+        <div class="sk-mini-name">${c.emoji || '✦'} ${c.name}</div>
+        <div class="sk-mini-effect">${c.effect.text}</div>
+      </div>`;
+    }).join('');
+    html += `<div class="sk-ingame-panel">
+      <div class="sk-ingame-head">
+        <div class="sk-ingame-title">▾ 技能卡组 · 本局 ${loadout.length - used.length}/${loadout.length} 可用</div>
+        <span style="font-size:10px;color:var(--dim)">点击使用 · 每张每局 1 次</span>
+      </div>
+      <div class="sk-ingame-cards">${cards}</div>
+    </div>`;
+  }
+
+  // 对手适应条
+  if (!OpponentAdaptation.isEmpty()) {
+    const state = OpponentAdaptation.getState();
+    const attrs = ['alertness', 'defense', 'bargaining', 'pressure', 'strategy', 'cognitiveResistance', 'endgameDefense'];
+    const rows = attrs.filter((a) => (state[a] || 0) > 0).map((a) => `
+      <div class="sk-adapt-row">
+        <span class="sk-adapt-label">${OpponentAdaptation.ATTR_LABEL(a)}</span>
+        <span class="sk-adapt-track"><span class="sk-adapt-fill" style="width:${state[a]}%"></span></span>
+        <span class="sk-adapt-val">${state[a]}</span>
+      </div>`).join('');
+    const last = (state.history || [])[state.history.length - 1];
+    const msg = last ? `<div class="sk-adapt-msg">${(last && last.text) || '对手开始适应你的策略。'}</div>` : '';
+    html += `<div class="sk-adapt-bar ${getOrPersistAdaptOpen() ? 'open' : ''}" id="sk-adapt-bar">
+      <div class="sk-adapt-head" data-sk-adapt-toggle>
+        <span><b>对手适应度</b>　·　对方正在识别你的策略并调整防守</span>
+        <span class="sk-adapt-toggle">▾</span>
+      </div>
+      <div class="sk-adapt-body">${rows}${msg}</div>
+    </div>`;
+  }
+
+  panelHost.innerHTML = html;
+
+  // 卡牌点击
+  panelHost.querySelectorAll('[data-sk-use]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-sk-use');
+      EventBus.emit(EVENTS.PLAYER_ACTION, { type: 'use-card', value: id });
+    });
+  });
+  // 适应条折叠
+  const adaptHead = panelHost.querySelector('[data-sk-adapt-toggle]');
+  if (adaptHead) {
+    adaptHead.addEventListener('click', () => {
+      const bar = panelHost.querySelector('#sk-adapt-bar');
+      if (bar) {
+        bar.classList.toggle('open');
+        setAdaptOpen(bar.classList.contains('open'));
+      }
+    });
+  }
+
+  // 卡牌效果提示（hint 区域）—— 如果场景给了 _cardHints，渲染到 game-content 顶部小标签
+  injectCardHintsToGameContent();
+}
+
+function injectCardHintsToGameContent() {
+  const scenario = Store.get('activeScenario');
+  if (!scenario || !scenario._cardHints || !scenario._cardHints.length) return;
+  const content = document.getElementById('game-content');
+  if (!content) return;
+  // 避免重复插入
+  if (content.querySelector('.sk-cardhint-strip')) return;
+  const strip = document.createElement('div');
+  strip.className = 'sk-cardhint-strip';
+  strip.style.cssText = 'margin:6px 0 10px;display:flex;flex-direction:column;gap:4px';
+  strip.innerHTML = scenario._cardHints.map((h) =>
+    `<div class="hint hint-purple" style="font-size:11px;padding:6px 10px">${h}</div>`).join('');
+  content.insertBefore(strip, content.firstChild);
+}
+
+let _adaptOpen = false;
+function getOrPersistAdaptOpen() { return _adaptOpen; }
+function setAdaptOpen(v) { _adaptOpen = !!v; }
+
+/* ── 卡牌效果飞行提示 toast ──────────────────────────────────────── */
+function showSkillCardToast(card, effectResult, adaptResult) {
+  if (typeof document === 'undefined') return;
+  const cfg = BLINDBOX_CONFIG.rarities[card.rarity];
+  const toast = document.createElement('div');
+  toast.className = 'sk-toast';
+  toast.style.setProperty('--card-color', cfg.color);
+  toast.style.setProperty('--card-glow', `${cfg.color}80`);
+  toast.innerHTML = `
+    <div class="sk-toast-card">${card.rarity} · ${card.emoji || ''} ${card.name}</div>
+    <div class="sk-toast-effect">✦ ${(effectResult && effectResult.text) || card.effect.text}</div>
+    <div class="sk-toast-adapt">↳ ${(adaptResult && adaptResult.text) || card.adaptation.text}</div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('closing');
+    setTimeout(() => toast.remove(), 320);
+  }, 2800);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ui/result-skill-replay.js — 结果页的"本局卡牌使用复盘"
+   ════════════════════════════════════════════════════════════════════════════ */
+function buildSkillReplayPanelHtml() {
+  const log = Store.get('cardPlayLog') || [];
+  if (!log.length) return '';
+  const rows = log.map((entry) => {
+    const c = entry.card;
+    const cfg = BLINDBOX_CONFIG.rarities[c.rarity];
+    return `<div class="sk-replay-row">
+      <span class="sk-replay-rarity" style="--card-color:${cfg.color};--card-bg:${cfg.color}22">${c.rarity}</span>
+      <span class="sk-replay-name">${c.emoji || ''} ${c.name}</span>
+      <span class="sk-replay-detail">效果：${(entry.effectResult && entry.effectResult.text) || c.effect.text}<br>
+        <span style="color:var(--dim)">对手反应：${(entry.adaptResult && entry.adaptResult.text) || c.adaptation.text}</span>
+      </span>
+    </div>`;
+  }).join('');
+  return `<div class="sk-replay-panel">
+    <div class="sk-replay-title">▸ 本局技能卡复盘 · 共使用 ${log.length} 张</div>
+    ${rows}
+  </div>`;
+}
+
+function buildSkillPackEarnedPanelHtml() {
+  const earned = Store.get('pendingSkillPacks');
+  if (!earned || !earned.length) return '';
+  Store.set('pendingSkillPacks', null);
+  const items = earned.map((p) => {
+    const meta = BLINDBOX_CONFIG.packs[p.type] || BLINDBOX_CONFIG.packs.basic;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11.5px">
+      <span>📦 ${meta.name}</span>
+      <span style="color:var(--dim);font-size:10px">${p.reason || ''}</span>
+    </div>`;
+  }).join('');
+  return `<div class="panel" style="border-color:var(--sr,#ffd166)">
+    <div class="panel-title" style="color:#ffd166">技能卡包奖励 · 共 ${earned.length} 包</div>
+    ${items}
+    <div style="margin-top:8px;text-align:center">
+      <button class="btn btn-yellow btn-sm" data-sk-goto-packs>去开包 →</button>
+    </div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   engine/blindbox-wire.js — 独立 GAME_END 监听器（与 recorder 互不影响）
+   即使 recorder 的 accumulate/addSession 链路抛错，卡包奖励仍能正常发放。
+   ════════════════════════════════════════════════════════════════════════════ */
+function initSkillBlindboxWire() {
+  EventBus.on(EVENTS.GAME_END, (payload) => {
+    try {
+      const player = Store.get('player');
+      if (!player || typeof SkillBlindBox === 'undefined') return;
+      SkillBlindBox.ensureCardState(player);
+      const result = (payload && payload.result) || {};
+      const opp = Store.get('opponent');
+      if (typeof result.difficulty === 'undefined') {
+        result.difficulty = Store.get('difficulty') || 'medium';
+      }
+      if (opp && opp.boss && result.outcome === 'win') result.bossWin = true;
+      // 每日首局：复用 recorder 写过的 _lastShardDay 标记（recorder 总是先写它）
+      // 但如果 recorder 在它之前抛错，这里降级判定一次
+      const today = new Date().toLocaleDateString('zh-CN');
+      if (typeof result._isDailyFirst === 'undefined') {
+        result._isDailyFirst = (player._lastShardDay !== today);
+      }
+      const packs = SkillBlindBox.calculateRewardPacks(result, player);
+      SkillBlindBox.addPacks(player, packs);
+      Store.set('pendingSkillPacks', packs);
+      Store.set('player', player);
+    } catch (e) {
+      console.warn('[blindbox-wire] GAME_END handler error', e);
+    }
+  });
+}
+
 /* ===== core/bootstrap.js ===== */
 // core/bootstrap.js — 应用启动入口（组合根）
 // 职责：注册所有屏幕 → 初始化对局视图/记录器/控制器 → 渲染首屏。
@@ -9502,6 +10906,8 @@ function boot() {
   Router.register(SCREENS.PSYCHOLOGY, renderPsychology);
   Router.register(SCREENS.DASHBOARD, renderDashboard);
   Router.register(SCREENS.CARD_ALBUM, renderCardAlbum);
+  // 技能盲盒系统（植入 negotiation_blindbox_claude_package）
+  Router.register(SCREENS.SKILL_CARDS, renderSkillCards);
   // 谈判弧线模式（植入 negotiation_arcs + negotiation_arcs_2 两个封装包）
   Router.register(SCREENS.ARC_SELECTION, renderArcSelection);
   Router.register(SCREENS.ARC_BRIEFING, renderArcBriefing);
@@ -9514,11 +10920,14 @@ function boot() {
   // 先初始化记录器，再初始化控制器 —— 保证 game:end 时"先记录、后导航"
   initRecorder();
   initRunner();
+  // 技能盲盒：独立 GAME_END 监听器（与 recorder 解耦，互不影响）
+  initSkillBlindboxWire();
 
   // 启动路由，首屏 = 欢迎屏
   Router.init(root, SCREENS.WELCOME);
-  console.log('[bootstrap] v3 + 谈判弧线模式 已启动 ✓');
+  console.log('[bootstrap] v4 + 弧线模式 + 技能盲盒系统 已启动 ✓');
   console.info('[Arc] 7 条弧线已加载:', NEGOTIATION_ARCS.map((a) => a.id).join(', '));
+  console.info('[Blindbox] 20 张技能卡 / 5 种卡包 / 7 维对手适应已就绪');
   console.info('[Arc] 调试参数: ?devUnlockAll=1 可解锁全部弧线');
 }
 

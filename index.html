@@ -9979,11 +9979,11 @@ const SKILL_CARDS = [
 const BLINDBOX_CONFIG = {
   version: '1.0.0',
   rarities: {
-    N:   { label: '普通', probability: 0.60, shards: 1,   color: '#8ecfff' },
-    R:   { label: '稀有', probability: 0.25, shards: 3,   color: '#3aa7ff' },
-    SR:  { label: '超稀有', probability: 0.10, shards: 10, color: '#ffd166' },
-    SSR: { label: '隐藏', probability: 0.04, shards: 30,  color: '#c084fc' },
-    UR:  { label: '神话', probability: 0.01, shards: 100, color: '#f6c453' }
+    N:   { label: '普通', probability: 0.60, shards: 5,   color: '#8ecfff' },
+    R:   { label: '稀有', probability: 0.25, shards: 15,  color: '#3aa7ff' },
+    SR:  { label: '超稀有', probability: 0.10, shards: 50, color: '#ffd166' },
+    SSR: { label: '隐藏', probability: 0.04, shards: 150, color: '#c084fc' },
+    UR:  { label: '神话', probability: 0.01, shards: 500, color: '#f6c453' }
   },
   packSize: 5,
   pity: { srPlusEvery: 10, ssrPlusEvery: 50, urEvery: 100 },
@@ -10883,6 +10883,2638 @@ function initSkillBlindboxWire() {
   });
 }
 
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   v2.0 总执行包植入 · negotiation_master_final_personal_learning_package
+   - Step 1-10：传奇人物 / 试炼场 / 剧情链 / 卡牌节奏v2 / Q版图案
+   - Step 1-10：能力标签 / 训练路径 / 成长池 / 覆盖率 / 导师能量 / AI记忆
+              / checkpoint / 回放档案 / 检索复盘 / 精通树
+   - 边界：不做赛季 / 不做社交 / 不做联网PVP / 不做公开排行榜
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 10 能力标签 ───────────────────────────────────────────────────── */
+const NEGOTIATION_SKILL_TAGS = {
+  info:       { id: 'info',       label: '信息获取', color: '#3aa7ff' },
+  agenda:     { id: 'agenda',     label: '议题控制', color: '#8ecfff' },
+  pressure:   { id: 'pressure',   label: '压力管理', color: '#ff4f6a' },
+  trust:      { id: 'trust',      label: '信任建立', color: '#00ff9f' },
+  endgame:    { id: 'endgame',    label: '终局控制', color: '#f6c453' },
+  batna:      { id: 'batna',      label: 'BATNA分析', color: '#c084fc' },
+  standard:   { id: 'standard',   label: '客观标准', color: '#00d4ff' },
+  emotion:    { id: 'emotion',    label: '情绪处理', color: '#ffb6d1' },
+  concession: { id: 'concession', label: '条件让步', color: '#ffd166' },
+  retreat:    { id: 'retreat',    label: '战略撤退', color: '#a8e6cf' }
+};
+const SKILL_TAG_KEYS = Object.keys(NEGOTIATION_SKILL_TAGS);
+
+/* ── 卡牌 v2：skillTags + artKey 侧带映射（不改原 SKILL_CARDS 数组结构） ── */
+const SKILL_CARD_META_V2 = {
+  n_open_question:        { skillTags: ['info', 'agenda'],          artKey: 'open_question_chibi' },
+  n_paraphrase:           { skillTags: ['trust', 'emotion'],        artKey: 'paraphrase_chibi' },
+  n_active_listen:        { skillTags: ['trust', 'emotion'],        artKey: 'listen_chibi' },
+  n_clarify_goal:         { skillTags: ['agenda'],                  artKey: 'goal_chibi' },
+  n_silence:              { skillTags: ['pressure', 'emotion'],     artKey: 'silence_chibi' },
+  n_summary:              { skillTags: ['agenda', 'endgame'],       artKey: 'summary_chibi' },
+  r_batna:                { skillTags: ['batna', 'info'],           artKey: 'batna_chibi' },
+  r_need_discovery:       { skillTags: ['info'],                    artKey: 'need_chibi' },
+  r_anchor_first:         { skillTags: ['pressure', 'agenda'],      artKey: 'anchor_chibi' },
+  r_walk_away:            { skillTags: ['batna', 'retreat'],        artKey: 'walkaway_chibi' },
+  r_objective_standard:   { skillTags: ['standard'],                artKey: 'standard_chibi' },
+  sr_concession_trade:    { skillTags: ['concession'],              artKey: 'concession_chibi' },
+  sr_emotional_defusing:  { skillTags: ['emotion'],                 artKey: 'emotion_chibi' },
+  sr_calibrated_question: { skillTags: ['info', 'trust'],           artKey: 'calibrate_chibi' },
+  sr_split_difference:    { skillTags: ['concession', 'pressure'],  artKey: 'split_chibi' },
+  ssr_frame_reframing:    { skillTags: ['agenda', 'endgame'],       artKey: 'reframe_chibi' },
+  ssr_information_fog:    { skillTags: ['info', 'pressure'],        artKey: 'fog_chibi' },
+  ssr_tactical_empathy:   { skillTags: ['emotion', 'trust'],        artKey: 'empathy_chibi' },
+  ur_negotiation_master:  { skillTags: ['endgame', 'agenda'],       artKey: 'master_chibi' },
+  ur_endgame_control:     { skillTags: ['endgame', 'retreat'],      artKey: 'endgame_chibi' }
+};
+// 注入到 SKILL_CARDS（仅一次）
+(function injectV2() {
+  if (typeof SKILL_CARDS === 'undefined') return;
+  SKILL_CARDS.forEach((c) => {
+    const m = SKILL_CARD_META_V2[c.id];
+    if (m) {
+      if (!c.skillTags) c.skillTags = m.skillTags;
+      if (!c.artKey) c.artKey = m.artKey;
+    }
+    if (!c.skillTags) c.skillTags = [];
+  });
+})();
+
+/* ── Q版 SVG 卡面（简化矢量，6 个代表性艺术 + 通用 fallback） ───────── */
+const SKILL_CARD_ART = {
+  open_question_chibi: '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="24" r="14" fill="#ffd9b3"/><circle cx="25" cy="22" r="2" fill="#1a2235"/><circle cx="35" cy="22" r="2" fill="#1a2235"/><path d="M24 28 Q30 32 36 28" stroke="#1a2235" stroke-width="1.5" fill="none"/><text x="48" y="20" font-size="22" fill="#3aa7ff" font-weight="bold">?</text><rect x="14" y="38" width="32" height="14" rx="6" fill="#3aa7ff"/></svg>',
+  batna_chibi: '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="22" r="13" fill="#ffd9b3"/><path d="M18 22 L42 22" stroke="#c084fc" stroke-width="2"/><circle cx="14" cy="22" r="6" fill="#c084fc"/><circle cx="46" cy="22" r="6" fill="#3aa7ff"/><rect x="20" y="40" width="20" height="14" rx="3" fill="#c084fc"/></svg>',
+  emotion_chibi: '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="26" r="14" fill="#ffd9b3"/><circle cx="25" cy="24" r="1.5" fill="#1a2235"/><circle cx="35" cy="24" r="1.5" fill="#1a2235"/><path d="M23 32 Q30 36 37 32" stroke="#1a2235" stroke-width="1.5" fill="none"/><path d="M12 14 L18 8 L20 14 Z" fill="#ff4f6a"/><circle cx="48" cy="14" r="6" fill="#ffb6d1"/></svg>',
+  reframe_chibi: '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><polygon points="30,8 50,22 42,46 18,46 10,22" fill="#c084fc" opacity=".25"/><polygon points="30,15 44,24 38,40 22,40 16,24" fill="#c084fc"/><circle cx="30" cy="28" r="6" fill="#ffd9b3"/><text x="30" y="56" font-size="10" fill="#c084fc" text-anchor="middle">框架</text></svg>',
+  master_chibi: '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><polygon points="22,8 30,2 38,8 36,14 24,14" fill="#f6c453"/><circle cx="30" cy="26" r="14" fill="#ffd9b3"/><circle cx="25" cy="24" r="1.8" fill="#1a2235"/><circle cx="35" cy="24" r="1.8" fill="#1a2235"/><path d="M24 32 Q30 36 36 32" stroke="#1a2235" stroke-width="1.5" fill="none"/><rect x="14" y="42" width="32" height="12" rx="2" fill="#f6c453"/></svg>',
+  endgame_chibi: '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="40" width="36" height="14" fill="#1a2235" stroke="#f6c453" stroke-width="1"/><circle cx="20" cy="22" r="6" fill="#f6c453"/><circle cx="40" cy="22" r="8" fill="#1a2235" stroke="#f6c453" stroke-width="2"/><polygon points="40,18 42,22 38,22" fill="#f6c453"/><text x="30" y="52" font-size="10" fill="#f6c453" text-anchor="middle">王</text></svg>'
+};
+
+function fallbackSkillCardArt(card) {
+  const cfg = BLINDBOX_CONFIG.rarities[card.rarity] || BLINDBOX_CONFIG.rarities.N;
+  // 自动生成的 Q 版头像：圆脸 + 表情 + 稀有度色调头饰
+  const emoji = card.emoji || '✦';
+  return `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="30" cy="26" r="14" fill="#ffd9b3"/>
+    <circle cx="25" cy="24" r="1.5" fill="#1a2235"/>
+    <circle cx="35" cy="24" r="1.5" fill="#1a2235"/>
+    <path d="M24 31 Q30 35 36 31" stroke="#1a2235" stroke-width="1.5" fill="none"/>
+    <rect x="14" y="40" width="32" height="14" rx="4" fill="${cfg.color}"/>
+    <text x="30" y="51" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">${card.rarity}</text>
+    <text x="48" y="14" font-size="13">${emoji}</text>
+  </svg>`;
+}
+
+function renderSkillCardArt(card) {
+  if (!card) return '';
+  if (card.artKey && SKILL_CARD_ART[card.artKey]) return SKILL_CARD_ART[card.artKey];
+  return fallbackSkillCardArt(card);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   卡牌 v2 升级：升星 / UR印记 / 重写 drawOne 使用新碎片表
+   ════════════════════════════════════════════════════════════════════════════ */
+const DUPLICATE_SHARDS_V2 = { N: 5, R: 15, SR: 50, SSR: 150, UR: 500 };
+
+function ensureSkillCardFieldsV2(player) {
+  if (!player) return player;
+  SkillBlindBox.ensureCardState(player);
+  player.skillCardStars       = player.skillCardStars || {};
+  player.skillCardMarks       = player.skillCardMarks || { UR: 0 };
+  player.skillCardFusionOwned = player.skillCardFusionOwned || [];
+  player.skillCardSetRewards  = player.skillCardSetRewards || [];
+  player.legendaryMentors     = player.legendaryMentors || {
+    owned: [], fragments: {}, equipped: null, duplicates: {},
+    stars: {}, duelRecords: {}, titles: [], borders: [],
+    pity: { packs: 0, sinceSSRMaster: 0, sinceURLegend: 0, sinceLRSignature: 0 }
+  };
+  player.skillProfile         = player.skillProfile || {};
+  SKILL_TAG_KEYS.forEach((tag) => {
+    player.skillProfile[tag] = player.skillProfile[tag] || {
+      attempts: 0, avgScore: 0, lastScore: 0,
+      streakPass: 0, weaknessCount: 0, mastered: false
+    };
+  });
+  player.masteryTree          = player.masteryTree || {};
+  SKILL_TAG_KEYS.forEach((tag) => { if (typeof player.masteryTree[tag] !== 'number') player.masteryTree[tag] = 0; });
+  player.packStats            = player.packStats || { totalOpened: 0 };
+  player.cardWishlist         = player.cardWishlist || null;
+  player.flags                = player.flags || {};
+  player.localReplays         = player.localReplays || [];
+  player.reviewQuestions      = player.reviewQuestions || [];
+  player.storyRuns            = player.storyRuns || {};
+  player.duelRecords          = player.duelRecords || {};
+  return player;
+}
+
+function updateCardStarByDuplicates(player, cardId) {
+  const dup = player.skillCardDuplicates[cardId] || 0;
+  let star = 1;
+  if (dup >= 10) star = 5;
+  else if (dup >= 6) star = 4;
+  else if (dup >= 3) star = 3;
+  else if (dup >= 1) star = 2;
+  player.skillCardStars[cardId] = Math.max(player.skillCardStars[cardId] || 1, star);
+  return player.skillCardStars[cardId];
+}
+
+// 覆盖 SkillBlindBox.drawOne：使用 v2 碎片表 + 升星 + UR印记 + packStats
+(function patchDrawOneV2() {
+  const _origDraw = SkillBlindBox.drawOne;
+  SkillBlindBox.drawOne = function (player, packType) {
+    ensureSkillCardFieldsV2(player);
+    const out = _origDraw.call(this, player, packType);
+    if (!out) return out;
+    // 重新计算 shard 用 v2 表（修正 _origDraw 用的旧 BLINDBOX_CONFIG.rarities.shards）
+    if (out.duplicate) {
+      const v2Shard = DUPLICATE_SHARDS_V2[out.card.rarity] || 5;
+      const oldShard = BLINDBOX_CONFIG.rarities[out.card.rarity].shards;
+      const delta = v2Shard - oldShard;
+      if (delta !== 0) player.cardShards = (player.cardShards || 0) + delta;
+      out.shard = v2Shard;
+      if (out.card.rarity === 'UR') player.skillCardMarks.UR = (player.skillCardMarks.UR || 0) + 1;
+    } else {
+      // 新卡 → 1 星
+      player.skillCardStars[out.card.id] = 1;
+    }
+    // 升星（基于 duplicates）
+    updateCardStarByDuplicates(player, out.card.id);
+    return out;
+  };
+})();
+
+// 覆盖 SkillBlindBox.openPack：包大小固定 5、且至少 1 张 R+、记录 packStats
+(function patchOpenPackV2() {
+  const _origOpen = SkillBlindBox.openPack;
+  SkillBlindBox.openPack = function (player, packIndex) {
+    ensureSkillCardFieldsV2(player);
+    const pack = player.skillCardPacks && player.skillCardPacks[packIndex];
+    if (!pack) return null;
+    const results = [];
+    let hasR = false;
+    for (let i = 0; i < BLINDBOX_CONFIG.packSize; i++) {
+      const r = SkillBlindBox.drawOne(player, pack.type);
+      results.push(r);
+      if (['R', 'SR', 'SSR', 'UR'].includes(r.card.rarity)) hasR = true;
+    }
+    // 单包至少 1 张 R+；若最差全 N，则强制升级最后一张到 R
+    if (!hasR && results.length) {
+      const lastN = results[results.length - 1];
+      const rPool = SKILL_CARDS.filter((c) => c.rarity === 'R');
+      if (rPool.length) {
+        const newCard = rPool[Math.floor(Math.random() * rPool.length)];
+        // 撤回旧的统计
+        const collIdx = player.skillCardCollection.indexOf(lastN.card.id);
+        if (!lastN.duplicate && collIdx >= 0) player.skillCardCollection.splice(collIdx, 1);
+        else if (lastN.duplicate) {
+          player.skillCardDuplicates[lastN.card.id] = Math.max(0, (player.skillCardDuplicates[lastN.card.id] || 1) - 1);
+          player.cardShards = Math.max(0, (player.cardShards || 0) - lastN.shard);
+        }
+        // 重新发放为 R
+        const isDup = player.skillCardCollection.includes(newCard.id);
+        if (isDup) {
+          const sh = DUPLICATE_SHARDS_V2.R;
+          player.skillCardDuplicates[newCard.id] = (player.skillCardDuplicates[newCard.id] || 0) + 1;
+          player.cardShards = (player.cardShards || 0) + sh;
+          results[results.length - 1] = { card: newCard, duplicate: true, shard: sh };
+        } else {
+          player.skillCardCollection.push(newCard.id);
+          player.skillCardStars[newCard.id] = 1;
+          results[results.length - 1] = { card: newCard, duplicate: false, shard: 0 };
+        }
+        updateCardStarByDuplicates(player, newCard.id);
+      }
+    }
+    player.skillCardPacks.splice(packIndex, 1);
+    player.packStats.totalOpened = (player.packStats.totalOpened || 0) + 1;
+    savePlayer(player);
+    EventBus.emit(EVENTS.CARD_PACK_OPENED, { pack, results });
+    return { pack, results };
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   卡牌使用规则 v2：1 张/回合、SSR/UR 1 张/局、关键回合连携惩罚
+   ════════════════════════════════════════════════════════════════════════════ */
+const CARD_USAGE_RULES = {
+  maxLoadoutPerGame: 3,
+  maxActiveCardsPerRound: 1,
+  maxCardsUsedPerGame: 3,
+  maxSSRorURPerGame: 1,
+  eachCardUseLimit: 1,
+  allowComboOnlyInCriticalRound: true,
+  maxCardsInCriticalRound: 2,
+  comboPenalty: { opponentAlertness: 15, opponentStrategy: 10, finalDefense: 10 }
+};
+
+function isCriticalRound() {
+  const scenario = Store.get('activeScenario');
+  if (!scenario) return false;
+  const mood = (scenario.opp && typeof Mood !== 'undefined') ? (Mood.get(scenario.opp.id) || {}) : {};
+  const totalRounds = scenario.rounds || scenario.stages || 5;
+  const round = scenario.round || scenario.stage || 0;
+  return Boolean(
+    scenario._criticalRound ||
+    (mood.anger && mood.anger > 0.75) ||
+    (typeof totalRounds === 'number' && typeof round === 'number' && round >= totalRounds - 2) ||
+    (scenario.opp && scenario.opp.boss) ||
+    Store.get('difficulty') === 'hell'
+  );
+}
+
+// 覆盖 SkillCardEffects.canUse：增加 v2 规则
+(function patchCanUseV2() {
+  SkillCardEffects.canUse = function (cardId) {
+    const loadout = Store.get('activeCardLoadout') || [];
+    if (!loadout.includes(cardId)) return { ok: false, reason: '本局未携带这张卡' };
+    const used = Store.get('usedCardsThisGame') || [];
+    if (used.includes(cardId)) return { ok: false, reason: '每张卡每局最多使用 1 次' };
+    if (used.length >= CARD_USAGE_RULES.maxCardsUsedPerGame) {
+      return { ok: false, reason: `每局最多使用 ${CARD_USAGE_RULES.maxCardsUsedPerGame} 张技能卡` };
+    }
+    const card = SKILL_CARDS.find((c) => c.id === cardId);
+    if (!card) return { ok: false, reason: '无效卡牌' };
+    // SSR/UR 每局 1 张
+    const usedHigh = used.map((id) => SKILL_CARDS.find((c) => c.id === id))
+                          .filter((c) => c && (c.rarity === 'SSR' || c.rarity === 'UR')).length;
+    if ((card.rarity === 'SSR' || card.rarity === 'UR') && usedHigh >= CARD_USAGE_RULES.maxSSRorURPerGame) {
+      return { ok: false, reason: 'SSR/UR 技能卡每局最多使用 1 张' };
+    }
+    // 1 张/回合（关键回合可 2 张）
+    const usedThisRound = Store.get('usedCardsThisRound') || [];
+    const critical = isCriticalRound();
+    const maxThisRound = critical ? CARD_USAGE_RULES.maxCardsInCriticalRound : CARD_USAGE_RULES.maxActiveCardsPerRound;
+    if (usedThisRound.length >= maxThisRound) {
+      return { ok: false, reason: critical ? '关键回合最多连携 2 张卡' : '普通回合最多使用 1 张主动技能卡' };
+    }
+    return { ok: true, critical };
+  };
+})();
+
+// 覆盖 use：每回合计数 + 关键回合连携惩罚
+(function patchUseV2() {
+  const _origUse = SkillCardEffects.use;
+  SkillCardEffects.use = function (cardId) {
+    const gate = SkillCardEffects.canUse(cardId);
+    if (!gate.ok) return gate;
+    const res = _origUse.call(this, cardId);
+    if (!res || !res.ok) return res;
+    // 标记本回合
+    const usedThisRound = (Store.get('usedCardsThisRound') || []).slice();
+    usedThisRound.push(cardId);
+    Store.set('usedCardsThisRound', usedThisRound);
+    // 关键回合连携惩罚（第二张卡触发）
+    if (usedThisRound.length >= 2 && typeof OpponentAdaptation !== 'undefined') {
+      const pen = CARD_USAGE_RULES.comboPenalty;
+      // 直接调整对手适应（不通过卡牌 adapt 卡，因为这是连携附加项）
+      const state = Object.assign({}, OpponentAdaptation.getState());
+      state.alertness = Math.min(100, (state.alertness || 0) + pen.opponentAlertness);
+      state.strategy  = Math.min(100, (state.strategy || 0) + pen.opponentStrategy);
+      state.endgameDefense = Math.min(100, (state.endgameDefense || 0) + pen.finalDefense);
+      state.history = (state.history || []).concat({
+        cardId: 'combo', attr: 'combo',
+        amount: pen.opponentAlertness, ts: Date.now(),
+        text: '【连携惩罚】对手识别你的连续打牌，警觉 +' + pen.opponentAlertness + ' / 策略 +' + pen.opponentStrategy + ' / 终局防守 +' + pen.finalDefense
+      });
+      Store.set('opponentAdaptation', state);
+      EventBus.emit(EVENTS.OPPONENT_ADAPTED, {
+        opponent: Store.get('opponent'),
+        card: { name: '连携惩罚', rarity: 'N' },
+        attr: 'combo', amount: pen.opponentAlertness,
+        text: '【关键回合连携惩罚】对手识别你的双卡组合，全面提高防御',
+        state
+      });
+    }
+    return res;
+  };
+})();
+
+// 每回合切换时清空 usedCardsThisRound（钩到 AI_DECIDED 或 GAME_RENDER 之间）
+(function attachRoundResetV2() {
+  // 我们用一个轻量的回合检测：每次 AI_DECIDED 表示一回合结束，下一次 game:render 是新回合
+  let lastRoundKey = null;
+  EventBus.on(EVENTS.GAME_RENDER, () => {
+    const scenario = Store.get('activeScenario');
+    if (!scenario) return;
+    const round = scenario.round != null ? scenario.round : scenario.stage;
+    const key = (scenario.scenarioKey || 'x') + ':' + (round != null ? round : 0);
+    if (key !== lastRoundKey) {
+      Store.set('usedCardsThisRound', []);
+      lastRoundKey = key;
+    }
+  });
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   传奇人物盲盒 · 19 张导师卡（13 UR_LEGEND + 6 SSR_MASTER）
+   ════════════════════════════════════════════════════════════════════════════ */
+const LEGEND_RARITIES = {
+  SSR_MASTER:   { label: 'SSR · 理论宗师', color: '#c084fc', glow: 'rgba(192,132,252,.55)' },
+  UR_LEGEND:    { label: 'UR · 传奇导师',  color: '#f6c453', glow: 'rgba(246,196,83,.65)' },
+  LR_SIGNATURE: { label: 'LR · 签名收藏',  color: '#ff4f6a', glow: 'rgba(255,79,106,.7)' }
+};
+
+const LEGEND_DUELISTS = [
+  // ── UR · 传奇导师（13 位，含 7 位女性） ────────────────────────────
+  {
+    id: 'mentor_sunzi', name: '孙子', rarity: 'UR_LEGEND', gender: '男',
+    style: '虚实判断 / 先胜后战', passive: { name: '知彼知己', effect: '局前揭示对手 2 条隐藏意图。' },
+    styleTags: ['info', 'agenda'], adjacentTags: ['batna', 'standard'],
+    bias: { information: -10 }, weakness: '一旦虚虚实实失效，过度计算会延误关键时机',
+    signature: ['知彼知己，百战不殆。', '不战而屈人之兵，善之善者也。'],
+    chibi: '🧙‍♂️', mentorSeries: '兵圣'
+  },
+  {
+    id: 'mentor_zhangyi', name: '张仪', rarity: 'UR_LEGEND', gender: '男',
+    style: '利益分化 / 游说破局', passive: { name: '纵横捭阖', effect: '本局首回合可揭示对手 1 条核心利益。' },
+    styleTags: ['info', 'concession'], adjacentTags: ['agenda', 'standard'],
+    bias: { trust: -8 }, weakness: '过度分化容易失去联盟基础',
+    signature: ['合纵连横，利之所趋。'], chibi: '🎭', mentorSeries: '纵横家'
+  },
+  {
+    id: 'mentor_lihongzhang', name: '李鸿章', rarity: 'UR_LEGEND', gender: '男',
+    style: '危局周旋 / 底线防守', passive: { name: '夹缝周旋', effect: '本局开局获得 +10 信任权（仅作起手缓冲）。' },
+    styleTags: ['retreat', 'concession'], adjacentTags: ['trust', 'emotion'],
+    bias: { endgame: -5 }, weakness: '长期妥协侵蚀核心利益',
+    signature: ['受尽天下百官气，养就胸中一段春。'], chibi: '🎩', mentorSeries: '弱势谈判'
+  },
+  {
+    id: 'mentor_inamori', name: '稻盛和夫', rarity: 'UR_LEGEND', gender: '男',
+    style: '利他经营 / 长期主义', passive: { name: '利他经营', effect: '触发后本局信任权增长 +50%。' },
+    styleTags: ['trust', 'standard'], adjacentTags: ['emotion'],
+    bias: { trust: -5 }, weakness: '面对短期博弈型对手优势不明显',
+    signature: ['敬天爱人，以利他之心经营。'], chibi: '🪷', mentorSeries: '经营之圣'
+  },
+  {
+    id: 'mentor_munger', name: '查理·芒格', rarity: 'UR_LEGEND', gender: '男',
+    style: '反向思维 / 多元模型', passive: { name: '反过来想', effect: '关键回合反问"如果失败会怎样"，规避一次错误选择。' },
+    styleTags: ['standard', 'batna'], adjacentTags: ['endgame'],
+    bias: { agenda: -8 }, weakness: '决策略慢',
+    signature: ['Invert, always invert. 反过来想，总是反过来想。'], chibi: '🧠', mentorSeries: '智慧合伙'
+  },
+  {
+    id: 'mentor_trump', name: '特朗普', rarity: 'UR_LEGEND', gender: '男',
+    style: '极限锚定 / 高压叙事', passive: { name: '极限锚定', effect: '本局首回合压力权 +15，对手锚定接受度 -10%。' },
+    styleTags: ['pressure', 'agenda'], adjacentTags: ['endgame'],
+    bias: { pressure: -15 }, weakness: '关系修复成本极高',
+    signature: ['你只能赢，否则就是输家。'], chibi: '💼', mentorSeries: '强交易'
+  },
+  {
+    id: 'mentor_cleopatra', name: '克利奥帕特拉', rarity: 'UR_LEGEND', gender: '女',
+    style: '资源置换 / 关系筹码', passive: { name: '战略联盟', effect: '局前可指定一位对手"暂时观望"一回合。' },
+    styleTags: ['trust', 'concession'], adjacentTags: ['info', 'emotion'],
+    bias: { information: -8 }, weakness: '依赖关系网络，长期对峙吃亏',
+    signature: ['我把世界折叠进这场谈判。'], chibi: '👑', mentorSeries: '战略联盟'
+  },
+  {
+    id: 'mentor_wuzetian', name: '武则天', rarity: 'UR_LEGEND', gender: '女',
+    style: '真实决策识别 / 权力再分配', passive: { name: '权力重构', effect: '本局可识别对手"代理人"信号一次。' },
+    styleTags: ['info', 'endgame'], adjacentTags: ['agenda'],
+    bias: { endgame: -10 }, weakness: '冷面手法对柔性对手反弹大',
+    signature: ['真正的权力，不在桌面上。'], chibi: '👸', mentorSeries: '权力重构'
+  },
+  {
+    id: 'mentor_elizabeth_i', name: '伊丽莎白一世', rarity: 'UR_LEGEND', gender: '女',
+    style: '延迟承诺 / 风险控制', passive: { name: '战略模糊', effect: '本局可推迟一次终局承诺，把决策推到下一回合。' },
+    styleTags: ['retreat', 'agenda'], adjacentTags: ['standard'],
+    bias: { agenda: -7 }, weakness: '错失短期窗口',
+    signature: ['我不想给一个不能撤回的回答。'], chibi: '👑', mentorSeries: '战略模糊'
+  },
+  {
+    id: 'mentor_catherine', name: '叶卡捷琳娜二世', rarity: 'UR_LEGEND', gender: '女',
+    style: '关键人物争取 / 利益联盟构建', passive: { name: '精英联盟', effect: '本局首回合自动结盟一位中立第三方。' },
+    styleTags: ['trust', 'standard'], adjacentTags: ['info', 'concession'],
+    bias: { trust: -10 }, weakness: '高成本利益捆绑',
+    signature: ['伟大不是天赐，是议事桌上一票一票拿到的。'], chibi: '👸', mentorSeries: '精英联盟'
+  },
+  {
+    id: 'mentor_thatcher', name: '撒切尔夫人', rarity: 'UR_LEGEND', gender: '女',
+    style: '底线谈判 / 高压反制', passive: { name: '铁线底牌', effect: '本局任何"无条件让步"动作前自动暂停一次确认。' },
+    styleTags: ['pressure', 'batna'], adjacentTags: ['endgame'],
+    bias: { pressure: -12 }, weakness: '关系账户长期透支',
+    signature: ['这位女士不会转弯。'], chibi: '🦁', mentorSeries: '铁线底牌'
+  },
+  {
+    id: 'mentor_merkel', name: '默克尔', rarity: 'UR_LEGEND', gender: '女',
+    style: '渐进妥协 / 稳健共识', passive: { name: '耐心共识', effect: '本局每回合信任权稳健增长 +3。' },
+    styleTags: ['trust', 'standard'], adjacentTags: ['agenda', 'concession'],
+    bias: {}, weakness: '面对极端锚定对手节奏偏慢',
+    signature: ['我们必须走完每一步。'], chibi: '🕊️', mentorSeries: '耐心共识'
+  },
+  {
+    id: 'mentor_cixi', name: '慈禧太后', rarity: 'UR_LEGEND', gender: '女',
+    style: '权力维稳 / 资源分配 / 延迟决策', passive: { name: '垂帘控局', effect: '本局可观察对手 1 次"模糊承诺"并要求转为明确条件。' },
+    styleTags: ['endgame', 'agenda'], adjacentTags: ['retreat'],
+    bias: { trust: -8, endgame: -8 }, weakness: '过度延迟会让模型可读',
+    signature: ['哀家不轻易表态。'], chibi: '👘', mentorSeries: '垂帘控局',
+    note: '高争议权力型角色：核心训练价值在于识别权力不透明、识别表面安抚、破解拖延承诺'
+  },
+
+  // ── SSR · 理论宗师（6 位） ────────────────────────────────────────
+  {
+    id: 'master_dawson', name: '罗杰·道森', rarity: 'SSR_MASTER', gender: '男',
+    style: '阶段掌控', passive: { name: '优势谈判流程', effect: '本局每幕开头自动提示当前应执行的阶段动作。' },
+    styleTags: ['agenda', 'concession'], adjacentTags: ['standard'],
+    chibi: '📘', mentorSeries: '优势谈判'
+  },
+  {
+    id: 'master_fisher_ury', name: '费希尔/尤里', rarity: 'SSR_MASTER', gender: '男',
+    style: '利益而非立场', passive: { name: '回到利益', effect: '关键回合可强制重定义议题为"利益而非立场"。' },
+    styleTags: ['standard', 'agenda'], adjacentTags: ['trust'],
+    chibi: '📕', mentorSeries: '原则谈判'
+  },
+  {
+    id: 'master_voss', name: '克里斯·沃斯', rarity: 'SSR_MASTER', gender: '男',
+    style: '战术同理心 · 镜像 / 标签', passive: { name: '战术同理心', effect: '本局获得 1 次"标注对方情绪"的高效提示。' },
+    styleTags: ['emotion', 'trust'], adjacentTags: ['info'],
+    chibi: '🎙️', mentorSeries: 'FBI 同理'
+  },
+  {
+    id: 'master_cohen', name: '赫布·科恩', rarity: 'SSR_MASTER', gender: '男',
+    style: '权力 / 时间 / 信息 三角', passive: { name: '三角评估', effect: '局前显示对手在三个维度上的相对强弱。' },
+    styleTags: ['info', 'batna'], adjacentTags: ['pressure'],
+    chibi: '📐', mentorSeries: '谈判三角'
+  },
+  {
+    id: 'master_diamond', name: '斯图尔特·戴蒙德', rarity: 'SSR_MASTER', gender: '男',
+    style: '目标第一 / 感知管理', passive: { name: '目标第一', effect: '本局开局自动锁定 1 项核心目标，避免被支线牵走。' },
+    styleTags: ['agenda', 'endgame'], adjacentTags: ['standard'],
+    chibi: '🎯', mentorSeries: 'Getting More'
+  },
+  {
+    id: 'master_shell', name: '理查德·谢尔', rarity: 'SSR_MASTER', gender: '男',
+    style: '风格适配', passive: { name: '风格适配', effect: '局前根据对手风格给出 1 条最优应对建议。' },
+    styleTags: ['standard', 'trust'], adjacentTags: ['emotion'],
+    chibi: '📖', mentorSeries: '风格适配'
+  }
+];
+
+const LEGEND_BLINDBOX_CONFIG = {
+  packSize: 5,
+  legendSlot: {
+    characterFragment10: 0.70,
+    masterFragment20:    0.20,
+    ssrMasterCard:       0.07,
+    urLegendCard:        0.025,
+    lrSignatureCard:     0.005
+  },
+  pity: { ssrMasterEveryPacks: 10, urLegendEveryPacks: 40, lrSignatureEveryPacks: 120 },
+  exchange: { urLegendFragments: 100, ssrMasterFragments: 80 }
+};
+
+function getMentor(id) { return LEGEND_DUELISTS.find((d) => d.id === id); }
+function getMentorsByRarity(rarity) { return LEGEND_DUELISTS.filter((d) => d.rarity === rarity); }
+
+/* ── 传奇盲盒抽卡 ────────────────────────────────────────────────── */
+const LegendBlindBox = (() => {
+  function pickLegendSlot(pity) {
+    // 保底优先
+    if ((pity.sinceLRSignature + 1) >= LEGEND_BLINDBOX_CONFIG.pity.lrSignatureEveryPacks) {
+      return { kind: 'lrSignatureCard' };
+    }
+    if ((pity.sinceURLegend + 1) >= LEGEND_BLINDBOX_CONFIG.pity.urLegendEveryPacks) {
+      return { kind: 'urLegendCard' };
+    }
+    if ((pity.sinceSSRMaster + 1) >= LEGEND_BLINDBOX_CONFIG.pity.ssrMasterEveryPacks) {
+      return { kind: 'ssrMasterCard' };
+    }
+    // 概率抽
+    const slot = LEGEND_BLINDBOX_CONFIG.legendSlot;
+    const r = Math.random();
+    let acc = 0;
+    for (const k of Object.keys(slot)) {
+      acc += slot[k];
+      if (r <= acc) return { kind: k };
+    }
+    return { kind: 'characterFragment10' };
+  }
+
+  function drawLegendPack(player) {
+    ensureSkillCardFieldsV2(player);
+    const pity = player.legendaryMentors.pity;
+    pity.packs = (pity.packs || 0) + 1;
+    const results = [];
+    // 前 3 个：技能卡 / 技能碎片
+    for (let i = 0; i < 3; i++) results.push({ kind: 'skill', value: SkillBlindBox.drawOne(player, 'basic') });
+    // 第 4 个：人物碎片（30 → 60 之间，随机一个 UR mentor）
+    const urPool = LEGEND_DUELISTS.filter((d) => d.rarity === 'UR_LEGEND');
+    const fragMentor = urPool[Math.floor(Math.random() * urPool.length)];
+    const fragAmt = 30 + Math.floor(Math.random() * 30);
+    player.legendaryMentors.fragments[fragMentor.id] = (player.legendaryMentors.fragments[fragMentor.id] || 0) + fragAmt;
+    results.push({ kind: 'fragment', mentorId: fragMentor.id, mentor: fragMentor, amount: fragAmt });
+
+    // 第 5 个：传奇位
+    const slot = pickLegendSlot(pity);
+    let slotResult = null;
+    switch (slot.kind) {
+      case 'characterFragment10': {
+        const m = urPool[Math.floor(Math.random() * urPool.length)];
+        player.legendaryMentors.fragments[m.id] = (player.legendaryMentors.fragments[m.id] || 0) + 10;
+        slotResult = { kind: 'characterFragment', mentor: m, amount: 10 };
+        break;
+      }
+      case 'masterFragment20': {
+        const ssrPool = LEGEND_DUELISTS.filter((d) => d.rarity === 'SSR_MASTER');
+        const m = ssrPool[Math.floor(Math.random() * ssrPool.length)];
+        player.legendaryMentors.fragments[m.id] = (player.legendaryMentors.fragments[m.id] || 0) + 20;
+        slotResult = { kind: 'masterFragment', mentor: m, amount: 20 };
+        break;
+      }
+      case 'ssrMasterCard': {
+        const ssrPool = LEGEND_DUELISTS.filter((d) => d.rarity === 'SSR_MASTER');
+        const m = ssrPool[Math.floor(Math.random() * ssrPool.length)];
+        slotResult = unlockMentor(player, m);
+        slotResult.kind = 'ssrMasterCard';
+        slotResult.mentor = m;
+        pity.sinceSSRMaster = 0;
+        break;
+      }
+      case 'urLegendCard': {
+        const m = urPool[Math.floor(Math.random() * urPool.length)];
+        slotResult = unlockMentor(player, m);
+        slotResult.kind = 'urLegendCard';
+        slotResult.mentor = m;
+        pity.sinceURLegend = 0;
+        pity.sinceSSRMaster = 0;
+        break;
+      }
+      case 'lrSignatureCard': {
+        // LR 是 UR 传奇的动态签名版本
+        const m = urPool[Math.floor(Math.random() * urPool.length)];
+        const lr = Object.assign({}, m, { id: m.id + '_lr', rarity: 'LR_SIGNATURE', name: m.name + ' · 动态签名' });
+        slotResult = unlockMentor(player, lr);
+        slotResult.kind = 'lrSignatureCard';
+        slotResult.mentor = lr;
+        pity.sinceLRSignature = 0;
+        pity.sinceURLegend = 0;
+        pity.sinceSSRMaster = 0;
+        break;
+      }
+    }
+    // 推进未命中的保底计数
+    if (slot.kind !== 'ssrMasterCard' && slot.kind !== 'urLegendCard' && slot.kind !== 'lrSignatureCard') {
+      pity.sinceSSRMaster = (pity.sinceSSRMaster || 0) + 1;
+    }
+    if (slot.kind !== 'urLegendCard' && slot.kind !== 'lrSignatureCard') {
+      pity.sinceURLegend = (pity.sinceURLegend || 0) + 1;
+    }
+    if (slot.kind !== 'lrSignatureCard') {
+      pity.sinceLRSignature = (pity.sinceLRSignature || 0) + 1;
+    }
+    results.push(slotResult);
+    savePlayer(player);
+    EventBus.emit(EVENTS.CARD_PACK_OPENED, { pack: { type: 'legend' }, results });
+    return results;
+  }
+
+  function unlockMentor(player, mentor) {
+    const id = mentor.id;
+    if (player.legendaryMentors.owned.includes(id)) {
+      player.legendaryMentors.duplicates[id] = (player.legendaryMentors.duplicates[id] || 0) + 1;
+      const dup = player.legendaryMentors.duplicates[id];
+      let star = 1;
+      if (dup >= 6) star = 5; else if (dup >= 3) star = 4; else if (dup >= 1) star = 2;
+      player.legendaryMentors.stars[id] = Math.max(player.legendaryMentors.stars[id] || 1, star);
+      // 重复 → 转碎片
+      const refund = (mentor.rarity === 'UR_LEGEND' || mentor.rarity === 'LR_SIGNATURE') ? 60 : 30;
+      player.legendaryMentors.fragments[id] = (player.legendaryMentors.fragments[id] || 0) + refund;
+      return { kind: 'mentorDup', mentor, refund };
+    }
+    player.legendaryMentors.owned.push(id);
+    player.legendaryMentors.stars[id] = 1;
+    return { kind: 'mentorNew', mentor };
+  }
+
+  function exchangeByFragments(player, mentorId) {
+    ensureSkillCardFieldsV2(player);
+    const mentor = getMentor(mentorId);
+    if (!mentor) return { ok: false, reason: '未知导师' };
+    if (player.legendaryMentors.owned.includes(mentorId)) {
+      return { ok: false, reason: '已持有该导师' };
+    }
+    const need = mentor.rarity === 'UR_LEGEND' ? LEGEND_BLINDBOX_CONFIG.exchange.urLegendFragments :
+                 mentor.rarity === 'SSR_MASTER' ? LEGEND_BLINDBOX_CONFIG.exchange.ssrMasterFragments : 200;
+    const have = player.legendaryMentors.fragments[mentorId] || 0;
+    if (have < need) return { ok: false, reason: `碎片不足（${have}/${need}）` };
+    player.legendaryMentors.fragments[mentorId] = have - need;
+    unlockMentor(player, mentor);
+    savePlayer(player);
+    EventBus.emit(EVENTS.CARD_UNLOCKED, { mentor });
+    return { ok: true, mentor };
+  }
+
+  function equipMentor(player, mentorId) {
+    ensureSkillCardFieldsV2(player);
+    if (mentorId && !player.legendaryMentors.owned.includes(mentorId)) {
+      return { ok: false, reason: '未拥有该导师' };
+    }
+    player.legendaryMentors.equipped = mentorId || null;
+    savePlayer(player);
+    return { ok: true, mentorId };
+  }
+
+  return { drawLegendPack, unlockMentor, exchangeByFragments, equipMentor };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   导师能量系统 + 局前装备
+   ════════════════════════════════════════════════════════════════════════════ */
+const MENTOR_ENERGY_RULES = {
+  styleMatchedAction: 34, adjacentAction: 17, offStyleAction: 0,
+  triggerThreshold: 100, teachingMinRound: 2, teachingMaxRound: 5
+};
+
+function getEquippedMentor() {
+  const player = Store.get('player');
+  if (!player || !player.legendaryMentors || !player.legendaryMentors.equipped) return null;
+  return getMentor(player.legendaryMentors.equipped);
+}
+
+function addMentorEnergy(actionTag) {
+  const mentor = getEquippedMentor();
+  if (!mentor) return null;
+  const state = Store.get('mentorEnergyState') || { energy: 0, triggered: false };
+  if (state.triggered) return state;
+  const gain = (mentor.styleTags || []).includes(actionTag) ? MENTOR_ENERGY_RULES.styleMatchedAction :
+               (mentor.adjacentTags || []).includes(actionTag) ? MENTOR_ENERGY_RULES.adjacentAction : 0;
+  state.energy = Math.min(100, (state.energy || 0) + gain);
+  Store.set('mentorEnergyState', state);
+  return { gain, energy: state.energy };
+}
+
+function tryTriggerMentor() {
+  const mentor = getEquippedMentor();
+  if (!mentor) return null;
+  const state = Store.get('mentorEnergyState') || { energy: 0, triggered: false };
+  if (state.triggered) return null;
+  if (state.energy < MENTOR_ENERGY_RULES.triggerThreshold) return null;
+  state.triggered = true;
+  Store.set('mentorEnergyState', state);
+  // 触发反馈
+  const trigger = {
+    title: `【${mentor.name}】触发：${mentor.passive.name}`,
+    reason: '能量充满，对应风格行动累计达成 100',
+    advice: mentor.passive.effect,
+    adaptation: '对手识别你的师承风格，对应防守值 +10',
+    signature: (mentor.signature || [''])[0]
+  };
+  Store.set('mentorLastTrigger', trigger);
+  // 对手对应适应
+  if (typeof OpponentAdaptation !== 'undefined') {
+    const adapt = Object.assign({}, OpponentAdaptation.getState());
+    adapt.strategy = Math.min(100, (adapt.strategy || 0) + 10);
+    adapt.history = (adapt.history || []).concat({
+      cardId: 'mentor:' + mentor.id, attr: 'strategy', amount: 10,
+      text: `对手识别【${mentor.name}】路线，策略 +10`,
+      ts: Date.now()
+    });
+    Store.set('opponentAdaptation', adapt);
+    EventBus.emit(EVENTS.OPPONENT_ADAPTED, {
+      opponent: Store.get('opponent'), card: { name: mentor.name, rarity: mentor.rarity },
+      attr: 'strategy', amount: 10, text: `导师触发：${mentor.passive.name}（对手策略 +10）`,
+      state: adapt
+    });
+  }
+  return trigger;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   能力标签 & 个人训练画像 · skillProfile / 训练路径推荐
+   ════════════════════════════════════════════════════════════════════════════ */
+const SkillProfile = (() => {
+  function update(player, deltas) {
+    ensureSkillCardFieldsV2(player);
+    Object.entries(deltas || {}).forEach(([tag, score]) => {
+      const p = player.skillProfile[tag];
+      if (!p) return;
+      p.attempts++;
+      p.lastScore = score;
+      p.avgScore = Math.round(((p.avgScore * (p.attempts - 1)) + score) / p.attempts);
+      p.streakPass = score >= 80 ? p.streakPass + 1 : 0;
+      p.weaknessCount = score < 65 ? p.weaknessCount + 1 : Math.max(0, p.weaknessCount - 1);
+      p.mastered = p.streakPass >= 3 || p.avgScore >= 85;
+    });
+    savePlayer(player);
+  }
+
+  function recommend(player) {
+    ensureSkillCardFieldsV2(player);
+    const entries = Object.entries(player.skillProfile).sort((a, b) =>
+      (b[1].weaknessCount - a[1].weaknessCount) || (a[1].avgScore - b[1].avgScore)
+    );
+    const weakest = entries.slice(0, 2).map(([tag]) => tag);
+    const strongest = entries.slice(-2).map(([tag]) => tag);
+    return { weakest, strongest, message: buildRecommendMessage(weakest, strongest, player) };
+  }
+
+  function buildRecommendMessage(weakest, strongest, player) {
+    const w = weakest.map((t) => NEGOTIATION_SKILL_TAGS[t].label).join('、');
+    const totalAttempts = Object.values(player.skillProfile).reduce((s, p) => s + (p.attempts || 0), 0);
+    if (totalAttempts < 3) return '建议先完成 3 场基础场景训练，系统将为你建立能力画像。';
+    let msg = `推荐继续训练【${w}】。`;
+    // 推荐场景：从 SCENARIO_META 选与 weakest 对应的场景
+    const sceneMap = SCENARIO_TAG_MAP || {};
+    const candidate = weakest.find((t) => sceneMap[t] && sceneMap[t].length);
+    if (candidate && sceneMap[candidate]) {
+      const sname = sceneMap[candidate][0];
+      msg += `具体可选 ${sname}。`;
+    }
+    // 推荐导师
+    const mentor = LEGEND_DUELISTS.find((m) =>
+      (m.styleTags || []).some((t) => weakest.includes(t)) &&
+      (player.legendaryMentors && player.legendaryMentors.owned || []).includes(m.id)
+    );
+    if (mentor) msg += `导师推荐：${mentor.name}（${mentor.style}）。`;
+    return msg;
+  }
+
+  function masteryProgress(player, tag) {
+    ensureSkillCardFieldsV2(player);
+    return player.masteryTree[tag] || 0;
+  }
+  function addMasteryProgress(player, tag, amount) {
+    ensureSkillCardFieldsV2(player);
+    player.masteryTree[tag] = Math.min(100, (player.masteryTree[tag] || 0) + (amount || 1));
+    savePlayer(player);
+  }
+
+  return { update, recommend, masteryProgress, addMasteryProgress };
+})();
+
+// 现有 SCENARIO_META 的能力标签映射
+const SCENARIO_TAG_MAP = {
+  info:       ['信任博弈', '联盟谈判'],
+  agenda:     ['最后通牒', '砍价谈判'],
+  pressure:   ['危机谈判', '砍价谈判'],
+  trust:      ['信任博弈', '公共品博弈'],
+  endgame:    ['最后通牒', '砍价谈判'],
+  batna:      ['砍价谈判'],
+  standard:   ['公共品博弈', '联盟谈判'],
+  emotion:    ['危机谈判', '信任博弈'],
+  concession: ['砍价谈判', '联盟谈判'],
+  retreat:    ['联盟谈判', '危机谈判']
+};
+
+/* ── 检索式复盘题 + 精通树 ─────────────────────────────────────── */
+const RetrievalReview = (() => {
+  const TEMPLATES = {
+    info:       { question: '本局你最应该先验证哪类信息？', answer: '对方真实目标、替代方案和承诺可信度。' },
+    endgame:    { question: '为什么条件好看不一定等于终局胜利？', answer: '因为执行风险、模糊承诺和后续成本可能抵消表面收益。' },
+    batna:      { question: '亮出替代方案前，需要先确认什么？', answer: '替代方案是否真实、可信、可执行，并且不会过早暴露底牌。' },
+    retreat:    { question: '什么情况下战略撤退可以被视为高级胜利？', answer: '当继续成交会破坏底线、带来长期风险或落入坏交易时。' },
+    agenda:     { question: '议题被对方带偏时，最快的回正方式是什么？', answer: '回到双方共同利益清单，把分歧议题重新打包到次要位置。' },
+    pressure:   { question: '面对极端锚定，最大的失误是什么？', answer: '在锚定参考系内还价——应先重新定义议题，跳出锚定。' },
+    trust:      { question: '为什么口头积极信号不等同于真实让步？', answer: '因为对方还没有明确时间表与书面条件。' },
+    standard:   { question: '客观标准在什么时候反而会被对方利用？', answer: '当你引用对方擅长的标准时——必须挑选对己方有利的中立来源。' },
+    emotion:    { question: '标注对方情绪后必须紧跟什么？', answer: '一个具体的、可验证的下一步行动建议。' },
+    concession: { question: '让步必须绑定什么才不会被对手视为弱势？', answer: '一个明确、可验证的对等条件或时间表承诺。' }
+  };
+
+  function generate(player, runResult) {
+    ensureSkillCardFieldsV2(player);
+    const weak = runResult && runResult.weakestTag;
+    const tag = weak && TEMPLATES[weak] ? weak : (Object.keys(TEMPLATES)[Math.floor(Math.random() * Object.keys(TEMPLATES).length)]);
+    const tpl = TEMPLATES[tag];
+    const q = {
+      id: 'review_' + Date.now(),
+      tag, question: tpl.question, answer: tpl.answer,
+      createdAt: Date.now(), dueAt: Date.now() + 86400000, answered: false
+    };
+    player.reviewQuestions = (player.reviewQuestions || []).concat(q).slice(-30);
+    savePlayer(player);
+    return q;
+  }
+
+  function getPending(player) {
+    ensureSkillCardFieldsV2(player);
+    const now = Date.now();
+    return (player.reviewQuestions || []).filter((q) => !q.answered && q.dueAt <= now);
+  }
+
+  function answer(player, id) {
+    ensureSkillCardFieldsV2(player);
+    const q = (player.reviewQuestions || []).find((x) => x.id === id);
+    if (!q) return null;
+    q.answered = true;
+    q.answeredAt = Date.now();
+    if (q.tag) SkillProfile.addMasteryProgress(player, q.tag, 5);
+    savePlayer(player);
+    return q;
+  }
+
+  return { generate, getPending, answer, TEMPLATES };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   AI 对手记忆 / 意图信号 / 重复策略递减
+   ════════════════════════════════════════════════════════════════════════════ */
+const AIMemoryV2 = (() => {
+  function fresh() {
+    return {
+      actionTags: {}, repeatedTag: null, concessionPattern: null,
+      lastThreeTurns: [], trustDebt: 0, pressureHistory: 0,
+      objectiveStandardUsed: 0, batnaShown: false, intentSignals: []
+    };
+  }
+  function ensure() {
+    let s = Store.get('aiMemoryV2');
+    if (!s) { s = fresh(); Store.set('aiMemoryV2', s); }
+    return s;
+  }
+  function observe(actionTag) {
+    const m = ensure();
+    if (!actionTag) return m;
+    m.actionTags[actionTag] = (m.actionTags[actionTag] || 0) + 1;
+    m.lastThreeTurns.push(actionTag);
+    m.lastThreeTurns = m.lastThreeTurns.slice(-3);
+    if (m.lastThreeTurns.length >= 3 && m.lastThreeTurns.every((t) => t === actionTag)) {
+      m.repeatedTag = actionTag;
+    } else {
+      m.repeatedTag = null;
+    }
+    if (actionTag === 'standard') m.objectiveStandardUsed++;
+    if (actionTag === 'batna') m.batnaShown = true;
+    if (actionTag === 'pressure') m.pressureHistory++;
+    Store.set('aiMemoryV2', m);
+    return m;
+  }
+  function intentionSignal() {
+    const m = ensure();
+    if (m.repeatedTag === 'info')     return '对手开始减少细节回应，回答更模糊。';
+    if (m.repeatedTag === 'pressure') return '对手开始提高防御姿态，强压效果可能下降。';
+    if (m.repeatedTag === 'emotion')  return '对手开始测试你的底线，判断你是否会继续退让。';
+    if (m.repeatedTag === 'standard') return '对手准备引用相反的标准，框架对抗即将开始。';
+    if (m.repeatedTag === 'concession') return '对手开始抬高让步门槛，要求更明确对等。';
+    if (m.batnaShown && m.pressureHistory >= 2) return '对手在 BATNA 与高压之间寻找你的真实底线。';
+    return '对手正在观察你的策略节奏。';
+  }
+
+  // ActionTag 递减系数
+  const DIMINISH = [1.0, 0.75, 0.5, 0.25];
+  function applyDiminishing(actionTag, baseDelta) {
+    const m = ensure();
+    const used = m.actionTags[actionTag] || 0;
+    const mult = DIMINISH[Math.min(used, DIMINISH.length - 1)];
+    const adjusted = {};
+    Object.entries(baseDelta || {}).forEach(([k, v]) => { adjusted[k] = Math.round(v * mult); });
+    return { adjusted, multiplier: mult, used };
+  }
+
+  return { fresh, ensure, observe, intentionSignal, applyDiminishing };
+})();
+
+// 把 skillTags → actionTag 映射（每张卡使用时记录到 AIMemoryV2）
+EventBus.on(EVENTS.PLAYER_CARD_USED, ({ card }) => {
+  if (!card || !card.skillTags) return;
+  // 取 skillTags 第一个作为主 actionTag
+  const tag = card.skillTags[0];
+  if (tag) AIMemoryV2.observe(tag);
+});
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   传奇试炼场 · Legend Duel（5 metrics × 6 rounds）
+   ════════════════════════════════════════════════════════════════════════════ */
+const DUEL_METRICS = ['information', 'agenda', 'pressure', 'trust', 'endgame'];
+const DUEL_METRIC_LABEL = {
+  information: '信息权', agenda: '议题权', pressure: '压力权',
+  trust: '信任权', endgame: '终局权'
+};
+const DUEL_OUTCOME_LABEL = {
+  strategicWin: { name: '策略胜利', icon: '🏆', narrative: '你掌握了节奏，对手在你的框架内被动应对。' },
+  defensiveWin: { name: '防守胜利', icon: '🛡️', narrative: '你守住了底线，对手未能撼动核心。' },
+  cooperativeWin:{ name: '合作胜利', icon: '🤝', narrative: '你与对手找到了双方都能签的方案。' },
+  narrowLoss:   { name: '小败',    icon: '⚠️', narrative: '你失了几分，但未崩盘——这次复盘很有价值。' },
+  collapse:     { name: '全面失守', icon: '💀', narrative: '对手击穿了你的多条态势——下次提前布防。' }
+};
+
+const DUEL_PHASES = [
+  { round: 1, title: '准备阶段',  brief: '展示意图，争取信息权。' },
+  { round: 2, title: '开局锚定',  brief: '议题权与压力权的第一次交锋。' },
+  { round: 3, title: '信息试探',  brief: '深问对手真实诉求。' },
+  { round: 4, title: '压力交锋',  brief: '高压回合，注意不被锚定带偏。' },
+  { round: 5, title: '交换让步',  brief: '让步必须绑定对等条件。' },
+  { round: 6, title: '终局拍板',  brief: '决定本局走向的最后一手。' }
+];
+
+const DUEL_CHOICES = [
+  { key: 'info',     label: '探询信息', metric: 'information', delta: 12, tag: 'info',
+    desc: '深问对手真实诉求，建立信息优势。', sample: '我想先了解你这边真正的优先级是什么。' },
+  { key: 'reframe',  label: '重定议题', metric: 'agenda', delta: 12, tag: 'agenda',
+    desc: '把对方锚定的议题重新框定到你的方向。', sample: '让我们换个角度——这不是价格问题，是结构问题。' },
+  { key: 'pressure', label: '施加压力', metric: 'pressure', delta: 12, tag: 'pressure',
+    desc: '建立 BATNA 或时间窗口的压迫感。', sample: '11 点前我必须有答复，11 点之后我们会启动 B 方案。' },
+  { key: 'build',    label: '建立信任', metric: 'trust', delta: 12, tag: 'trust',
+    desc: '释放善意 + 标注情绪 + 共同利益。', sample: '我听见你担心的是 X，我们可以先把它放进保护条款。' },
+  { key: 'lock',     label: '终局拍板', metric: 'endgame', delta: 12, tag: 'endgame',
+    desc: '把已达成的共识落到可签字的具体条件。', sample: '我们把目前一致的部分写下来，剩下的逐条解决。' }
+];
+
+const LegendDuel = (() => {
+  function start(duelistId) {
+    const duelist = getMentor(duelistId);
+    if (!duelist) return null;
+    // 初始 metrics 50，根据 duelist.bias 微调
+    const metrics = {};
+    DUEL_METRICS.forEach((m) => { metrics[m] = 50; });
+    Object.entries(duelist.bias || {}).forEach(([k, v]) => {
+      if (typeof metrics[k] === 'number') metrics[k] = Math.max(0, Math.min(100, metrics[k] - v));
+    });
+    const state = {
+      mode: 'legend_duel',
+      duelistId,
+      duelist,
+      round: 0,
+      totalRounds: 6,
+      metrics,
+      log: [],
+      adaptation: { alertness: 0, defense: 0, bargaining: 0, pressure: 0, strategy: 0, endgameDefense: 0 },
+      mentorEnergy: 0,
+      mentorTriggered: false,
+      completed: false,
+      outcome: null,
+      perRoundTags: []
+    };
+    Store.set('duelState', state);
+    return state;
+  }
+
+  function step(choiceKey) {
+    const state = Store.get('duelState');
+    if (!state || state.completed) return null;
+    const choice = DUEL_CHOICES.find((c) => c.key === choiceKey);
+    if (!choice) return null;
+
+    // 递减系数（玩家重复使用同 tag）
+    const dim = AIMemoryV2.applyDiminishing(choice.tag, { [choice.metric]: choice.delta });
+    const delta = dim.adjusted[choice.metric] || 0;
+    state.metrics[choice.metric] = Math.min(100, state.metrics[choice.metric] + delta);
+
+    // AI 反制：对应 metric 略下降 + 对应 adaptation +
+    const adaptMap = { info: 'alertness', agenda: 'strategy', pressure: 'pressure', trust: 'defense', endgame: 'endgameDefense' };
+    const aKey = adaptMap[choice.tag] || 'strategy';
+    state.adaptation[aKey] = Math.min(100, (state.adaptation[aKey] || 0) + (5 + Math.round(8 * (1 - dim.multiplier))));
+
+    // 对手"反向施压"：在玩家强项的反面降 1-3 分
+    const counterMetric = choice.metric === 'information' ? 'pressure' :
+                          choice.metric === 'agenda' ? 'trust' :
+                          choice.metric === 'pressure' ? 'trust' :
+                          choice.metric === 'trust' ? 'pressure' : 'pressure';
+    state.metrics[counterMetric] = Math.max(0, state.metrics[counterMetric] - (2 + Math.round(2 * dim.multiplier)));
+
+    // AI 记忆
+    AIMemoryV2.observe(choice.tag);
+
+    // 导师能量
+    const equipped = getEquippedMentor();
+    if (equipped) {
+      const matched = (equipped.styleTags || []).includes(choice.tag);
+      const adj = (equipped.adjacentTags || []).includes(choice.tag);
+      const gain = matched ? MENTOR_ENERGY_RULES.styleMatchedAction : adj ? MENTOR_ENERGY_RULES.adjacentAction : 0;
+      state.mentorEnergy = Math.min(100, (state.mentorEnergy || 0) + gain);
+    }
+
+    // 记录回合
+    state.log.push({
+      round: state.round,
+      phase: DUEL_PHASES[state.round].title,
+      choice: choice.key,
+      label: choice.label,
+      delta, multiplier: dim.multiplier,
+      adaptKey: aKey,
+      intentionSignal: AIMemoryV2.intentionSignal(),
+      mentorEnergy: state.mentorEnergy
+    });
+    state.perRoundTags.push(choice.tag);
+    state.round += 1;
+
+    // 完结
+    if (state.round >= state.totalRounds) {
+      state.completed = true;
+      state.outcome = computeDuelOutcome(state);
+      // 写入玩家
+      const player = Store.get('player');
+      if (player) {
+        ensureSkillCardFieldsV2(player);
+        player.duelRecords = player.duelRecords || {};
+        const rec = player.duelRecords[state.duelistId] || { plays: 0, wins: 0, bestOutcome: null };
+        rec.plays++;
+        if (['strategicWin', 'defensiveWin', 'cooperativeWin'].includes(state.outcome)) rec.wins++;
+        rec.bestOutcome = bestOutcome(rec.bestOutcome, state.outcome);
+        player.duelRecords[state.duelistId] = rec;
+        // 给奖励
+        const reward = duelReward(state.outcome, state.duelist);
+        player.cardShards = (player.cardShards || 0) + reward.shards;
+        if (reward.mentorFragments && state.duelistId) {
+          player.legendaryMentors.fragments[state.duelistId] =
+            (player.legendaryMentors.fragments[state.duelistId] || 0) + reward.mentorFragments;
+        }
+        // 能力标签得分
+        const tagScore = {};
+        state.perRoundTags.forEach((t) => { tagScore[t] = (tagScore[t] || 0) + 16; });
+        SkillProfile.update(player, tagScore);
+        // 精通进度
+        Object.keys(tagScore).forEach((t) => SkillProfile.addMasteryProgress(player, t, 2));
+        // 检索复盘题
+        const weakest = state.perRoundTags.length ? state.perRoundTags[state.perRoundTags.length - 1] : 'endgame';
+        const reviewQ = RetrievalReview.generate(player, { weakestTag: weakest });
+        // 回放
+        LocalReplay.add(player, {
+          mode: 'duel', duelistId: state.duelistId, duelistName: state.duelist.name,
+          outcome: state.outcome, metrics: state.metrics, log: state.log
+        });
+        savePlayer(player);
+        state.reward = reward;
+        state.reviewQuestion = reviewQ;
+      }
+    }
+    Store.set('duelState', state);
+    return state;
+  }
+
+  function computeDuelOutcome(state) {
+    const m = state.metrics;
+    const high = (k) => m[k] >= 65;
+    const low = (k) => m[k] <= 35;
+    const lowCount = DUEL_METRICS.filter(low).length;
+    const highCount = DUEL_METRICS.filter(high).length;
+    if (lowCount >= 3) return 'collapse';
+    if (high('trust') && high('endgame') && !low('information')) return 'cooperativeWin';
+    if (high('agenda') && high('endgame')) return 'strategicWin';
+    if (high('trust') && (m.information >= 50 || m.pressure >= 50)) return 'defensiveWin';
+    if (highCount >= 1 && lowCount <= 1) return 'narrowLoss';
+    return 'narrowLoss';
+  }
+
+  function duelReward(outcome, duelist) {
+    const base = { strategicWin: 80, defensiveWin: 60, cooperativeWin: 60, narrowLoss: 30, collapse: 15 };
+    const shards = base[outcome] || 20;
+    const mentorFragments = (outcome === 'strategicWin') ? 15 :
+                            (outcome === 'defensiveWin' || outcome === 'cooperativeWin') ? 10 :
+                            (outcome === 'narrowLoss') ? 5 : 2;
+    return { shards, mentorFragments, title: outcome === 'strategicWin' ? `${duelist.name} 见解者` : null };
+  }
+
+  function bestOutcome(a, b) {
+    const order = ['collapse', 'narrowLoss', 'cooperativeWin', 'defensiveWin', 'strategicWin'];
+    return order.indexOf(b) > order.indexOf(a || 'collapse') ? b : (a || b);
+  }
+
+  function isUnlocked() {
+    // 门槛：完成新手训练 + 3 场基础谈判
+    const player = Store.get('player');
+    if (!player) return false;
+    return (player.total || 0) >= 3;
+  }
+
+  return { start, step, computeDuelOutcome, isUnlocked, DUEL_PHASES, DUEL_CHOICES };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   传奇剧情链（3-5 幕 × 4-6 回合 · 5 metric carry · 5 endings）
+   ════════════════════════════════════════════════════════════════════════════ */
+const LEGENDARY_STORY_CHAINS = [
+  {
+    id: 'sunzi_story_chain',     mentorId: 'mentor_sunzi',
+    title: '孙子 · 虚实五局',     subtitle: '兵圣长线博弈',
+    desc: '五场对战隐隐相扣，胜在前局已伏。每幕都要既算这局也算下一局。',
+    acts: [
+      { title: '幕一 · 庙算先发', briefing: '不出兵之前先算清楚得失。', focusTag: 'info' },
+      { title: '幕二 · 兵不厌诈', briefing: '让对方看到你愿意让，但不让真正在意的。', focusTag: 'agenda' },
+      { title: '幕三 · 先胜后战', briefing: '把不可逆的资源先稳住再谈分歧。', focusTag: 'endgame' },
+      { title: '幕四 · 围而不战', briefing: '把对方的退路收掉，再给一个体面台阶。', focusTag: 'pressure' },
+      { title: '幕五 · 全胜之策', briefing: '不战而屈人之兵——你必须放弃部分速胜以换长期收益。', focusTag: 'retreat' }
+    ]
+  },
+  {
+    id: 'zhangyi_story_chain',   mentorId: 'mentor_zhangyi',
+    title: '张仪 · 纵横之局',     subtitle: '游说与利益分化',
+    desc: '面对一个联盟，单打独斗不可取。你要分化它，把每个人的利益重新排列。',
+    acts: [
+      { title: '幕一 · 入秦', briefing: '先取得对方主要决策者的初步信任。', focusTag: 'trust' },
+      { title: '幕二 · 离间', briefing: '让联盟内部出现可见的利益分歧。', focusTag: 'info' },
+      { title: '幕三 · 合纵', briefing: '为一边制定新的、可签的方案。', focusTag: 'agenda' },
+      { title: '幕四 · 反间', briefing: '让对方关键人物相信对手在欺骗他。', focusTag: 'standard' },
+      { title: '幕五 · 闭单', briefing: '把分化后的最优共识固化为最终协议。', focusTag: 'endgame' }
+    ]
+  },
+  {
+    id: 'cixi_story_chain',      mentorId: 'mentor_cixi',
+    title: '慈禧太后 · 垂帘控局',  subtitle: '权力维稳与模糊承诺破解',
+    desc: '对手用模糊话术换你明确让步。本剧情链的训练价值在于：识破"延迟决策"、转模糊为明确条件。',
+    acts: [
+      { title: '幕一 · 帘后听政', briefing: '识别对方是不是真正的决策者。', focusTag: 'info' },
+      { title: '幕二 · 模糊承诺', briefing: '把"再考虑考虑"转化为"何时给书面"。', focusTag: 'standard' },
+      { title: '幕三 · 资源分配', briefing: '让对方在你设定的池子里做选择。', focusTag: 'agenda' },
+      { title: '幕四 · 延迟反制', briefing: '识破拖延战术，给一个真实的时间窗口。', focusTag: 'pressure' },
+      { title: '幕五 · 终局收权', briefing: '把决定权重新拿回桌面。', focusTag: 'endgame' }
+    ]
+  },
+  {
+    id: 'munger_story_chain',    mentorId: 'mentor_munger',
+    title: '芒格 · 反向思维',     subtitle: '从失败逆推',
+    desc: '不是问怎么赢，而是问怎么会输。',
+    acts: [
+      { title: '幕一 · 反过来想', briefing: '列出所有让交易失败的路径。', focusTag: 'batna' },
+      { title: '幕二 · 排除地雷', briefing: '识别并谈判出最致命的两个条款。', focusTag: 'standard' },
+      { title: '幕三 · 多元模型', briefing: '用多视角验证最优解。', focusTag: 'endgame' }
+    ]
+  },
+  {
+    id: 'trump_story_chain',     mentorId: 'mentor_trump',
+    title: '特朗普 · 极限锚定',   subtitle: '强交易模型的极限训练',
+    desc: '面对极端开价、媒体施压、反复推翻共识——你必须练出"重新定义议题"的反应。',
+    acts: [
+      { title: '幕一 · 极限开价', briefing: '不接锚 + 不还价。直接挑战开价的合理性。', focusTag: 'pressure' },
+      { title: '幕二 · 媒体压力', briefing: '把场外信号关掉，回到桌面。', focusTag: 'standard' },
+      { title: '幕三 · 终局反扑', briefing: '关键时刻，把"赢叙事"换成"可签条款"。', focusTag: 'endgame' }
+    ]
+  },
+  {
+    id: 'merkel_story_chain',    mentorId: 'mentor_merkel',
+    title: '默克尔 · 耐心共识',   subtitle: '渐进的胜利',
+    desc: '不要一步成功，要每一步都比上一步更接近共识。',
+    acts: [
+      { title: '幕一 · 听完', briefing: '听完对方的全部诉求再回应。', focusTag: 'trust' },
+      { title: '幕二 · 共同清单', briefing: '建一份双方都不反对的清单。', focusTag: 'standard' },
+      { title: '幕三 · 推进小步', briefing: '在共同清单里逐项落地。', focusTag: 'concession' },
+      { title: '幕四 · 防守底线', briefing: '面对突袭，稳住核心。', focusTag: 'pressure' },
+      { title: '幕五 · 闭单', briefing: '稳健落地最终协议。', focusTag: 'endgame' }
+    ]
+  },
+  {
+    id: 'thatcher_story_chain',  mentorId: 'mentor_thatcher',
+    title: '撒切尔夫人 · 铁线底牌', subtitle: '不退让的艺术',
+    desc: '底线必须用动作而非话语表达。',
+    acts: [
+      { title: '幕一 · 划线', briefing: '明确写下你绝不让的三条。', focusTag: 'batna' },
+      { title: '幕二 · 反压', briefing: '面对压迫，反向加压。', focusTag: 'pressure' },
+      { title: '幕三 · 终局', briefing: '让对方在你的框架里选择。', focusTag: 'endgame' }
+    ]
+  }
+];
+
+const STORY_ENDINGS = {
+  perfectWin:      { name: '完美胜利', icon: '🏆' },
+  defensiveWin:    { name: '防守胜利', icon: '🛡️' },
+  surfaceWin:      { name: '表面胜利', icon: '🎭' },
+  strategicRetreat:{ name: '战略撤退', icon: '↩️' },
+  collapse:        { name: '全面失守', icon: '💀' }
+};
+
+const StoryChain = (() => {
+  function start(chainId) {
+    const chain = LEGENDARY_STORY_CHAINS.find((c) => c.id === chainId);
+    if (!chain) return null;
+    const mentor = getMentor(chain.mentorId);
+    const state = {
+      mode: 'story_chain',
+      chainId, chain, mentor,
+      actIndex: 0,
+      roundInAct: 0,
+      metrics: { information: 50, agenda: 50, pressure: 50, trust: 50, endgame: 50 },
+      carry: {
+        trustCarry: 0, alertCarry: 0, leverageCarry: 0,
+        clueCarry: [], debtCarry: 0,
+        opponentMemory: {}, hiddenFlags: {}, endingFlags: {}
+      },
+      actResults: [],
+      log: [],
+      completed: false,
+      endingId: null,
+      checkpoints: []
+    };
+    Store.set('storyState', state);
+    // checkpoint: actStart
+    saveCheckpoint(state, 'actStart');
+    return state;
+  }
+
+  function getActiveAct(state) {
+    if (!state) return null;
+    return state.chain.acts[state.actIndex];
+  }
+
+  function step(choiceKey) {
+    const state = Store.get('storyState');
+    if (!state || state.completed) return null;
+    const act = getActiveAct(state);
+    if (!act) return null;
+    const choice = DUEL_CHOICES.find((c) => c.key === choiceKey);
+    if (!choice) return null;
+    // 同 duel 计算
+    const dim = AIMemoryV2.applyDiminishing(choice.tag, { [choice.metric]: choice.delta });
+    state.metrics[choice.metric] = Math.min(100, state.metrics[choice.metric] + (dim.adjusted[choice.metric] || 0));
+    AIMemoryV2.observe(choice.tag);
+    // 焦点标签 bonus
+    if (choice.tag === act.focusTag) state.metrics[choice.metric] = Math.min(100, state.metrics[choice.metric] + 3);
+    state.log.push({
+      actIndex: state.actIndex, actTitle: act.title,
+      round: state.roundInAct, tag: choice.tag, label: choice.label,
+      delta: dim.adjusted[choice.metric] || 0, multiplier: dim.multiplier
+    });
+    state.roundInAct += 1;
+    // 一幕固定 4 回合
+    const actRounds = 4;
+    if (state.roundInAct >= actRounds) {
+      // 幕结算
+      const actAvg = Math.round(Object.values(state.metrics).reduce((s, v) => s + v, 0) / DUEL_METRICS.length);
+      state.actResults.push({ act: act.title, avg: actAvg, focusTag: act.focusTag });
+      // carry：trust 大于 60 → trustCarry +5
+      if (state.metrics.trust >= 60) state.carry.trustCarry += 5;
+      if (state.metrics.pressure >= 65) state.carry.alertCarry += 5;
+      state.actIndex += 1;
+      state.roundInAct = 0;
+      // 全部完成？
+      if (state.actIndex >= state.chain.acts.length) {
+        state.completed = true;
+        state.endingId = computeStoryEnding(state);
+        // 写入玩家
+        const player = Store.get('player');
+        if (player) {
+          ensureSkillCardFieldsV2(player);
+          player.storyRuns = player.storyRuns || {};
+          const rec = player.storyRuns[state.chainId] || { plays: 0, bestEnding: null };
+          rec.plays++;
+          rec.bestEnding = bestEnding(rec.bestEnding, state.endingId);
+          player.storyRuns[state.chainId] = rec;
+          // 奖励
+          const shards = state.endingId === 'perfectWin' ? 200 :
+                         state.endingId === 'defensiveWin' ? 120 :
+                         state.endingId === 'surfaceWin' ? 60 :
+                         state.endingId === 'strategicRetreat' ? 90 : 30;
+          player.cardShards = (player.cardShards || 0) + shards;
+          // 给对应 mentor 碎片
+          if (state.mentor) {
+            player.legendaryMentors.fragments[state.mentor.id] =
+              (player.legendaryMentors.fragments[state.mentor.id] || 0) + 30;
+          }
+          // 能力评分
+          const tagScore = {};
+          state.chain.acts.forEach((a) => { tagScore[a.focusTag] = state.metrics[mapTagMetric(a.focusTag)] || 70; });
+          SkillProfile.update(player, tagScore);
+          Object.keys(tagScore).forEach((t) => SkillProfile.addMasteryProgress(player, t, 3));
+          // 复盘题 + 本地回放
+          const weakest = pickWeakestTag(state);
+          RetrievalReview.generate(player, { weakestTag: weakest });
+          LocalReplay.add(player, {
+            mode: 'chain', chainId: state.chainId, chainTitle: state.chain.title,
+            endingId: state.endingId, endingName: STORY_ENDINGS[state.endingId].name,
+            metrics: state.metrics, log: state.log, actResults: state.actResults
+          });
+          savePlayer(player);
+          state.shards = shards;
+        }
+      } else {
+        saveCheckpoint(state, 'actStart');
+      }
+    } else if ((state.roundInAct % 2) === 0) {
+      saveCheckpoint(state, 'roundEnd');
+    }
+    Store.set('storyState', state);
+    return state;
+  }
+
+  function mapTagMetric(tag) {
+    const map = { info: 'information', agenda: 'agenda', pressure: 'pressure', trust: 'trust', endgame: 'endgame', batna: 'information', standard: 'agenda', emotion: 'trust', concession: 'agenda', retreat: 'endgame' };
+    return map[tag] || 'endgame';
+  }
+
+  function pickWeakestTag(state) {
+    let min = 999, tag = 'endgame';
+    Object.entries(state.metrics).forEach(([k, v]) => { if (v < min) { min = v; tag = k; } });
+    return tag === 'information' ? 'info' : tag;
+  }
+
+  function computeStoryEnding(state) {
+    const m = state.metrics;
+    const high = (k) => m[k] >= 65;
+    const low = (k) => m[k] <= 35;
+    const lowCount = DUEL_METRICS.filter(low).length;
+    const highCount = DUEL_METRICS.filter(high).length;
+    if (lowCount >= 3) return 'collapse';
+    if (highCount >= 4) return 'perfectWin';
+    if (high('trust') && high('endgame')) return 'defensiveWin';
+    if (high('endgame') && low('trust')) return 'surfaceWin';
+    if (lowCount <= 1 && m.endgame >= 45) return 'strategicRetreat';
+    return 'defensiveWin';
+  }
+
+  function bestEnding(a, b) {
+    const order = ['collapse', 'surfaceWin', 'strategicRetreat', 'defensiveWin', 'perfectWin'];
+    return order.indexOf(b) > order.indexOf(a || 'collapse') ? b : (a || b);
+  }
+
+  function saveCheckpoint(state, kind) {
+    const cp = {
+      checkpointId: 'chk_' + Date.now() + '_' + Math.random().toString(16).slice(2),
+      chainId: state.chainId, actIndex: state.actIndex, roundIndex: state.roundInAct,
+      kind, snapshot: JSON.parse(JSON.stringify(state)), createdAt: Date.now()
+    };
+    state.checkpoints = (state.checkpoints || []).concat(cp).slice(-10);
+  }
+
+  function rollbackToActStart() {
+    const state = Store.get('storyState');
+    if (!state) return null;
+    const actStarts = (state.checkpoints || []).filter((c) => c.kind === 'actStart');
+    if (!actStarts.length) return null;
+    const last = actStarts[actStarts.length - 1];
+    Store.set('storyState', last.snapshot);
+    return last.snapshot;
+  }
+
+  function rollbackToNearest() {
+    const state = Store.get('storyState');
+    if (!state) return null;
+    const cps = state.checkpoints || [];
+    if (!cps.length) return null;
+    const last = cps[cps.length - 1];
+    Store.set('storyState', last.snapshot);
+    return last.snapshot;
+  }
+
+  function isUnlocked(chainId) {
+    const player = Store.get('player');
+    if (!player) return false;
+    const chain = LEGENDARY_STORY_CHAINS.find((c) => c.id === chainId);
+    if (!chain) return false;
+    // 门槛：对应人物碎片 ≥30 或拥有该人物卡
+    const mentors = player.legendaryMentors || { owned: [], fragments: {} };
+    return mentors.owned.includes(chain.mentorId) ||
+           (mentors.fragments[chain.mentorId] || 0) >= 30;
+  }
+
+  return { start, step, isUnlocked, computeStoryEnding, rollbackToActStart, rollbackToNearest, getActiveAct };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   本地回放档案馆 · Local Replay Archive
+   ════════════════════════════════════════════════════════════════════════════ */
+const LocalReplay = (() => {
+  function add(player, entry) {
+    ensureSkillCardFieldsV2(player);
+    const r = {
+      replayId: 'replay_' + Date.now() + '_' + Math.random().toString(16).slice(2),
+      ...entry,
+      createdAt: Date.now()
+    };
+    player.localReplays = (player.localReplays || []).concat(r).slice(-30);
+    return r;
+  }
+  function list(player) {
+    ensureSkillCardFieldsV2(player);
+    return (player.localReplays || []).slice().reverse();
+  }
+  function get(player, id) {
+    ensureSkillCardFieldsV2(player);
+    return (player.localReplays || []).find((r) => r.replayId === id);
+  }
+  function remove(player, id) {
+    ensureSkillCardFieldsV2(player);
+    player.localReplays = (player.localReplays || []).filter((r) => r.replayId !== id);
+    savePlayer(player);
+  }
+  return { add, list, get, remove };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   起手卡组 / 成长池 / 愿望单
+   ════════════════════════════════════════════════════════════════════════════ */
+const BEGINNER_DECK_CARD_IDS = [
+  'n_open_question', 'n_paraphrase', 'r_objective_standard',
+  'r_batna', 'sr_concession_trade', 'sr_emotional_defusing'
+];
+const GROWTH_POOL_RULES = {
+  enabledUntilPackCount: 20,
+  newCardProtection: true,
+  beginnerDeckGuarantee: true,
+  wishlistEnabled: true
+};
+
+function grantBeginnerDeckIfNeeded(player) {
+  if (!player) return false;
+  ensureSkillCardFieldsV2(player);
+  if (player.flags.beginnerDeckGranted) return false;
+  BEGINNER_DECK_CARD_IDS.forEach((id) => {
+    if (!player.skillCardCollection.includes(id)) {
+      player.skillCardCollection.push(id);
+      player.skillCardStars[id] = 1;
+    }
+  });
+  player.flags.beginnerDeckGranted = true;
+  savePlayer(player);
+  return true;
+}
+
+function setWishlist(player, focusTag) {
+  ensureSkillCardFieldsV2(player);
+  if (focusTag && SKILL_TAG_KEYS.includes(focusTag)) {
+    player.cardWishlist = { focusTag, updatedAt: Date.now() };
+  } else {
+    player.cardWishlist = null;
+  }
+  savePlayer(player);
+}
+
+function inGrowthPool(player) {
+  ensureSkillCardFieldsV2(player);
+  return (player.packStats.totalOpened || 0) < GROWTH_POOL_RULES.enabledUntilPackCount;
+}
+
+// 覆盖 drawOne 加入成长池保护 + 愿望单
+(function patchDrawWithGrowthPool() {
+  const _origDraw = SkillBlindBox.drawOne;
+  SkillBlindBox.drawOne = function (player, packType) {
+    ensureSkillCardFieldsV2(player);
+    const useGrowth = inGrowthPool(player) && GROWTH_POOL_RULES.newCardProtection;
+    const focus = player.cardWishlist && player.cardWishlist.focusTag;
+    // 成长池：优先未拥有 + 愿望单 tag 匹配
+    if (useGrowth || focus) {
+      const ownedSet = new Set(player.skillCardCollection || []);
+      const unowned = SKILL_CARDS.filter((c) => !ownedSet.has(c.id));
+      const focusCards = focus ? SKILL_CARDS.filter((c) => (c.skillTags || []).includes(focus)) : [];
+      // 触发条件：成长池中且未拥有非空 → 60% 概率落在未拥有里
+      const candidates = [];
+      if (useGrowth && unowned.length) candidates.push(...unowned);
+      if (focus && focusCards.length) candidates.push(...focusCards);
+      if (candidates.length && Math.random() < 0.6) {
+        const card = candidates[Math.floor(Math.random() * candidates.length)];
+        // 直接走 _origDraw 但强制此卡 → 拷贝逻辑
+        const isDup = player.skillCardCollection.includes(card.id);
+        player.skillCardPity.total += 1;
+        const rRank = SkillBlindBox.RARITY_RANK[card.rarity];
+        player.skillCardPity.sinceSR = rRank >= SkillBlindBox.RARITY_RANK.SR ? 0 : player.skillCardPity.sinceSR + 1;
+        player.skillCardPity.sinceSSR = rRank >= SkillBlindBox.RARITY_RANK.SSR ? 0 : player.skillCardPity.sinceSSR + 1;
+        player.skillCardPity.sinceUR = card.rarity === 'UR' ? 0 : player.skillCardPity.sinceUR + 1;
+        if (isDup) {
+          const sh = DUPLICATE_SHARDS_V2[card.rarity] || 5;
+          player.skillCardDuplicates[card.id] = (player.skillCardDuplicates[card.id] || 0) + 1;
+          player.cardShards = (player.cardShards || 0) + sh;
+          if (card.rarity === 'UR') player.skillCardMarks.UR = (player.skillCardMarks.UR || 0) + 1;
+          updateCardStarByDuplicates(player, card.id);
+          return { card, duplicate: true, shard: sh };
+        }
+        player.skillCardCollection.push(card.id);
+        player.skillCardStars[card.id] = 1;
+        EventBus.emit(EVENTS.CARD_UNLOCKED, { card });
+        return { card, duplicate: false, shard: 0 };
+      }
+    }
+    return _origDraw.call(this, player, packType);
+  };
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   屏幕扩展 · 传奇训练中心（8 个新 SCREEN）
+   ════════════════════════════════════════════════════════════════════════════ */
+SCREENS.LEGEND_HUB        = 'legend-hub';
+SCREENS.MENTOR_ALBUM      = 'mentor-album';
+SCREENS.MENTOR_BLINDBOX   = 'mentor-blindbox';
+SCREENS.DUEL_SELECT       = 'duel-select';
+SCREENS.DUEL_PLAY         = 'duel-play';
+SCREENS.DUEL_RESULT       = 'duel-result';
+SCREENS.STORY_SELECT      = 'story-select';
+SCREENS.STORY_PLAY        = 'story-play';
+SCREENS.STORY_RESULT      = 'story-result';
+SCREENS.MASTERY_TREE      = 'mastery-tree';
+SCREENS.REPLAY_ARCHIVE    = 'replay-archive';
+SCREENS.REVIEW_QUEUE      = 'review-queue';
+SCREENS.TRAINING_PATH     = 'training-path';
+
+/* ────────────────────────────────────────────────────────────────────
+   主 HUB：传奇训练中心
+   ────────────────────────────────────────────────────────────────── */
+function renderLegendHub() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const mentors = player.legendaryMentors;
+  const equipped = mentors.equipped ? getMentor(mentors.equipped) : null;
+  const replays = (player.localReplays || []).length;
+  const pendingReviews = RetrievalReview.getPending(player).length;
+  const rec = SkillProfile.recommend(player);
+
+  const tile = (icon, title, sub, target, badge) => `
+    <div class="legend-tile" data-go="${target}">
+      <div class="legend-tile-icon">${icon}</div>
+      <div class="legend-tile-body">
+        <div class="legend-tile-title">${title}${badge ? `<span class="legend-tile-badge">${badge}</span>` : ''}</div>
+        <div class="legend-tile-sub">${sub}</div>
+      </div>
+    </div>`;
+
+  return `
+    <div class="flex-between">
+      <div class="section-title">⑨ 传奇训练中心 · 个人学习模式</div>
+      <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
+    </div>
+    <div class="hint hint-yellow" style="font-size:11.5px;margin-bottom:12px">
+      <b>本中心定位</b>：个人长期训练 · 不做赛季 / 不做联网 / 不做社交分享。<br>
+      <b>三层结构</b>：技能卡（局内主动）+ 导师卡（局前路线）+ 剧情链/试炼（高阶训练）。
+    </div>
+    ${equipped ? `<div class="mentor-equipped-banner">
+      <div class="mentor-equipped-icon">${equipped.chibi || '👤'}</div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--dim)">局前装备的导师</div>
+        <div style="font-size:14px;font-weight:bold;color:var(--white)">${equipped.name} <span class="legend-rarity-tag" style="background:${LEGEND_RARITIES[equipped.rarity].color}">${LEGEND_RARITIES[equipped.rarity].label}</span></div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${equipped.passive.name}：${equipped.passive.effect}</div>
+      </div>
+      <button class="btn btn-sm" data-go="${SCREENS.MENTOR_ALBUM}">更换</button>
+    </div>` : `<div class="hint hint-cyan" style="font-size:11px;margin-bottom:10px">
+      尚未装备导师。进入「传奇人物图鉴」可装备 1 位导师（局前生效）。
+    </div>`}
+    <div class="training-path-callout">
+      <div class="tp-title">▸ 个人训练建议</div>
+      <div class="tp-hint">${rec.message}</div>
+    </div>
+    <div class="legend-grid">
+      ${tile('🃏', '传奇人物图鉴', '查看 19 位导师 · 装备 / 兑换 / 升星', SCREENS.MENTOR_ALBUM, mentors.owned.length + '/' + LEGEND_DUELISTS.length)}
+      ${tile('📦', '传奇人物盲盒', '5 件式 · 含人物碎片 / 宗师 / 传奇 / LR 签名', SCREENS.MENTOR_BLINDBOX, '')}
+      ${tile('⚔️', '传奇试炼场', '5 态势 × 6 回合快速对战', SCREENS.DUEL_SELECT, LegendDuel.isUnlocked() ? '' : '🔒')}
+      ${tile('📜', '传奇剧情链', '3-5 幕 · 多结局 · checkpoint', SCREENS.STORY_SELECT, '')}
+      ${tile('🌳', '个人精通树', '10 项谈判能力 · 长期目标', SCREENS.MASTERY_TREE, '')}
+      ${tile('🗂️', '本地回放档案馆', '保存关键局 / 复盘建议', SCREENS.REPLAY_ARCHIVE, replays ? replays + '' : '')}
+      ${tile('🧩', '检索式复盘队列', '回忆 + 验证', SCREENS.REVIEW_QUEUE, pendingReviews ? pendingReviews + '' : '')}
+      ${tile('🎯', '训练路径与推荐', '下一步训练什么', SCREENS.TRAINING_PATH, '')}
+    </div>
+  `;
+}
+
+renderLegendHub.afterRender = function () {
+  document.querySelectorAll('[data-nav]').forEach((b) => {
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: b.getAttribute('data-nav'), params: {} }));
+  });
+  document.querySelectorAll('[data-go]').forEach((b) => {
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: b.getAttribute('data-go'), params: {} }));
+  });
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇人物图鉴 + 装备
+   ────────────────────────────────────────────────────────────────── */
+function renderMentorAlbum() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const m = player.legendaryMentors;
+  const owned = new Set(m.owned);
+  const equipped = m.equipped;
+
+  const groups = ['UR_LEGEND', 'SSR_MASTER'];
+  let html = `<div class="flex-between">
+    <div class="section-title">传奇人物图鉴</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="sk-status-bar">
+    <div class="sk-status-item">🎴 已收集 <b>${m.owned.length}/${LEGEND_DUELISTS.length}</b></div>
+    <div class="sk-status-item">💎 碎片库（导师专属）<b>${Object.values(m.fragments).reduce((s,v)=>s+v,0)}</b></div>
+    <div class="sk-status-pity">SSR保底 ${m.pity.sinceSSRMaster}/10 · UR保底 ${m.pity.sinceURLegend}/40 · LR保底 ${m.pity.sinceLRSignature}/120</div>
+  </div>`;
+
+  groups.forEach((rarity) => {
+    const cfg = LEGEND_RARITIES[rarity];
+    const list = LEGEND_DUELISTS.filter((d) => d.rarity === rarity);
+    const ownedCount = list.filter((d) => owned.has(d.id)).length;
+    html += `<div class="sk-section-head" style="--card-color:${cfg.color}">◆ ${cfg.label}<span class="sk-section-prog">${ownedCount}/${list.length}</span></div>
+    <div class="mentor-grid">${list.map((d) => renderMentorCard(d, owned.has(d.id), equipped === d.id, m.fragments[d.id] || 0, m.stars[d.id] || 0)).join('')}</div>`;
+  });
+
+  return html;
+}
+
+function renderMentorCard(d, isOwned, isEquipped, fragments, stars) {
+  const cfg = LEGEND_RARITIES[d.rarity];
+  const fragNeed = d.rarity === 'UR_LEGEND' ? LEGEND_BLINDBOX_CONFIG.exchange.urLegendFragments : LEGEND_BLINDBOX_CONFIG.exchange.ssrMasterFragments;
+  const exchangeable = !isOwned && fragments >= fragNeed;
+  const starHtml = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(5 - stars) : '';
+  const genderTag = d.gender === '女' ? '<span class="mentor-gender-tag">♀</span>' : '';
+  return `<div class="mentor-card ${isOwned ? '' : 'mentor-locked'} ${isEquipped ? 'mentor-equipped' : ''}" data-mentor="${d.id}" style="--card-color:${cfg.color};--card-glow:${cfg.glow}">
+    <div class="mentor-card-rarity" style="background:${cfg.color}">${cfg.label}</div>
+    ${genderTag}
+    <div class="mentor-card-avatar"><div class="mentor-chibi">${d.chibi || '👤'}</div></div>
+    <div class="mentor-card-name">${d.name}</div>
+    <div class="mentor-card-series">${d.mentorSeries || ''}</div>
+    <div class="mentor-card-style">${d.style}</div>
+    ${isOwned ? `
+      <div class="mentor-stars">${starHtml}</div>
+      <div class="mentor-card-passive"><b>${d.passive.name}</b>：${d.passive.effect}</div>
+      ${d.weakness ? `<div class="mentor-card-weakness">弱点：${d.weakness}</div>` : ''}
+      ${d.note ? `<div class="mentor-card-note">⚠ ${d.note}</div>` : ''}
+      <div class="mentor-card-actions">
+        ${isEquipped
+          ? `<button class="btn btn-sm" data-equip="">取消装备</button>`
+          : `<button class="btn btn-green btn-sm" data-equip="${d.id}">装备</button>`}
+        ${LegendDuel.isUnlocked() ? `<button class="btn btn-sm" data-duel="${d.id}">挑战</button>` : ''}
+      </div>
+    ` : `
+      <div class="mentor-card-locked-info">碎片 ${fragments}/${fragNeed}</div>
+      ${exchangeable ? `<button class="btn btn-yellow btn-sm" data-exchange="${d.id}">兑换</button>` : `<div style="font-size:10px;color:var(--dim);text-align:center;padding:4px">继续收集碎片解锁</div>`}
+    `}
+  </div>`;
+}
+
+renderMentorAlbum.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-equip]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      const id = b.getAttribute('data-equip');
+      LegendBlindBox.equipMentor(player, id || null);
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_ALBUM, params: {} });
+    }));
+  document.querySelectorAll('[data-exchange]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      const id = b.getAttribute('data-exchange');
+      const r = LegendBlindBox.exchangeByFragments(player, id);
+      if (r.ok) alert(`✓ 已解锁导师：${r.mentor.name}`);
+      else alert(r.reason);
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_ALBUM, params: {} });
+    }));
+  document.querySelectorAll('[data-duel]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: { duelistId: b.getAttribute('data-duel') } })));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇人物盲盒
+   ────────────────────────────────────────────────────────────────── */
+function renderMentorBlindbox() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const m = player.legendaryMentors;
+  return `
+    <div class="flex-between">
+      <div class="section-title">传奇人物盲盒</div>
+      <button class="back-btn" data-back>← 返回</button>
+    </div>
+    <div class="sk-status-bar">
+      <div class="sk-status-item">💎 普通碎片 <b>${player.cardShards || 0}</b></div>
+      <div class="sk-status-pity">SSR保底 ${m.pity.sinceSSRMaster}/10 · UR ${m.pity.sinceURLegend}/40 · LR ${m.pity.sinceLRSignature}/120</div>
+    </div>
+    <div class="hint hint-purple" style="font-size:11px;margin-bottom:12px">
+      <b>包结构</b>：每包 5 件 = 3 张技能卡/碎片 + 1 个人物碎片 + 1 个传奇位（碎片/宗师/UR/LR）。<br>
+      <b>抽包消耗</b>：普通碎片 <b>200</b>。
+    </div>
+    <div class="mentor-pack-area">
+      <div class="sk-pack" data-pack="legend" style="--card-color:#f6c453;--card-bg:rgba(246,196,83,.14);--card-glow:rgba(246,196,83,.6);max-width:240px;margin:0 auto;cursor:pointer">
+        <div class="sk-pack-icon"><div class="sk-pack-shine"></div></div>
+        <div class="sk-pack-name">传奇人物盲盒</div>
+        <div class="sk-pack-reason">200 碎片 / 包</div>
+        <div class="sk-pack-action">▸ 点击抽取</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;text-align:center">
+      <button class="btn btn-yellow" data-draw>抽取 1 包（-200 碎片）</button>
+    </div>
+  `;
+}
+renderMentorBlindbox.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-draw], [data-pack="legend"]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      if ((player.cardShards || 0) < 200) { alert('碎片不足（需 200）'); return; }
+      player.cardShards -= 200;
+      const results = LegendBlindBox.drawLegendPack(player);
+      Store.set('player', player);
+      renderLegendPackOpenModal(results, () =>
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_BLINDBOX, params: {} })
+      );
+    }));
+};
+
+function renderLegendPackOpenModal(results, onClose) {
+  if (typeof document === 'undefined') return;
+  const overlay = document.createElement('div');
+  overlay.className = 'box-modal-overlay';
+  const items = results.map((r) => {
+    if (!r) return '';
+    if (r.kind === 'skill') {
+      const c = r.value.card;
+      const cfg = BLINDBOX_CONFIG.rarities[c.rarity];
+      return `<div class="legend-result-item" style="border-color:${cfg.color}">
+        <div class="legend-result-tag">${c.rarity}</div>
+        <div class="legend-result-name">${c.name}</div>
+        <div class="legend-result-detail">${r.value.duplicate ? `重复 → +${r.value.shard} 碎片` : 'NEW'}</div>
+      </div>`;
+    }
+    if (r.kind === 'fragment' || r.kind === 'characterFragment' || r.kind === 'masterFragment') {
+      const cfg = LEGEND_RARITIES[r.mentor.rarity] || LEGEND_RARITIES.SSR_MASTER;
+      return `<div class="legend-result-item" style="border-color:${cfg.color}">
+        <div class="legend-result-tag">碎片</div>
+        <div class="legend-result-name">${r.mentor.name}</div>
+        <div class="legend-result-detail">×${r.amount}</div>
+      </div>`;
+    }
+    if (r.kind === 'ssrMasterCard' || r.kind === 'urLegendCard' || r.kind === 'lrSignatureCard' || r.kind === 'mentorNew' || r.kind === 'mentorDup') {
+      const m = r.mentor;
+      const cfg = LEGEND_RARITIES[m.rarity];
+      return `<div class="legend-result-item" style="border-color:${cfg.color};box-shadow:0 0 18px ${cfg.glow}">
+        <div class="legend-result-tag" style="background:${cfg.color};color:#0a0e1a">${cfg.label}</div>
+        <div class="legend-result-name">${m.name}</div>
+        <div class="legend-result-detail">${r.kind === 'mentorDup' ? `已拥有 +${r.refund} 碎片` : '✦ NEW 导师'}</div>
+      </div>`;
+    }
+    return '';
+  }).join('');
+  overlay.innerHTML = `<div class="box-modal sk-open-modal">
+    <div class="sk-open-title">✦ 传奇盲盒 · 5 件 ✦</div>
+    <div class="sk-open-sub">前 3 件 = 技能卡 / 碎片 · 第 4 件 = 人物碎片 · 第 5 件 = 传奇位</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:10px 0">${items}</div>
+    <div style="text-align:center"><button class="btn btn-green" data-close>收下 ✓</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('[data-close]').addEventListener('click', () => {
+    overlay.remove();
+    if (typeof onClose === 'function') onClose();
+  });
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇试炼场 · 选择对手
+   ────────────────────────────────────────────────────────────────── */
+function renderDuelSelect() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const owned = new Set(player.legendaryMentors.owned);
+  const list = LEGEND_DUELISTS.filter((d) => d.rarity === 'UR_LEGEND' || d.rarity === 'SSR_MASTER');
+  const cards = list.map((d) => {
+    const isOwned = owned.has(d.id);
+    const rec = (player.duelRecords && player.duelRecords[d.id]) || { plays: 0, wins: 0, bestOutcome: null };
+    const cfg = LEGEND_RARITIES[d.rarity];
+    return `<div class="duel-pick-card ${isOwned ? '' : 'duel-locked'}" data-duel="${d.id}" style="--card-color:${cfg.color}">
+      <div class="duel-pick-icon">${d.chibi || '👤'}</div>
+      <div class="duel-pick-body">
+        <div class="duel-pick-name">${d.name} <span style="font-size:10px;color:${cfg.color}">${cfg.label}</span></div>
+        <div class="duel-pick-style">${d.style}</div>
+        ${isOwned ? `<div class="duel-pick-record">出战 ${rec.plays} 次 · 胜 ${rec.wins} · 最佳：${rec.bestOutcome ? DUEL_OUTCOME_LABEL[rec.bestOutcome].icon + ' ' + DUEL_OUTCOME_LABEL[rec.bestOutcome].name : '—'}</div>` : `<div class="duel-pick-record" style="color:var(--dim)">未拥有导师卡，可挑战但奖励减半</div>`}
+        <div class="duel-pick-weakness">弱点：${d.weakness || '—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="flex-between">
+    <div class="section-title">传奇试炼场 · 选择对手</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="hint hint-cyan" style="font-size:11px;margin-bottom:10px">
+    每场 <b>6 回合</b> · 围绕 <b>5 条谈判态势</b>（信息权 / 议题权 / 压力权 / 信任权 / 终局权）· 不使用血量。
+  </div>
+  <div class="duel-pick-list">${cards}</div>`;
+}
+
+renderDuelSelect.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-duel]').forEach((b) =>
+    b.addEventListener('click', () => {
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: { duelistId: b.getAttribute('data-duel') } });
+    }));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇试炼场 · 对局
+   ────────────────────────────────────────────────────────────────── */
+function renderDuelPlay(params) {
+  params = params || {};
+  let state = Store.get('duelState');
+  if (!state || (params.duelistId && state.duelistId !== params.duelistId) || state.completed) {
+    state = LegendDuel.start(params.duelistId);
+    AIMemoryV2.ensure();
+    Store.set('aiMemoryV2', AIMemoryV2.fresh());
+    Store.set('mentorEnergyState', { energy: 0, triggered: false });
+    Store.set('mentorLastTrigger', null);
+  }
+  if (!state) return '<div class="hint hint-red">未知导师</div>';
+  const phase = DUEL_PHASES[state.round] || DUEL_PHASES[DUEL_PHASES.length - 1];
+  const equipped = getEquippedMentor();
+  const signal = AIMemoryV2.intentionSignal();
+  const trigger = Store.get('mentorLastTrigger');
+
+  const metricsHtml = DUEL_METRICS.map((m) => {
+    const v = state.metrics[m];
+    const cls = v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad';
+    return `<div class="duel-metric">
+      <div class="duel-metric-label">${DUEL_METRIC_LABEL[m]}</div>
+      <div class="duel-metric-track"><div class="duel-metric-fill ${cls}" style="width:${v}%"></div></div>
+      <div class="duel-metric-val">${v}</div>
+    </div>`;
+  }).join('');
+
+  const choicesHtml = DUEL_CHOICES.map((c) => {
+    const tag = NEGOTIATION_SKILL_TAGS[c.tag];
+    return `<button class="duel-choice-btn" data-duel-choice="${c.key}">
+      <div class="duel-choice-head"><b>${c.label}</b> <span class="duel-choice-tag" style="color:${tag.color}">${tag.label}</span></div>
+      <div class="duel-choice-desc">${c.desc}</div>
+      <div class="duel-choice-sample">"${c.sample}"</div>
+    </button>`;
+  }).join('');
+
+  const mentorBar = equipped ? `<div class="mentor-bar ${state.mentorEnergy >= 100 ? 'ready' : ''}">
+    <div class="mentor-bar-head">
+      <span>${equipped.chibi} ${equipped.name} · 导师能量</span>
+      <span style="color:var(--yellow);font-weight:bold">${state.mentorEnergy}/100</span>
+    </div>
+    <div class="mentor-bar-track"><div class="mentor-bar-fill" style="width:${state.mentorEnergy}%"></div></div>
+    ${state.mentorEnergy >= 100 && !trigger ? `<button class="btn btn-yellow btn-sm" data-trigger-mentor style="margin-top:6px">触发导师 ${equipped.passive.name}</button>` : ''}
+    ${trigger ? `<div class="mentor-trigger-box">
+      <div class="mentor-trigger-title">${trigger.title}</div>
+      <div class="mentor-trigger-line">原因：${trigger.reason}</div>
+      <div class="mentor-trigger-line">建议：${trigger.advice}</div>
+      <div class="mentor-trigger-line" style="color:var(--red)">对手反应：${trigger.adaptation}</div>
+      ${trigger.signature ? `<div class="mentor-trigger-sig">"${trigger.signature}"</div>` : ''}
+    </div>` : ''}
+  </div>` : '';
+
+  return `<div class="flex-between">
+    <div class="section-title">${state.duelist.name} · ${phase.title}</div>
+    <button class="back-btn" data-back>← 退出</button>
+  </div>
+  <div class="duel-phase-banner">第 ${state.round + 1} / 6 回合 · ${phase.title}<br><span style="color:var(--dim);font-size:11px">${phase.brief}</span></div>
+  <div class="duel-metrics">${metricsHtml}</div>
+  ${mentorBar}
+  <div class="hint hint-purple" style="font-size:11.5px;margin:10px 0">▸ 对手意图：${signal}</div>
+  <div class="sk-section-head" style="--card-color:var(--cyan)">▸ 你的选择 · 5 个策略方向</div>
+  <div class="duel-choice-list">${choicesHtml}</div>
+  ${state.log.length ? `<div class="duel-log">
+    <div class="sk-section-head" style="--card-color:var(--dim)">▸ 回合记录</div>
+    ${state.log.slice(-4).map((l) => `<div class="duel-log-item">
+      第${l.round+1}回 · ${l.phase} · ${l.label} → +${l.delta}（×${l.multiplier.toFixed(2)}）<br>
+      <span style="color:var(--dim);font-size:10px">${l.intentionSignal}</span>
+    </div>`).join('')}
+  </div>` : ''}`;
+}
+
+renderDuelPlay.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => {
+      Store.set('duelState', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} });
+    }));
+  document.querySelectorAll('[data-trigger-mentor]').forEach((b) =>
+    b.addEventListener('click', () => {
+      tryTriggerMentor();
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: {} });
+    }));
+  document.querySelectorAll('[data-duel-choice]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const choice = b.getAttribute('data-duel-choice');
+      const state = LegendDuel.step(choice);
+      // 导师能量增长后自动 tick
+      const energy = (Store.get('duelState') || {}).mentorEnergy || 0;
+      if (energy >= 100) tryTriggerMentor();
+      if (state && state.completed) {
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_RESULT, params: {} });
+      } else {
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: {} });
+      }
+    }));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇试炼场 · 结果
+   ────────────────────────────────────────────────────────────────── */
+function renderDuelResult() {
+  const state = Store.get('duelState');
+  if (!state || !state.completed) {
+    return `${C.hint('暂无对战结果', 'yellow')}<div style="text-align:center;margin-top:14px"><button class="btn" data-back>返回</button></div>`;
+  }
+  const out = DUEL_OUTCOME_LABEL[state.outcome];
+  const tagSummary = {};
+  state.perRoundTags.forEach((t) => { tagSummary[t] = (tagSummary[t] || 0) + 1; });
+  const dominant = Object.entries(tagSummary).sort((a, b) => b[1] - a[1])[0];
+  const reward = state.reward || { shards: 0, mentorFragments: 0 };
+  const review = state.reviewQuestion;
+  return `<div class="flex-between">
+    <div class="section-title">${state.duelist.name} · 战报</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="arc-result-hero">
+    <div class="arc-result-icon">${out.icon}</div>
+    <div class="arc-result-title">${out.name}</div>
+    <div class="arc-result-subtitle">${state.duelist.name} · 六回合试炼</div>
+    <p class="arc-result-narrative">${out.narrative}</p>
+  </div>
+  <div class="panel">
+    <div class="panel-title">最终态势</div>
+    <div class="duel-metrics">${DUEL_METRICS.map((m) => {
+      const v = state.metrics[m];
+      const cls = v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad';
+      return `<div class="duel-metric">
+        <div class="duel-metric-label">${DUEL_METRIC_LABEL[m]}</div>
+        <div class="duel-metric-track"><div class="duel-metric-fill ${cls}" style="width:${v}%"></div></div>
+        <div class="duel-metric-val">${v}</div>
+      </div>`;
+    }).join('')}</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">本局奖励</div>
+    <div class="info-row"><span class="info-key">💎 碎片</span><span class="info-val" style="color:var(--purple)">+${reward.shards}</span></div>
+    <div class="info-row"><span class="info-key">👤 导师碎片（${state.duelist.name}）</span><span class="info-val" style="color:var(--yellow)">+${reward.mentorFragments}</span></div>
+    <div class="info-row"><span class="info-key">主导策略</span><span class="info-val">${dominant ? NEGOTIATION_SKILL_TAGS[dominant[0]].label + ' ×' + dominant[1] : '混合'}</span></div>
+  </div>
+  ${review ? `<div class="panel">
+    <div class="panel-title">检索式复盘题（保存到下次训练前）</div>
+    <div style="font-size:12px;color:var(--text);line-height:1.7;margin:6px 0">Q: ${review.question}</div>
+    <details style="font-size:11px;color:var(--dim);margin-top:6px"><summary>查看参考答案</summary><div style="margin-top:6px">A: ${review.answer}</div></details>
+  </div>` : ''}
+  <div style="text-align:center;margin-top:14px">
+    <button class="btn btn-green" data-again>再战一局</button>
+    <button class="btn" data-hub>返回训练中心</button>
+  </div>`;
+}
+renderDuelResult.afterRender = function () {
+  document.querySelectorAll('[data-back], [data-hub]').forEach((b) =>
+    b.addEventListener('click', () => {
+      Store.set('duelState', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} });
+    }));
+  document.querySelectorAll('[data-again]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const s = Store.get('duelState');
+      Store.set('duelState', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: { duelistId: s.duelistId } });
+    }));
+};
+
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇剧情链 · 选择
+   ────────────────────────────────────────────────────────────────── */
+function renderStorySelect() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const owned = new Set(player.legendaryMentors.owned);
+  const cards = LEGENDARY_STORY_CHAINS.map((c) => {
+    const unlocked = StoryChain.isUnlocked(c.id);
+    const mentor = getMentor(c.mentorId);
+    const rec = (player.storyRuns && player.storyRuns[c.id]) || { plays: 0, bestEnding: null };
+    const cfg = LEGEND_RARITIES[mentor.rarity];
+    return `<div class="story-card ${unlocked ? '' : 'story-locked'}" data-chain="${c.id}" style="--card-color:${cfg.color}">
+      <div class="story-card-icon">${mentor.chibi}</div>
+      <div class="story-card-body">
+        <div class="story-card-title">${c.title} <span style="font-size:10px;color:${cfg.color}">${cfg.label}</span></div>
+        <div class="story-card-subtitle">${c.subtitle} · ${c.acts.length} 幕</div>
+        <div class="story-card-desc">${c.desc}</div>
+        ${unlocked
+          ? `<div class="story-card-record">已挑战 ${rec.plays} 次 · 最佳：${rec.bestEnding ? STORY_ENDINGS[rec.bestEnding].icon + ' ' + STORY_ENDINGS[rec.bestEnding].name : '—'}</div>`
+          : `<div class="story-card-record" style="color:var(--dim)">解锁条件：${mentor.name} 碎片 ≥ 30 或拥有该导师卡</div>`}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="flex-between">
+    <div class="section-title">传奇剧情链</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="hint hint-cyan" style="font-size:11px;margin-bottom:10px">
+    每条剧情链 <b>${LEGENDARY_STORY_CHAINS[0].acts.length} 幕（视章节而定）</b> · 每幕 <b>4 回合</b> · 5 种结局 · 支持 checkpoint / rollback。
+  </div>
+  <div class="story-list">${cards}</div>`;
+}
+renderStorySelect.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-chain]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const id = b.getAttribute('data-chain');
+      if (!StoryChain.isUnlocked(id)) { alert('该剧情链尚未解锁'); return; }
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STORY_PLAY, params: { chainId: id } });
+    }));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇剧情链 · 对局
+   ────────────────────────────────────────────────────────────────── */
+function renderStoryPlay(params) {
+  params = params || {};
+  let state = Store.get('storyState');
+  if (!state || (params.chainId && state.chainId !== params.chainId) || state.completed) {
+    state = StoryChain.start(params.chainId);
+    AIMemoryV2.ensure();
+    Store.set('aiMemoryV2', AIMemoryV2.fresh());
+  }
+  if (!state) return '<div class="hint hint-red">未知剧情链</div>';
+  const act = StoryChain.getActiveAct(state);
+  const equipped = getEquippedMentor();
+  const signal = AIMemoryV2.intentionSignal();
+
+  const metricsHtml = DUEL_METRICS.map((m) => {
+    const v = state.metrics[m];
+    const cls = v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad';
+    return `<div class="duel-metric">
+      <div class="duel-metric-label">${DUEL_METRIC_LABEL[m]}</div>
+      <div class="duel-metric-track"><div class="duel-metric-fill ${cls}" style="width:${v}%"></div></div>
+      <div class="duel-metric-val">${v}</div>
+    </div>`;
+  }).join('');
+
+  const focusTag = NEGOTIATION_SKILL_TAGS[act.focusTag];
+  const choicesHtml = DUEL_CHOICES.map((c) => {
+    const tag = NEGOTIATION_SKILL_TAGS[c.tag];
+    const isFocus = c.tag === act.focusTag;
+    return `<button class="duel-choice-btn ${isFocus ? 'focus' : ''}" data-story-choice="${c.key}">
+      <div class="duel-choice-head"><b>${c.label}</b> <span class="duel-choice-tag" style="color:${tag.color}">${tag.label}${isFocus ? ' · 本幕焦点' : ''}</span></div>
+      <div class="duel-choice-desc">${c.desc}</div>
+    </button>`;
+  }).join('');
+
+  return `<div class="flex-between">
+    <div class="section-title">${state.chain.title} · ${act.title}</div>
+    <button class="back-btn" data-back>← 退出</button>
+  </div>
+  <div class="duel-phase-banner">
+    幕 ${state.actIndex + 1} / ${state.chain.acts.length} · 回合 ${state.roundInAct + 1} / 4<br>
+    <span style="color:var(--dim);font-size:11px">${act.briefing}</span><br>
+    <span style="font-size:11px;color:${focusTag.color}">本幕焦点：${focusTag.label}</span>
+  </div>
+  <div class="duel-metrics">${metricsHtml}</div>
+  ${equipped ? `<div class="mentor-bar" style="opacity:.65"><div class="mentor-bar-head"><span>${equipped.chibi} ${equipped.name}（局前装备）</span><span style="font-size:10px;color:var(--dim)">${equipped.passive.name}</span></div></div>` : ''}
+  <div class="hint hint-purple" style="font-size:11.5px;margin:10px 0">▸ 对手意图：${signal}</div>
+  <div class="sk-section-head" style="--card-color:var(--cyan)">▸ 你的选择</div>
+  <div class="duel-choice-list">${choicesHtml}</div>
+  <div class="story-rollback-bar">
+    <button class="btn btn-sm" data-rollback="actStart">↺ 回滚至本幕开始</button>
+    <button class="btn btn-sm" data-rollback="nearest">↺ 回滚至最近 checkpoint</button>
+  </div>
+  ${state.actResults.length ? `<div class="panel" style="margin-top:10px">
+    <div class="panel-title">已完成幕次</div>
+    ${state.actResults.map((r, i) => `<div class="info-row"><span class="info-key">幕 ${i+1} · ${r.act}</span><span class="info-val">综合 ${r.avg}</span></div>`).join('')}
+  </div>` : ''}`;
+}
+renderStoryPlay.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => {
+      Store.set('storyState', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} });
+    }));
+  document.querySelectorAll('[data-story-choice]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const choice = b.getAttribute('data-story-choice');
+      const state = StoryChain.step(choice);
+      if (state && state.completed) {
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STORY_RESULT, params: {} });
+      } else {
+        EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STORY_PLAY, params: {} });
+      }
+    }));
+  document.querySelectorAll('[data-rollback]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const kind = b.getAttribute('data-rollback');
+      if (!confirm(kind === 'actStart' ? '回滚到本幕开始？' : '回滚到最近 checkpoint？')) return;
+      if (kind === 'actStart') StoryChain.rollbackToActStart();
+      else StoryChain.rollbackToNearest();
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STORY_PLAY, params: {} });
+    }));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   传奇剧情链 · 结果
+   ────────────────────────────────────────────────────────────────── */
+function renderStoryResult() {
+  const state = Store.get('storyState');
+  if (!state || !state.completed) {
+    return `${C.hint('暂无结果', 'yellow')}<div style="text-align:center;margin-top:14px"><button class="btn" data-back>返回</button></div>`;
+  }
+  const ending = STORY_ENDINGS[state.endingId];
+  return `<div class="flex-between">
+    <div class="section-title">${state.chain.title} · 战报</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="arc-result-hero">
+    <div class="arc-result-icon">${ending.icon}</div>
+    <div class="arc-result-title">${ending.name}</div>
+    <div class="arc-result-subtitle">${state.chain.title} · ${state.chain.acts.length} 幕完成</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">本局奖励</div>
+    <div class="info-row"><span class="info-key">💎 碎片</span><span class="info-val" style="color:var(--purple)">+${state.shards || 0}</span></div>
+    <div class="info-row"><span class="info-key">👤 ${state.mentor.name} 碎片</span><span class="info-val" style="color:var(--yellow)">+30</span></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">最终态势</div>
+    <div class="duel-metrics">${DUEL_METRICS.map((m) => {
+      const v = state.metrics[m];
+      const cls = v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad';
+      return `<div class="duel-metric">
+        <div class="duel-metric-label">${DUEL_METRIC_LABEL[m]}</div>
+        <div class="duel-metric-track"><div class="duel-metric-fill ${cls}" style="width:${v}%"></div></div>
+        <div class="duel-metric-val">${v}</div>
+      </div>`;
+    }).join('')}</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">幕次轨迹</div>
+    ${state.actResults.map((r, i) => `<div class="info-row"><span class="info-key">幕 ${i+1} · ${r.act}</span><span class="info-val">综合 ${r.avg}（焦点：${NEGOTIATION_SKILL_TAGS[r.focusTag].label}）</span></div>`).join('')}
+  </div>
+  <div class="panel">
+    <div class="panel-title">5 种结局参考</div>
+    ${Object.entries(STORY_ENDINGS).map(([k, e]) => `<div class="info-row" style="${k === state.endingId ? 'background:rgba(0,212,255,.06);' : ''}"><span class="info-key">${e.icon} ${e.name}</span><span class="info-val" style="font-size:10px;color:var(--dim)">${k === state.endingId ? '本次' : ''}</span></div>`).join('')}
+  </div>
+  <div style="text-align:center;margin-top:14px">
+    <button class="btn btn-green" data-again>重玩本链</button>
+    <button class="btn" data-hub>返回训练中心</button>
+  </div>`;
+}
+renderStoryResult.afterRender = function () {
+  document.querySelectorAll('[data-back], [data-hub]').forEach((b) =>
+    b.addEventListener('click', () => {
+      Store.set('storyState', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} });
+    }));
+  document.querySelectorAll('[data-again]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const s = Store.get('storyState');
+      const id = s.chainId;
+      Store.set('storyState', null);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STORY_PLAY, params: { chainId: id } });
+    }));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   个人精通树
+   ────────────────────────────────────────────────────────────────── */
+function renderMasteryTree() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const tree = player.masteryTree;
+  const rows = SKILL_TAG_KEYS.map((tag) => {
+    const t = NEGOTIATION_SKILL_TAGS[tag];
+    const v = tree[tag] || 0;
+    const profile = player.skillProfile[tag];
+    const mastered = profile && profile.mastered;
+    const level = v >= 80 ? '精通' : v >= 50 ? '熟练' : v >= 20 ? '入门' : '未开';
+    return `<div class="mastery-row">
+      <div class="mastery-label" style="color:${t.color}">● ${t.label}</div>
+      <div class="mastery-track"><div class="mastery-fill" style="width:${v}%;background:${t.color}"></div></div>
+      <div class="mastery-meta"><b>${v}</b> · ${level}${mastered ? ' ★' : ''}</div>
+    </div>`;
+  }).join('');
+  const totalMastered = Object.values(player.skillProfile).filter((p) => p.mastered).length;
+  return `<div class="flex-between">
+    <div class="section-title">个人精通树</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="hint hint-cyan" style="font-size:11px;margin-bottom:12px">
+    精通树是你的长期目标 · 不与他人比较 · 已掌握 <b>${totalMastered} / 10</b> 项能力
+  </div>
+  <div class="mastery-tree">${rows}</div>
+  <div class="hint hint-yellow" style="font-size:11px;margin-top:14px">
+    <b>提升方式</b>：① 在对应场景中达到 A 级 ② 完成对应剧情链或试炼 ③ 回答检索式复盘题
+  </div>`;
+}
+renderMasteryTree.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   本地回放档案馆
+   ────────────────────────────────────────────────────────────────── */
+function renderReplayArchive() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const replays = LocalReplay.list(player);
+  if (!replays.length) {
+    return `<div class="flex-between">
+      <div class="section-title">本地回放档案馆</div>
+      <button class="back-btn" data-back>← 返回</button>
+    </div>
+    ${C.hint('档案馆为空 · 完成试炼场或剧情链后将自动归档。<br>本档案只保存在你的本地浏览器，不上传任何服务器。', 'yellow')}`;
+  }
+  const items = replays.map((r) => {
+    const meta = r.mode === 'duel'
+      ? `传奇试炼 · ${r.duelistName} · ${DUEL_OUTCOME_LABEL[r.outcome] ? DUEL_OUTCOME_LABEL[r.outcome].name : r.outcome}`
+      : `剧情链 · ${r.chainTitle || ''} · ${r.endingName || ''}`;
+    const date = new Date(r.createdAt).toLocaleString('zh-CN');
+    return `<div class="replay-item">
+      <div class="replay-meta">
+        <div class="replay-title">${meta}</div>
+        <div class="replay-date">${date}</div>
+      </div>
+      <button class="btn btn-sm" data-view="${r.replayId}">查看</button>
+      <button class="btn btn-red btn-sm" data-del="${r.replayId}">删除</button>
+    </div>`;
+  }).join('');
+  return `<div class="flex-between">
+    <div class="section-title">本地回放档案馆 · ${replays.length}</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="hint hint-cyan" style="font-size:11px;margin-bottom:10px">仅本地存储 · 不上传 · 不分享</div>
+  <div class="replay-list">${items}</div>`;
+}
+renderReplayArchive.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-view]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      const r = LocalReplay.get(player, b.getAttribute('data-view'));
+      if (!r) return;
+      showReplayModal(r);
+    }));
+  document.querySelectorAll('[data-del]').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (!confirm('确定删除这条本地回放？')) return;
+      const player = Store.get('player');
+      LocalReplay.remove(player, b.getAttribute('data-del'));
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.REPLAY_ARCHIVE, params: {} });
+    }));
+};
+
+function showReplayModal(r) {
+  if (typeof document === 'undefined') return;
+  const overlay = document.createElement('div');
+  overlay.className = 'box-modal-overlay';
+  const log = (r.log || []).map((l, i) => {
+    if (r.mode === 'duel') {
+      return `<div class="replay-log-row">第 ${l.round + 1} 回 · <b>${l.label}</b> → +${l.delta}（×${l.multiplier ? l.multiplier.toFixed(2) : '1.00'}）<br><span style="color:var(--dim);font-size:10px">${l.intentionSignal || ''}</span></div>`;
+    } else {
+      return `<div class="replay-log-row">幕 ${l.actIndex+1} · 第 ${l.round+1} 回 · <b>${l.label}</b>（${NEGOTIATION_SKILL_TAGS[l.tag] ? NEGOTIATION_SKILL_TAGS[l.tag].label : l.tag}）→ +${l.delta}</div>`;
+    }
+  }).join('');
+  const metrics = DUEL_METRICS.map((m) => `<div class="info-row"><span class="info-key">${DUEL_METRIC_LABEL[m]}</span><span class="info-val">${r.metrics ? r.metrics[m] : '-'}</span></div>`).join('');
+  overlay.innerHTML = `<div class="box-modal" style="max-width:540px;width:96%">
+    <div class="sk-open-title">▸ 回放详情</div>
+    <div class="sk-open-sub">${r.mode === 'duel' ? r.duelistName : r.chainTitle}</div>
+    <div class="panel" style="margin:10px 0"><div class="panel-title">最终态势</div>${metrics}</div>
+    <div class="panel" style="max-height:240px;overflow-y:auto"><div class="panel-title">逐回合记录</div>${log}</div>
+    <div style="text-align:center;margin-top:10px"><button class="btn btn-green" data-close>关闭</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('[data-close]').addEventListener('click', () => overlay.remove());
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   检索式复盘队列
+   ────────────────────────────────────────────────────────────────── */
+function renderReviewQueue() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const all = (player.reviewQuestions || []).slice().reverse();
+  const pending = all.filter((q) => !q.answered);
+  if (!all.length) {
+    return `<div class="flex-between">
+      <div class="section-title">检索式复盘</div>
+      <button class="back-btn" data-back>← 返回</button>
+    </div>
+    ${C.hint('暂无复盘题 · 完成试炼或剧情后系统会生成 1-3 道复盘题。', 'yellow')}`;
+  }
+  const items = all.map((q) => {
+    const tag = NEGOTIATION_SKILL_TAGS[q.tag] || { label: q.tag, color: '#aaa' };
+    return `<div class="review-item ${q.answered ? 'answered' : ''}">
+      <div class="review-tag" style="color:${tag.color}">● ${tag.label}</div>
+      <div class="review-question">Q: ${q.question}</div>
+      <details><summary>参考答案 · 点击展开</summary><div class="review-answer">A: ${q.answer}</div></details>
+      ${!q.answered ? `<button class="btn btn-green btn-sm" data-answered="${q.id}" style="margin-top:6px">我已复习 ✓</button>` : '<div style="color:var(--green);font-size:10px;margin-top:4px">✓ 已复习</div>'}
+    </div>`;
+  }).join('');
+  return `<div class="flex-between">
+    <div class="section-title">检索式复盘 · 待复习 ${pending.length}</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="hint hint-cyan" style="font-size:11px;margin-bottom:10px">
+    <b>原则</b>：先尝试回忆答案，再展开对照 · 每复习一题，精通进度 +5
+  </div>
+  <div class="review-list">${items}</div>`;
+}
+renderReviewQueue.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-answered]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      RetrievalReview.answer(player, b.getAttribute('data-answered'));
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.REVIEW_QUEUE, params: {} });
+    }));
+};
+
+/* ────────────────────────────────────────────────────────────────────
+   训练路径
+   ────────────────────────────────────────────────────────────────── */
+function renderTrainingPath() {
+  const player = ensureSkillCardFieldsV2(Store.get('player'));
+  const rec = SkillProfile.recommend(player);
+  const profileRows = SKILL_TAG_KEYS.map((tag) => {
+    const t = NEGOTIATION_SKILL_TAGS[tag];
+    const p = player.skillProfile[tag];
+    const isWeak = rec.weakest.includes(tag);
+    const isStrong = rec.strongest.includes(tag);
+    return `<div class="profile-row ${isWeak ? 'weak' : ''} ${isStrong ? 'strong' : ''}">
+      <div class="profile-label" style="color:${t.color}">${isWeak ? '⚠ ' : isStrong ? '★ ' : '  '}${t.label}</div>
+      <div class="profile-stats">尝试 ${p.attempts} · 平均 ${p.avgScore} · 连胜 ${p.streakPass}${p.mastered ? ' · 已掌握' : ''}</div>
+    </div>`;
+  }).join('');
+  // 卡组覆盖率（基于推荐能力 vs loadout）
+  const loadout = (player.skillCardLoadout || []).map((id) => SKILL_CARDS.find((c) => c.id === id)).filter(Boolean);
+  const coveredSet = new Set();
+  loadout.forEach((c) => (c.skillTags || []).forEach((t) => coveredSet.add(t)));
+  const recTags = rec.weakest.concat(rec.strongest);
+  const covered = recTags.filter((t) => coveredSet.has(t)).length;
+  const coverage = recTags.length ? Math.round(covered / recTags.length * 100) : 0;
+  const missing = recTags.filter((t) => !coveredSet.has(t)).map((t) => NEGOTIATION_SKILL_TAGS[t].label).join('、');
+  const wishlist = player.cardWishlist && player.cardWishlist.focusTag ? NEGOTIATION_SKILL_TAGS[player.cardWishlist.focusTag] : null;
+
+  return `<div class="flex-between">
+    <div class="section-title">训练路径 · 个人推荐</div>
+    <button class="back-btn" data-back>← 返回</button>
+  </div>
+  <div class="training-path-callout">
+    <div class="tp-title">▸ 系统建议</div>
+    <div class="tp-hint">${rec.message}</div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">能力画像（10 维）</div>
+    ${profileRows}
+  </div>
+  <div class="panel">
+    <div class="panel-title">卡组覆盖率</div>
+    <div class="info-row"><span class="info-key">推荐能力覆盖</span><span class="info-val" style="color:${coverage >= 70 ? 'var(--green)' : coverage >= 40 ? 'var(--yellow)' : 'var(--red)'}">${coverage}%</span></div>
+    ${missing ? `<div class="hint hint-yellow" style="font-size:11px">缺少：${missing} 类技能卡</div>` : '<div class="hint hint-green" style="font-size:11px">推荐能力已被卡组完全覆盖</div>'}
+  </div>
+  <div class="panel">
+    <div class="panel-title">愿望单</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">设置后，开包时倾向获得相关 tag 的卡牌（轻微概率提升）。</div>
+    <div class="wishlist-tags">
+      ${SKILL_TAG_KEYS.map((t) => {
+        const tag = NEGOTIATION_SKILL_TAGS[t];
+        const active = wishlist && wishlist.id === t;
+        return `<button class="wishlist-tag ${active ? 'active' : ''}" data-wishlist="${t}" style="--card-color:${tag.color}">${tag.label}${active ? ' ✓' : ''}</button>`;
+      }).join('')}
+    </div>
+    ${wishlist ? `<button class="btn btn-red btn-sm" data-wishlist="" style="margin-top:8px">清除愿望单</button>` : ''}
+  </div>`;
+}
+renderTrainingPath.afterRender = function () {
+  document.querySelectorAll('[data-back]').forEach((b) =>
+    b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.LEGEND_HUB, params: {} })));
+  document.querySelectorAll('[data-wishlist]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      setWishlist(player, b.getAttribute('data-wishlist') || null);
+      Store.set('player', player);
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.TRAINING_PATH, params: {} });
+    }));
+};
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   GAME_END 钩子：从场景结果更新 skillProfile / masteryTree / 生成复盘题
+   ════════════════════════════════════════════════════════════════════════════ */
+function initSkillProfileWire() {
+  EventBus.on(EVENTS.GAME_END, (payload) => {
+    try {
+      const player = Store.get('player');
+      if (!player) return;
+      ensureSkillCardFieldsV2(player);
+      const result = (payload && payload.result) || {};
+      const scenarioKey = Store.get('scenarioKey');
+      const scoreRaw = result.playerScore || result.score || 60;
+      // 0-100 区间
+      const norm = Math.max(0, Math.min(100, scoreRaw));
+      // 把场景映射回 skillTags
+      const sceneTagMap = {
+        'prisoners':   ['trust', 'pressure', 'concession'],
+        'ultimatum':   ['endgame', 'pressure', 'agenda'],
+        'trust':       ['trust', 'info', 'emotion'],
+        'bargaining':  ['agenda', 'concession', 'batna'],
+        'crisis':      ['emotion', 'pressure', 'retreat'],
+        'publicgoods': ['trust', 'standard', 'concession'],
+        'coalition':   ['agenda', 'info', 'standard']
+      };
+      const tags = sceneTagMap[scenarioKey] || ['agenda'];
+      const deltas = {};
+      tags.forEach((t) => { deltas[t] = norm; });
+      SkillProfile.update(player, deltas);
+      // 精通进度（仅胜局/平局加分）
+      if (result.outcome === 'win' || result.outcome === 'coop' || result.outcome === 'draw') {
+        tags.forEach((t) => SkillProfile.addMasteryProgress(player, t, 2));
+      }
+      // 生成 1 道复盘题
+      const weakest = SkillProfile.recommend(player).weakest[0];
+      RetrievalReview.generate(player, { weakestTag: weakest });
+      Store.set('player', player);
+    } catch (e) { console.warn('[skillProfile-wire]', e); }
+  });
+}
+
+// 在 GAME_START 时清空 AI 记忆 + mentor 能量 + usedCardsThisRound
+function initLegendGameWire() {
+  EventBus.on(EVENTS.GAME_START, () => {
+    Store.set('aiMemoryV2', AIMemoryV2.fresh());
+    Store.set('mentorEnergyState', { energy: 0, triggered: false });
+    Store.set('mentorLastTrigger', null);
+    Store.set('usedCardsThisRound', []);
+    // 给新手发放起手卡组（仅一次）
+    const player = Store.get('player');
+    if (player) grantBeginnerDeckIfNeeded(player);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   样式注入（一次性插入 <style>）
+   ════════════════════════════════════════════════════════════════════════════ */
+function injectV2Styles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('v2-master-styles')) return;
+  const css = `
+/* ── 主 HUB / 导师装备横幅 ─────────────────────────────────── */
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px}
+.legend-tile{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:all .2s}
+.legend-tile:hover{border-color:var(--cyan);transform:translateY(-1px);box-shadow:0 0 14px rgba(0,212,255,.18)}
+.legend-tile-icon{font-size:24px;line-height:1;flex-shrink:0}
+.legend-tile-body{flex:1;min-width:0}
+.legend-tile-title{font-size:12px;font-weight:bold;color:var(--white);margin-bottom:3px}
+.legend-tile-badge{display:inline-block;background:var(--purple);color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:bold}
+.legend-tile-sub{font-size:10.5px;color:var(--dim);line-height:1.5}
+.mentor-equipped-banner{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,rgba(246,196,83,.08),rgba(192,132,252,.06));border:1px solid rgba(246,196,83,.4);border-radius:6px;padding:12px 14px;margin-bottom:10px}
+.mentor-equipped-icon{font-size:32px;line-height:1;flex-shrink:0}
+.legend-rarity-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;color:#0a0e1a;font-weight:bold;letter-spacing:.5px}
+
+/* ── 传奇人物卡 ─────────────────────────────────────────────── */
+.mentor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.mentor-card{position:relative;background:linear-gradient(160deg,var(--bg2),var(--bg3));border:2px solid var(--card-color,var(--border));border-radius:10px;padding:10px 8px;text-align:center;overflow:hidden;box-shadow:0 0 12px var(--card-glow,transparent);transition:all .25s}
+.mentor-card:hover{transform:translateY(-2px)}
+.mentor-locked{opacity:.55;filter:grayscale(.55)}
+.mentor-equipped{box-shadow:0 0 20px var(--card-glow),inset 0 0 0 2px var(--card-color)}
+.mentor-card-rarity{display:inline-block;color:#0a0e1a;font-size:9px;font-weight:bold;letter-spacing:1px;padding:1px 8px;border-radius:8px;margin-bottom:4px}
+.mentor-gender-tag{position:absolute;top:6px;right:8px;color:#ffb6d1;font-size:13px;font-weight:bold}
+.mentor-card-avatar{height:60px;display:flex;align-items:center;justify-content:center;margin:4px 0}
+.mentor-chibi{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff5e6 0%,#ffe0b3 35%,var(--card-color) 100%);display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid var(--card-color);box-shadow:0 0 12px var(--card-glow),inset 0 -8px 14px rgba(0,0,0,.18);position:relative}
+.mentor-chibi::after{content:'';position:absolute;top:14%;left:18%;width:28%;height:18%;border-radius:50%;background:rgba(255,255,255,.45);transform:rotate(-20deg)}
+.mentor-card-name{color:var(--white);font-size:13px;font-weight:bold;margin-bottom:2px}
+.mentor-card-series{color:var(--card-color);font-size:9px;letter-spacing:1px;margin-bottom:4px}
+.mentor-card-style{color:var(--text);font-size:10.5px;line-height:1.5;margin-bottom:6px}
+.mentor-stars{color:#ffd166;font-size:11px;letter-spacing:1px;margin:4px 0;text-shadow:0 0 4px rgba(255,209,102,.5)}
+.mentor-card-passive{color:var(--text);font-size:10px;line-height:1.5;padding:5px 6px;background:rgba(0,0,0,.18);border-radius:3px;margin:5px 0;text-align:left}
+.mentor-card-passive b{color:var(--card-color)}
+.mentor-card-weakness{color:var(--dim);font-size:9.5px;line-height:1.5;font-style:italic;margin-top:4px;text-align:left}
+.mentor-card-note{color:var(--yellow);font-size:9.5px;line-height:1.5;margin-top:4px;text-align:left;padding:3px 5px;background:rgba(255,215,0,.06);border-left:2px solid var(--yellow)}
+.mentor-card-actions{display:flex;gap:4px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.mentor-card-locked-info{font-size:10px;color:var(--dim);margin:6px 0;padding:4px;background:rgba(0,0,0,.2);border-radius:3px}
+
+/* ── 试炼场对战卡（选择） ─────────────────────────────────── */
+.duel-pick-list{display:flex;flex-direction:column;gap:10px}
+.duel-pick-card{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);border:1.5px solid var(--card-color,var(--border));border-radius:6px;padding:12px 14px;cursor:pointer;transition:all .2s}
+.duel-pick-card:hover{transform:translateX(2px);box-shadow:0 0 12px var(--card-color,rgba(0,212,255,.2))}
+.duel-locked{opacity:.55}
+.duel-pick-icon{font-size:32px;line-height:1;flex-shrink:0}
+.duel-pick-body{flex:1;min-width:0}
+.duel-pick-name{font-size:13px;font-weight:bold;color:var(--white);margin-bottom:2px}
+.duel-pick-style{font-size:11px;color:var(--text);margin-bottom:4px}
+.duel-pick-record{font-size:10px;color:var(--cyan);margin-bottom:4px}
+.duel-pick-weakness{font-size:10px;color:var(--red);font-style:italic}
+
+/* ── 5 条态势条 ────────────────────────────────────────────── */
+.duel-phase-banner{background:linear-gradient(90deg,rgba(192,132,252,.06),rgba(0,212,255,.04));border-left:3px solid var(--cyan);padding:10px 14px;border-radius:0 4px 4px 0;margin-bottom:12px;font-size:12px;color:var(--white)}
+.duel-metrics{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.duel-metric{display:flex;align-items:center;gap:8px;font-size:11px}
+.duel-metric-label{flex:0 0 60px;color:var(--text);font-weight:bold}
+.duel-metric-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.duel-metric-fill{height:100%;transition:width .4s;background:var(--cyan)}
+.duel-metric-fill.good{background:linear-gradient(90deg,#006644,var(--green))}
+.duel-metric-fill.warn{background:linear-gradient(90deg,#886600,var(--yellow))}
+.duel-metric-fill.bad{background:linear-gradient(90deg,#880022,var(--red))}
+.duel-metric-val{flex:0 0 30px;text-align:right;color:var(--white);font-weight:bold;font-size:11px}
+
+/* ── 选择按钮 ──────────────────────────────────────────────── */
+.duel-choice-list{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.duel-choice-btn{text-align:left;background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:4px;cursor:pointer;font-family:inherit;transition:all .15s}
+.duel-choice-btn:hover{background:rgba(0,212,255,.05);border-color:var(--cyan)}
+.duel-choice-btn.focus{border-color:var(--yellow);background:rgba(255,215,0,.04)}
+.duel-choice-head{font-size:12px;color:var(--white);margin-bottom:3px;display:flex;justify-content:space-between}
+.duel-choice-tag{font-size:10px}
+.duel-choice-desc{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:3px}
+.duel-choice-sample{font-size:10.5px;color:var(--dim);font-style:italic;line-height:1.5}
+
+/* ── 导师能量条 ────────────────────────────────────────────── */
+.mentor-bar{background:linear-gradient(135deg,rgba(246,196,83,.06),rgba(192,132,252,.04));border:1px solid rgba(246,196,83,.3);border-radius:4px;padding:8px 12px;margin:10px 0}
+.mentor-bar.ready{border-color:var(--yellow);box-shadow:0 0 12px rgba(255,215,0,.4)}
+.mentor-bar-head{display:flex;justify-content:space-between;font-size:11px;color:var(--text);margin-bottom:4px}
+.mentor-bar-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.mentor-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--yellow));transition:width .4s}
+.mentor-trigger-box{margin-top:8px;padding:8px 10px;background:rgba(246,196,83,.08);border:1px solid rgba(246,196,83,.4);border-radius:3px}
+.mentor-trigger-title{color:var(--yellow);font-size:12px;font-weight:bold;margin-bottom:5px}
+.mentor-trigger-line{color:var(--text);font-size:10.5px;line-height:1.7;margin:2px 0}
+.mentor-trigger-sig{color:var(--dim);font-size:10.5px;font-style:italic;margin-top:5px;padding-top:5px;border-top:1px dashed var(--border)}
+
+/* ── 试炼场日志 ────────────────────────────────────────────── */
+.duel-log{margin-top:14px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:4px}
+.duel-log-item{font-size:11px;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.04);color:var(--text)}
+.duel-log-item:last-child{border-bottom:none}
+
+/* ── 剧情链卡 ─────────────────────────────────────────────── */
+.story-list{display:flex;flex-direction:column;gap:10px}
+.story-card{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);border:1.5px solid var(--card-color,var(--border));border-radius:6px;padding:12px 14px;cursor:pointer;transition:all .2s}
+.story-card:hover{transform:translateX(2px);box-shadow:0 0 14px var(--card-color,rgba(0,212,255,.2))}
+.story-locked{opacity:.55}
+.story-card-icon{font-size:32px;line-height:1;flex-shrink:0}
+.story-card-body{flex:1;min-width:0}
+.story-card-title{font-size:13px;font-weight:bold;color:var(--white);margin-bottom:2px}
+.story-card-subtitle{font-size:11px;color:var(--dim);margin-bottom:4px}
+.story-card-desc{font-size:11px;color:var(--text);line-height:1.6;margin-bottom:4px}
+.story-card-record{font-size:10px;color:var(--cyan)}
+.story-rollback-bar{display:flex;gap:8px;justify-content:flex-end;margin:8px 0}
+
+/* ── 精通树 ───────────────────────────────────────────────── */
+.mastery-tree{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.mastery-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 12px}
+.mastery-label{flex:0 0 110px;font-size:12px;font-weight:bold}
+.mastery-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.mastery-fill{height:100%;transition:width .4s}
+.mastery-meta{flex:0 0 90px;text-align:right;font-size:11px;color:var(--white)}
+
+/* ── 本地回放 ──────────────────────────────────────────────── */
+.replay-list{display:flex;flex-direction:column;gap:6px}
+.replay-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px}
+.replay-meta{flex:1;min-width:0}
+.replay-title{font-size:12px;color:var(--white);font-weight:500;margin-bottom:2px}
+.replay-date{font-size:10px;color:var(--dim)}
+.replay-log-row{font-size:11px;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.04);color:var(--text)}
+
+/* ── 检索复盘 ──────────────────────────────────────────────── */
+.review-list{display:flex;flex-direction:column;gap:8px}
+.review-item{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px 12px}
+.review-item.answered{opacity:.6}
+.review-tag{font-size:10px;font-weight:bold;margin-bottom:4px;letter-spacing:.5px}
+.review-question{font-size:12px;color:var(--white);line-height:1.6;margin-bottom:6px}
+.review-answer{color:var(--text);font-size:11px;line-height:1.7;margin-top:6px}
+.review-item details summary{color:var(--cyan);font-size:10.5px;cursor:pointer;list-style:none}
+
+/* ── 训练路径 ──────────────────────────────────────────────── */
+.profile-row{display:flex;justify-content:space-between;padding:6px 8px;border-radius:3px;font-size:11px;margin:2px 0}
+.profile-row.weak{background:rgba(255,79,106,.06);border-left:2px solid var(--red)}
+.profile-row.strong{background:rgba(0,255,159,.06);border-left:2px solid var(--green)}
+.profile-label{flex:1;color:var(--text);font-weight:bold}
+.profile-stats{color:var(--dim);font-size:10px}
+.wishlist-tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.wishlist-tag{background:transparent;border:1px solid var(--card-color);color:var(--card-color);padding:4px 10px;border-radius:12px;font-size:10.5px;cursor:pointer;font-family:inherit;transition:all .15s}
+.wishlist-tag:hover{background:rgba(255,255,255,.04)}
+.wishlist-tag.active{background:var(--card-color);color:#0a0e1a;font-weight:bold}
+
+/* ── 盲盒第 5 件结果 ───────────────────────────────────────── */
+.legend-result-item{background:var(--bg3);border:1.5px solid;border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:10px}
+.legend-result-tag{font-size:10px;padding:2px 6px;border-radius:3px;background:rgba(0,0,0,.4);color:var(--white);font-weight:bold;letter-spacing:.5px}
+.legend-result-name{flex:1;font-size:12px;color:var(--white);font-weight:500}
+.legend-result-detail{font-size:11px;color:var(--cyan);font-weight:bold}
+
+/* 移动端 */
+@media(max-width:600px){
+  .legend-grid{grid-template-columns:1fr}
+  .mentor-grid{grid-template-columns:repeat(2,1fr)}
+  .duel-pick-card,.story-card{flex-direction:column}
+}
+`;
+  const style = document.createElement('style');
+  style.id = 'v2-master-styles';
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
+// 在 DOM 准备好时注入 + 启动 wire（依赖 boot 之前完成）
+(function v2MasterStartup() {
+  if (typeof document === 'undefined') return;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      injectV2Styles();
+    });
+  } else {
+    injectV2Styles();
+  }
+  // wires 必须立刻 attach（监听器形式）
+  initSkillProfileWire();
+  initLegendGameWire();
+})();
+
+/* ════════════════════════════════════════════════════════════════════════════
+   主菜单 ⑨：传奇训练中心
+   ════════════════════════════════════════════════════════════════════════════ */
+(function injectMainMenuItem9() {
+  if (typeof MENU === 'undefined') return;
+  // 防止重复加
+  if (MENU.some((it) => it[0] === '⑨')) return;
+  MENU.push(['⑨', '传奇训练中心', '导师 / 试炼场 / 剧情链 / 个人精通', 'nav', SCREENS.LEGEND_HUB]);
+})();
+
+/* ════════════════════════════════════════════════════════════════════════════
+   公开 API
+   ════════════════════════════════════════════════════════════════════════════ */
+const LegendMasterAPI = {
+  LEGEND_DUELISTS, LEGENDARY_STORY_CHAINS, NEGOTIATION_SKILL_TAGS,
+  LegendBlindBox, LegendDuel, StoryChain,
+  SkillProfile, RetrievalReview, LocalReplay,
+  AIMemoryV2, CARD_USAGE_RULES, MENTOR_ENERGY_RULES,
+  ensureSkillCardFieldsV2, grantBeginnerDeckIfNeeded, setWishlist
+};
 /* ===== core/bootstrap.js ===== */
 // core/bootstrap.js — 应用启动入口（组合根）
 // 职责：注册所有屏幕 → 初始化对局视图/记录器/控制器 → 渲染首屏。
@@ -10914,6 +13546,20 @@ function boot() {
   Router.register(SCREENS.ARC_NEGOTIATION, renderArcNegotiation);
   Router.register(SCREENS.ARC_ROUND_RESULT, renderArcRoundResult);
   Router.register(SCREENS.ARC_RESULT, renderArcResultScreen);
+  // 传奇训练中心 + 个人学习优化层（植入 negotiation_master_final_personal_learning_package）
+  Router.register(SCREENS.LEGEND_HUB, renderLegendHub);
+  Router.register(SCREENS.MENTOR_ALBUM, renderMentorAlbum);
+  Router.register(SCREENS.MENTOR_BLINDBOX, renderMentorBlindbox);
+  Router.register(SCREENS.DUEL_SELECT, renderDuelSelect);
+  Router.register(SCREENS.DUEL_PLAY, renderDuelPlay);
+  Router.register(SCREENS.DUEL_RESULT, renderDuelResult);
+  Router.register(SCREENS.STORY_SELECT, renderStorySelect);
+  Router.register(SCREENS.STORY_PLAY, renderStoryPlay);
+  Router.register(SCREENS.STORY_RESULT, renderStoryResult);
+  Router.register(SCREENS.MASTERY_TREE, renderMasteryTree);
+  Router.register(SCREENS.REPLAY_ARCHIVE, renderReplayArchive);
+  Router.register(SCREENS.REVIEW_QUEUE, renderReviewQueue);
+  Router.register(SCREENS.TRAINING_PATH, renderTrainingPath);
 
   // 初始化对局视图（game:render 落地 + 动作委托）
   initGameView();
@@ -10925,9 +13571,10 @@ function boot() {
 
   // 启动路由，首屏 = 欢迎屏
   Router.init(root, SCREENS.WELCOME);
-  console.log('[bootstrap] v4 + 弧线模式 + 技能盲盒系统 已启动 ✓');
+  console.log('[bootstrap] v4 + 弧线 + 技能盲盒 + 传奇训练中心 已启动 ✓');
   console.info('[Arc] 7 条弧线已加载:', NEGOTIATION_ARCS.map((a) => a.id).join(', '));
   console.info('[Blindbox] 20 张技能卡 / 5 种卡包 / 7 维对手适应已就绪');
+  console.info('[Legend] 19 位传奇导师 / 7 条剧情链 / 5 态势 6 回合试炼 / 10 维精通树已就绪');
   console.info('[Arc] 调试参数: ?devUnlockAll=1 可解锁全部弧线');
 }
 

@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全谱系博弈实战演练系统</title>
+<style>
+:root{
+  --bg1:#0a0e1a;
+  --bg2:#111827;
+  --bg3:#1a2235;
+  --border:#1e3a5f;
+  --cyan:#00d4ff;
+  --yellow:#f6c453;
+  --purple:#c084fc;
+  --green:#4ade80;
+  --red:#ff4f6a;
+  --white:#e8f0fe;
+  --text:#94a3b8;
+  --dim:#4a5568;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg1);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(1200px 600px at 50% -10%,rgba(0,212,255,.06),transparent 60%),var(--bg1)}
+.wrap{max-width:960px;margin:0 auto;padding:18px 16px 64px}
+.screen{display:none;animation:fade .35s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes slidein{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+
+/* ===== Header ===== */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 16px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:40px;height:40px;border:1px solid var(--cyan);border-radius:10px;display:grid;place-items:center;color:var(--cyan);font-size:20px;box-shadow:0 0 22px rgba(0,212,255,.25) inset,0 0 12px rgba(0,212,255,.2)}
+.brand h1{font-size:18px;color:var(--white);letter-spacing:1px;font-weight:700}
+.brand .sub{color:var(--dim);font-size:11px;letter-spacing:2px;margin-top:2px}
+.rankchip{text-align:right}
+.rankchip .r{color:var(--yellow);font-size:13px;font-weight:700}
+.rankchip .p{color:var(--dim);font-size:11px}
+
+/* ===== Generic ===== */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.panel-t{color:var(--cyan);font-size:13px;letter-spacing:1.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700}
+.panel-t::before{content:"";width:4px;height:14px;background:var(--cyan);border-radius:2px;box-shadow:0 0 10px var(--cyan)}
+.muted{color:var(--dim)}
+.center{text-align:center}
+.row{display:flex;gap:10px;align-items:center}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.hide{display:none!important}
+
+/* ===== Buttons ===== */
+.btn{background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:10px 22px;cursor:pointer;font-family:inherit;font-size:14px;border-radius:8px;transition:all .18s;letter-spacing:.5px;font-weight:600}
+.btn:hover{background:rgba(0,212,255,.12);box-shadow:0 0 16px rgba(0,212,255,.25)}
+.btn:active{transform:translateY(1px)}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:rgba(74,222,128,.12);box-shadow:0 0 16px rgba(74,222,128,.22)}
+.btn-yellow{border-color:var(--yellow);color:var(--yellow)}
+.btn-yellow:hover{background:rgba(246,196,83,.12)}
+.btn-purple{border-color:var(--purple);color:var(--purple)}
+.btn-purple:hover{background:rgba(192,132,252,.12)}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:rgba(255,79,106,.12)}
+.btn-ghost{border-color:var(--border);color:var(--text)}
+.btn-ghost:hover{background:rgba(255,255,255,.04);border-color:var(--dim)}
+.btn-sm{padding:6px 14px;font-size:12px;border-radius:6px}
+.btn-block{width:100%;text-align:center}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===== HUB tracks ===== */
+.tracks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.track{background:linear-gradient(160deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.track::after{content:"";position:absolute;inset:0;background:radial-gradient(140px 80px at 80% 0,var(--gc,rgba(0,212,255,.18)),transparent 70%);opacity:.5;pointer-events:none}
+.track:hover{transform:translateY(-3px);border-color:var(--ac,var(--cyan));box-shadow:0 8px 28px rgba(0,0,0,.4)}
+.track .tk-icon{font-size:26px;margin-bottom:10px}
+.track h3{color:var(--white);font-size:15px;margin-bottom:4px}
+.track .tk-sub{color:var(--dim);font-size:11px;margin-bottom:12px;min-height:28px}
+.track .tk-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text);border-top:1px solid var(--border);padding-top:10px}
+.track .tk-meta b{color:var(--ac,var(--cyan))}
+
+/* progress ring */
+.ringwrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.ringtxt h2{color:var(--white);font-size:17px;margin-bottom:4px}
+.ringtxt p{font-size:12px;color:var(--dim);max-width:420px;line-height:1.6}
+
+/* ===== Module cards ===== */
+.modgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modcard{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden;cursor:pointer;transition:all .18s;position:relative}
+.modcard:hover{transform:translateY(-2px);border-color:var(--cyan)}
+.modcard .barcolor{height:4px;width:100%}
+.modcard .mc-body{padding:14px}
+.modcard h4{color:var(--white);font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.modcard .mc-tag{font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.modcard .mc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.bestbadge{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--dim)}
+.bestbadge.has{border-color:var(--yellow);color:var(--yellow);background:rgba(246,196,83,.08)}
+.modcard.locked{opacity:.55;cursor:not-allowed}
+.lockicon{position:absolute;top:10px;right:12px;color:var(--dim);font-size:14px}
+
+/* completion mini bar */
+.minibar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex:1;margin-right:10px}
+.minibar > i{display:block;height:100%;border-radius:3px;transition:width .8s ease}
+
+/* ===== Drill ===== */
+.scenebox{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:8px;padding:16px;margin-bottom:14px;line-height:1.7}
+.scenebox .lbl{font-size:11px;color:var(--cyan);letter-spacing:1.5px;margin-bottom:8px;font-weight:700}
+.objbox{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);border-radius:8px;padding:14px;margin-bottom:12px}
+.objbox .lbl{color:var(--green)}
+.tipbox{background:rgba(192,132,252,.06);border:1px solid rgba(192,132,252,.22);border-radius:8px;padding:14px;font-style:italic;color:var(--purple);line-height:1.7}
+.tipbox .who{font-style:normal;font-size:11px;color:var(--dim);margin-top:6px;display:block}
+
+.roundhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.roundhdr .rd{color:var(--cyan);font-size:13px;letter-spacing:1px;font-weight:700}
+.dots{display:flex;gap:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--border);transition:all .3s}
+.dots i.done{background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.6)}
+.dots i.cur{background:var(--cyan);box-shadow:0 0 8px rgba(0,212,255,.7);transform:scale(1.2)}
+
+.choices{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.choice{display:flex;gap:12px;align-items:flex-start;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .18s;animation:slidein .35s ease both}
+.choice:hover{transform:translateY(-2px);border-color:var(--cyan);background:rgba(0,212,255,.05);box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.choice .badge{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid var(--cyan);color:var(--cyan);display:grid;place-items:center;font-weight:700;font-size:15px}
+.choice .ctext{flex:1;color:var(--white);font-size:14px;line-height:1.5}
+.choice.disabled{pointer-events:none;opacity:.5}
+.choice.picked{border-color:var(--yellow);background:rgba(246,196,83,.06)}
+.choice.picked .badge{border-color:var(--yellow);color:var(--yellow)}
+.choice .sret{margin-left:auto;font-weight:700;font-size:13px;flex:none}
+
+/* feedback */
+.fb-score{text-align:center;padding:18px;margin-bottom:14px;border-radius:12px;border:1px solid var(--border);background:var(--bg3)}
+.fb-score .delta{font-size:42px;font-weight:800;line-height:1}
+.fb-score .deltalbl{font-size:12px;color:var(--dim);margin-top:6px;letter-spacing:1px}
+.fb-verdict{display:inline-block;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:12px}
+.v-great{background:rgba(74,222,128,.15);color:var(--green);border:1px solid var(--green)}
+.v-ok{background:rgba(246,196,83,.15);color:var(--yellow);border:1px solid var(--yellow)}
+.v-bad{background:rgba(255,79,106,.15);color:var(--red);border:1px solid var(--red)}
+.fb-exp{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;line-height:1.7;margin-bottom:12px}
+.fb-exp .lbl{font-size:11px;letter-spacing:1px;font-weight:700;margin-bottom:6px;color:var(--cyan)}
+.fb-ideal{background:rgba(74,222,128,.05);border:1px dashed rgba(74,222,128,.4);border-radius:8px;padding:12px;font-size:13px;color:var(--green);line-height:1.6;margin-bottom:12px}
+
+/* opponent adaptation */
+.oppbox{background:rgba(255,79,106,.05);border:1px solid rgba(255,79,106,.25);border-radius:8px;padding:14px;line-height:1.7;margin-bottom:12px}
+.oppbox .lbl{font-size:11px;letter-spacing:1px;font-weight:700;margin-bottom:6px;color:var(--red)}
+
+/* result */
+.result-hero{text-align:center;padding:24px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(160deg,var(--bg3),var(--bg2));margin-bottom:16px}
+.bigscore{font-size:64px;font-weight:800;color:var(--cyan);line-height:1;text-shadow:0 0 30px rgba(0,212,255,.4)}
+.stars{font-size:40px;letter-spacing:8px;margin:14px 0 8px}
+.star{color:var(--dim)}
+.star.on{color:var(--yellow);text-shadow:0 0 16px rgba(246,196,83,.6)}
+.gainlist{display:flex;flex-direction:column;gap:8px}
+.gainrow{display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px}
+.gainrow .gp{color:var(--green);font-weight:700}
+
+/* ===== skill bars (stats) ===== */
+.skillbar{margin-bottom:12px}
+.skillbar .sb-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.skillbar .sb-top .nm{color:var(--white)}
+.skillbar .sb-top .vl{color:var(--cyan);font-weight:700}
+.sb-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.sb-fill{height:100%;border-radius:4px;transition:width 1s ease;background:linear-gradient(90deg,#0066aa,var(--cyan))}
+
+/* radar */
+.radarwrap{display:flex;justify-content:center;padding:8px 0}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.statgrid{grid-template-columns:1fr}}
+
+/* full sim cards */
+.simcard{background:linear-gradient(160deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;margin-bottom:12px;position:relative;overflow:hidden}
+.simcard:hover{transform:translateY(-2px);border-color:var(--purple);box-shadow:0 8px 26px rgba(0,0,0,.4)}
+.simcard h3{color:var(--white);font-size:16px;margin-bottom:6px}
+.simcard .sc-meta{font-size:11px;color:var(--purple);letter-spacing:1px;margin-bottom:8px}
+.simcard p{font-size:12px;color:var(--dim);line-height:1.6}
+
+.kvgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.kvgrid{grid-template-columns:1fr}}
+.kvbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.kvbox .v{font-size:24px;font-weight:800;color:var(--cyan)}
+.kvbox .k{font-size:11px;color:var(--dim);margin-top:3px}
+
+/* breadcrumb / back */
+.crumb{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12px;color:var(--dim);flex-wrap:wrap}
+.crumb a{color:var(--cyan);cursor:pointer;text-decoration:none}
+.crumb a:hover{text-decoration:underline}
+.crumb span.sep{color:var(--dim)}
+
+/* tag pills */
+.pill{display:inline-block;padding:3px 10px;border-radius:14px;font-size:11px;border:1px solid var(--border);color:var(--text);margin:2px}
+.pill.c{border-color:var(--cyan);color:var(--cyan)}
+.pill.g{border-color:var(--green);color:var(--green)}
+.pill.p{border-color:var(--purple);color:var(--purple)}
+.pill.y{border-color:var(--yellow);color:var(--yellow)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:1px solid var(--cyan);color:var(--white);padding:12px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .3s;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.5);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:760px){
+  .tracks{grid-template-columns:1fr}
+  .modgrid{grid-template-columns:1fr}
+  .brand h1{font-size:15px}
+  .bigscore{font-size:52px}
+  .wrap{padding:14px 12px 56px}
+}
+/* ===== Extra classes for JS rendering ===== */
+.btn-primary{background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(0,212,255,.05));border:1px solid var(--cyan);color:var(--cyan);padding:12px 28px;cursor:pointer;font-family:inherit;font-size:14px;border-radius:10px;transition:all .2s;letter-spacing:.5px;font-weight:700}
+.btn-primary:hover{background:rgba(0,212,255,.2);box-shadow:0 0 20px rgba(0,212,255,.3);transform:translateY(-1px)}
+.btn-back{background:transparent;border:1px solid var(--border);color:var(--dim);padding:8px 16px;cursor:pointer;font-family:inherit;font-size:12px;border-radius:8px;transition:all .18s}
+.btn-back:hover{border-color:var(--cyan);color:var(--cyan)}
+.mb12{margin-bottom:12px}
+.mc-bar{height:4px;width:100%;border-radius:2px 2px 0 0}
+.mc-name{color:var(--white);font-size:14px;font-weight:700}
+.mc-scenarios{display:flex;flex-direction:column;gap:6px}
+.mc-sc{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;font-size:12px}
+.mc-sc:hover{border-color:var(--cyan);background:rgba(0,212,255,.04)}
+.mc-sc-idx{width:20px;height:20px;border-radius:50%;border:1px solid var(--cyan);color:var(--cyan);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+.mc-sc-label{flex:1;color:var(--text)}
+.mc-sc-go{color:var(--cyan);font-size:13px}
+.footer{text-align:center;color:var(--dim);font-size:11px;margin-top:30px;padding-top:16px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">◈</div>
+      <div>
+        <h1>全谱系博弈实战演练系统</h1>
+        <div class="sub">FULL-SPECTRUM GAME PRACTICE TRAINING</div>
+      </div>
+    </div>
+    <div class="rankchip" id="rankchip">
+      <div class="r" id="rankName">见习谈判员</div>
+      <div class="p" id="rankPts">0 训练分</div>
+    </div>
+  </div>
+
+  <div id="app"></div>
+
+  <div class="footer">数据仅保存在本机浏览器 · 与主系统 index.html 互补 · 演练用模拟内容</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   全谱系博弈实战演练系统  —  single-file training app
+   ========================================================================= */
+
+/* ---------------- Skill metadata ---------------- */
+const SKILLS = {
+  info:       {name:"信息获取", color:"#3aa7ff"},
+  agenda:     {name:"议程控制", color:"#7dd3fc"},
+  pressure:   {name:"施压博弈", color:"#ff6b6b"},
+  trust:      {name:"信任构建", color:"#4ade80"},
+  endgame:    {name:"终局收尾", color:"#f6c453"},
+  batna:      {name:"BATNA分析", color:"#c084fc"},
+  standard:   {name:"客观标准", color:"#60a5fa"},
+  emotion:    {name:"情绪管理", color:"#fb7185"},
+  concession: {name:"让步策略", color:"#fbbf24"},
+  retreat:    {name:"撤退判断", color:"#94a3b8"}
+};
+const SKILL_ORDER = ["info","agenda","pressure","trust","endgame","batna","standard","emotion","concession","retreat"];
+
+const RANKS = [
+  {min:0,   name:"见习谈判员"},
+  {min:200, name:"初级谈判员"},
+  {min:400, name:"资深谈判员"},
+  {min:600, name:"首席谈判官"},
+  {min:800, name:"传奇谈判宗师"}
+];
+
+/* =========================================================================
+   TRACK A — 技能系演练 (10 modules, 2 scenarios each, 4 rounds each)
+   round.choices: {text, score(20-90), tag, feedback, ideal}
+   ========================================================================= */
+const TRACK_A = {
+  id:"A", name:"技能系演练", icon:"⚙",
+  sub:"逐项打磨十大核心谈判技能", color:"#00d4ff",
+  modules:[
+  /* ===== 1. 信息获取 ===== */
+  {id:"info",name:"信息获取演练",color:"#3aa7ff",skill:"info",scenarios:[
+    {context:"你是采购经理，供应商报价远高于市场预期。你怀疑其中有大量可压缩空间，但对方对成本结构守口如瓶。",
+     objective:"用开放式提问与倾听，逐层挖出对方的真实约束与底牌。",
+     tip:"\"最有力的不是你说了什么，而是你让对方说了什么。\"——谈判导师 林楷",
+     rounds:[
+      {situation:"对方一上来就抛出总价，强调\"这是最优惠的整包价\"。你还不清楚价格里包含哪些项目。",
+       choices:[
+        {text:"能帮我拆解一下这个总价的构成吗",score:85,tag:"info",feedback:"开放式提问把笼统总价拆成可讨论的细项，为逐项议价创造抓手。这是信息获取的标准起手式。",ideal:true},
+        {text:"太贵了，直接砍三成再谈",score:32,tag:"info",feedback:"在零信息下乱砍价容易报出离谱数字暴露你的无知。你既没拿到事实，也让对方掌握了主动。",ideal:false},
+        {text:"我理解，那就先按这个价走流程",score:22,tag:"info",feedback:"过早接受等于放弃全部信息探查。所有筹码都被你拱手让出。",ideal:false}
+       ]},
+      {situation:"对方拆出了三大块：硬件、人工、服务。其中\"服务\"占了四成且语焉不详。",
+       choices:[
+        {text:"服务这块具体覆盖哪些内容、按什么计费",score:88,tag:"info",feedback:"对占比最高且最模糊的科目深挖，是性价比最高的信息动作。模糊处往往藏着水分。",ideal:true},
+        {text:"硬件还能再便宜点吗",score:48,tag:"info",feedback:"硬件透明度高、压缩空间小，你把精力放错了地方。不过至少在试探。",ideal:false},
+        {text:"服务听起来很专业，那没问题",score:25,tag:"info",feedback:"被\"专业\"二字带过，恰恰漏掉了最大的成本黑箱。",ideal:false}
+       ]},
+      {situation:"对方坦言服务里含了一支随时待命的驻场团队，但你们其实用不到那么高的响应级别。",
+       choices:[
+        {text:"我们的实际响应需求其实低很多，能否按需配置",score:86,tag:"info",feedback:"用挖到的信息反推出真实需求，把不必要的服务剥离，这是信息转化为价值的关键一步。",ideal:true},
+        {text:"那把服务整块去掉吧",score:50,tag:"info",feedback:"一刀切掉可能误伤你真正需要的部分。信息已到位，决策却太粗。",ideal:false},
+        {text:"既然都含了，那就留着以防万一",score:28,tag:"info",feedback:"为用不上的能力付全款，等于让信息白白浪费。",ideal:false}
+       ]},
+      {situation:"对方松口愿意降配，但反问你\"你们一年大概多少工单量\"，想反向摸你的底。",
+       choices:[
+        {text:"给一个区间，但同时反问对方同行的平均水平",score:84,tag:"info",feedback:"有限度地交换信息并立刻反向索取，维持信息天平的平衡。对等才能持续挖掘。",ideal:true},
+        {text:"如实和盘托出我方全部历史数据",score:30,tag:"info",feedback:"信息是筹码，单方面全交底会让对方据此精准报价、压缩你的空间。",ideal:false},
+        {text:"这是商业机密，一概不答",score:46,tag:"info",feedback:"完全封闭会让对方失去配合的动力，谈判容易僵死。适度交换才健康。",ideal:false}
+       ]}
+     ]},
+    {context:"你是销售总监，正与一位新客户首次接洽。客户态度礼貌但克制，你还不知道他真正的痛点和决策权限。",
+     objective:"通过结构化提问快速建立客户画像，找到真实需求与决策链。",
+     tip:"\"先诊断，后开方。没搞清病情就报价，等于盲射。\"——谈判导师 林楷",
+     rounds:[
+      {situation:"客户说\"我们就是随便了解一下，看看你们能提供什么\"。",
+       choices:[
+        {text:"方便先聊聊你们现在遇到的最头疼的问题吗",score:87,tag:"info",feedback:"把对话从产品转向客户的痛点，痛点才是需求的源头。这是顾问式信息获取。",ideal:true},
+        {text:"那我把全部产品线给您过一遍",score:34,tag:"info",feedback:"在不了解需求时倾销信息，既低效又显得你不懂客户。",ideal:false},
+        {text:"我们什么都能做，您要啥有啥",score:21,tag:"info",feedback:"空泛的承诺毫无信息量，也让你显得不专业。",ideal:false}
+       ]},
+      {situation:"客户透露现在的系统经常宕机，影响交付，但语气仍很平淡。",
+       choices:[
+        {text:"宕机一次大概会造成多大的业务损失",score:88,tag:"info",feedback:"把模糊的痛感量化成具体损失，既加深客户的紧迫感，也为你后续定价建立价值锚。",ideal:true},
+        {text:"我们的系统从不宕机，放心",score:40,tag:"info",feedback:"急于推销错过了量化痛点的黄金时机。",ideal:false},
+        {text:"宕机很正常啦，谁家都有",score:24,tag:"info",feedback:"轻描淡写化解了客户的痛感，等于亲手削弱了自己的销售机会。",ideal:false}
+       ]},
+      {situation:"客户开始投入，算出每次宕机损失约二十万。你想了解谁能拍板。",
+       choices:[
+        {text:"这样的改造方案，通常需要哪些角色一起评估",score:85,tag:"info",feedback:"用中性问法摸清决策链，避免把宝压在没有权限的人身上。",ideal:true},
+        {text:"您能直接签字吗",score:43,tag:"info",feedback:"过于直白可能让客户尴尬或防御，信息还没拿到就先制造了压力。",ideal:false},
+        {text:"反正您说了算吧",score:26,tag:"info",feedback:"凭假设代替探查，一旦判断错误整个推进路径就错了。",ideal:false}
+       ]},
+      {situation:"客户说技术总监也要参与，且预算需走年度评审。你想确认时间窗口。",
+       choices:[
+        {text:"年度评审大概什么节点，我好配合您的内部节奏",score:86,tag:"info",feedback:"获取时间线信息能让你的跟进踩准节奏，把对方的流程变成你的推进抓手。",ideal:true},
+        {text:"那我下周就来签合同",score:36,tag:"info",feedback:"无视对方的内部流程强推，容易碰壁且显得不专业。",ideal:false},
+        {text:"评审太麻烦了，能跳过吗",score:23,tag:"info",feedback:"质疑对方的内部规则毫无意义，还会损害关系。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 2. 议程控制 ===== */
+  {id:"agenda",name:"议程控制演练",color:"#7dd3fc",skill:"agenda",scenarios:[
+    {context:"你代表公司与合作方谈一份框架协议。对方习惯一上来就纠结价格，把谈判拖进单点拉锯。",
+     objective:"练习设定与掌控议程，先框架后细节，避免被对方牵着走。",
+     tip:"\"谁定议程，谁就定义了什么是'公平'。\"——谈判导师 沈知遥",
+     rounds:[
+      {situation:"刚落座，对方就说\"咱们别废话，先把价格定了\"。",
+       choices:[
+        {text:"价格很重要，建议先花十分钟对齐目标和范围",score:86,tag:"agenda",feedback:"用先框架后价格的顺序把单点拉锯升级为整体方案讨论，掌握议程主导权。",ideal:true},
+        {text:"好，那就先报个数吧",score:33,tag:"agenda",feedback:"顺着对方走会陷入纯价格博弈，丧失打包腾挪的空间。",ideal:false},
+        {text:"价格不急，我们先聊聊别的",score:47,tag:"agenda",feedback:"回避价格而不给出替代结构，会显得没有章法，对方未必买账。",ideal:false}
+       ]},
+      {situation:"对方勉强同意，问\"那你说说先聊什么\"。主动权暂时在你手上。",
+       choices:[
+        {text:"提出三项议题清单并询问对方有无补充",score:88,tag:"agenda",feedback:"给出清单同时邀请补充，既掌控结构又让对方有参与感，议程更易被接受。",ideal:true},
+        {text:"按我准备的顺序一条条往下讲",score:52,tag:"agenda",feedback:"单方面推进虽有结构，但缺乏对方认同，后续易被推翻。",ideal:false},
+        {text:"随便，你想聊啥都行",score:25,tag:"agenda",feedback:"刚拿到的主导权又交了出去，议程控制功亏一篑。",ideal:false}
+       ]},
+      {situation:"谈到一半，对方突然跳回价格，想打乱节奏。",
+       choices:[
+        {text:"这点我记下了，按约定我们聊完范围再回到价格",score:85,tag:"agenda",feedback:"温和地把跑题拉回既定议程，并承诺稍后处理，既不失礼又守住节奏。",ideal:true},
+        {text:"那行，价格就价格，先谈",score:34,tag:"agenda",feedback:"一被打断就放弃议程，等于宣告你的议程没有约束力。",ideal:false},
+        {text:"说好先不谈价格的，请别打断",score:44,tag:"agenda",feedback:"生硬制止守住了节奏，却伤了气氛。手法可以更柔。",ideal:false}
+       ]},
+      {situation:"范围和服务条款都谈妥，终于进入价格环节。",
+       choices:[
+        {text:"基于刚确认的范围，我们来锚定价格区间",score:87,tag:"agenda",feedback:"把前面达成的共识当作价格的依据，议程铺垫在此刻转化为谈价的杠杆。",ideal:true},
+        {text:"价格你先开吧",score:48,tag:"agenda",feedback:"前面铺垫了半天却放弃首报权，没把议程优势变现。",ideal:false},
+        {text:"价格我们各退一步随便定个数",score:27,tag:"agenda",feedback:"草率收尾浪费了整场议程经营出来的结构优势。",ideal:false}
+       ]}
+     ]},
+    {context:"跨部门会议上，你要推动一项需要多方点头的方案，但与会者各有诉求，话题很容易发散失控。",
+     objective:"练习会议议程掌控：聚焦、控时、收敛到决议。",
+     tip:"\"没有议程的会议，是所有人的时间黑洞。\"——谈判导师 沈知遥",
+     rounds:[
+      {situation:"会议刚开始，几个人已经开始各说各的需求。",
+       choices:[
+        {text:"先用一句话明确今天必须产出的决议是什么",score:86,tag:"agenda",feedback:"开场即锚定目标，给发散的讨论装上方向盘。这是控场第一步。",ideal:true},
+        {text:"让大家先充分发言再说",score:40,tag:"agenda",feedback:"无边界的发言会迅速吞掉会议时间，目标始终模糊。",ideal:false},
+        {text:"按职级高低轮流讲",score:30,tag:"agenda",feedback:"以职级而非议题组织讨论，容易变成表态会而非决策会。",ideal:false}
+       ]},
+      {situation:"有人开始长篇阐述一个无关的历史遗留问题。",
+       choices:[
+        {text:"这个问题很重要，先记入待办，今天聚焦主线",score:85,tag:"agenda",feedback:"用停车场技巧承接跑题诉求又不被其绑架，兼顾尊重与效率。",ideal:true},
+        {text:"打断：这个跟今天没关系",score:42,tag:"agenda",feedback:"控住了节奏却显得粗暴，容易激起对方抵触。",ideal:false},
+        {text:"任由其讲完",score:24,tag:"agenda",feedback:"一次纵容会引来更多跑题，会议彻底失控。",ideal:false}
+       ]},
+      {situation:"两个部门就一个细节争执不下，眼看要陷入僵局。",
+       choices:[
+        {text:"先确认双方共识点，把分歧点单列后续专题处理",score:87,tag:"agenda",feedback:"分离共识与分歧能让会议继续推进，避免被单点僵局拖死。",ideal:true},
+        {text:"现场必须吵出个结果",score:38,tag:"agenda",feedback:"强行死磕细节会耗尽全场耐心，其他议题全被牺牲。",ideal:false},
+        {text:"那这条先跳过不管了",score:33,tag:"agenda",feedback:"简单跳过未做记录，分歧会在执行时反扑。",ideal:false}
+       ]},
+      {situation:"时间快到了，主要议题已有结论，但还没人确认下一步。",
+       choices:[
+        {text:"复述决议、明确责任人和截止时间再散会",score:88,tag:"agenda",feedback:"用结论加责任加时限的方式收口，让议程真正落地为行动。",ideal:true},
+        {text:"时间到了，先散会吧",score:35,tag:"agenda",feedback:"不收尾的会议等于白开，决议无人认领。",ideal:false},
+        {text:"细节大家会后自己看纪要",score:28,tag:"agenda",feedback:"把收敛责任甩给纪要，落实率会大打折扣。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 3. 施压博弈 ===== */
+  {id:"pressure",name:"施压博弈演练",color:"#ff6b6b",skill:"pressure",scenarios:[
+    {context:"你是卖方，买家不断拖延、压价，并暗示\"还在比价\"。你需要施加恰当压力，逼出对方的真实意向。",
+     objective:"练习有理有据地施压：用稀缺、期限与替代方案制造紧迫感。",
+     tip:"\"压力不是发脾气，而是让对方看清不行动的代价。\"——谈判导师 顾�余",
+     rounds:[
+      {situation:"买家说\"我们再考虑考虑，可能下个月才定\"。",
+       choices:[
+        {text:"目前这个价对应本季度产能，下季度需重新核算",score:85,tag:"pressure",feedback:"把拖延与成本上升挂钩，制造真实而非虚张的紧迫感。施压的核心是让等待有代价。",ideal:true},
+        {text:"那你们慢慢考虑，不急",score:30,tag:"pressure",feedback:"完全松绑会被对方理解为你毫不在意，拖延将无限延长。",ideal:false},
+        {text:"再不定我就不卖了！",score:28,tag:"pressure",feedback:"情绪化的最后通牒缺乏依据，容易被识破为虚张声势。",ideal:false}
+       ]},
+      {situation:"买家试探：\"听说你们竞品报价更低。\"",
+       choices:[
+        {text:"价格可比，但请确认对方是否含了同等质保",score:86,tag:"pressure",feedback:"把比价引向总价值而非单价，反向施压让对方暴露其比较口径。",ideal:true},
+        {text:"那你去找竞品好了",score:40,tag:"pressure",feedback:"赌气式回应虽显强硬，但可能真把客户推走，压力用过了头。",ideal:false},
+        {text:"那我也降到比他们更低",score:32,tag:"pressure",feedback:"被竞品牵着降价，等于把定价权交给对手。",ideal:false}
+       ]},
+      {situation:"买家沉默了，似乎在评估。你手上确有另一个潜在订单。",
+       choices:[
+        {text:"坦诚有另一笔订单在排期，希望优先给到你们",score:87,tag:"pressure",feedback:"用真实的替代机会制造稀缺，同时表达偏好，压力与诚意并存。",ideal:true},
+        {text:"继续沉默，等对方先开口",score:60,tag:"pressure",feedback:"沉默是有效的施压工具，但此刻主动亮出筹码效果更佳。",ideal:false},
+        {text:"急忙补一句'其实也可以再等等'",score:24,tag:"pressure",feedback:"自己先松口，前面积累的压力瞬间清零。",ideal:false}
+       ]},
+      {situation:"买家终于松动，问\"如果今天定，能有什么\"。",
+       choices:[
+        {text:"今天定可锁定现价并加赠一次免费部署",score:85,tag:"pressure",feedback:"把紧迫感兑换成对方今天行动的具体好处，临门一脚把压力转为成交。",ideal:true},
+        {text:"今天定也没什么特别的",score:33,tag:"pressure",feedback:"不给即时行动以奖励，等于浪费了好不容易营造的紧迫窗口。",ideal:false},
+        {text:"那再给你打个九折吧",score:46,tag:"pressure",feedback:"直接让利虽能促单，但施压本可换来更好的成交，略显浪费。",ideal:false}
+       ]}
+     ]},
+    {context:"你是买方，供应商态度强硬，声称\"价格没有任何商量余地\"。你需要打破其强硬姿态。",
+     objective:"练习对抗强硬：测试边界、引入替代、控制节奏。",
+     tip:"\"对方说'没得谈'，往往只是谈判的开始。\"——谈判导师 顾�余",
+     rounds:[
+      {situation:"供应商斩钉截铁：\"这是公司定价，一分不让。\"",
+       choices:[
+        {text:"理解定价有规则，那我们聊聊价格之外的条件",score:85,tag:"pressure",feedback:"绕开被锁死的价格，从付款期、交期等维度施压，仍能创造价值。",ideal:true},
+        {text:"不让算了，谈崩",score:30,tag:"pressure",feedback:"过早翻脸放弃了所有腾挪空间，强硬变成鲁莽。",ideal:false},
+        {text:"那好吧，按你们的价来",score:25,tag:"pressure",feedback:"一遇强硬就投降，等于鼓励对方下次更强硬。",ideal:false}
+       ]},
+      {situation:"供应商松口可谈条件，但仍想试探你的底线。",
+       choices:[
+        {text:"亮出已收到的另一家更优报价作为参照",score:84,tag:"pressure",feedback:"用真实的替代方案制造压力，比空喊更有说服力。前提是报价属实。",ideal:true},
+        {text:"虚构一个更低的竞品价格",score:35,tag:"pressure",feedback:"造假一旦被戳穿，你将失去全部信誉，压力反噬自身。",ideal:false},
+        {text:"反正你们最好，我也不比价了",score:26,tag:"pressure",feedback:"主动放弃替代筹码，等于自废武功。",ideal:false}
+       ]},
+      {situation:"供应商被触动，开始解释他们的成本压力，气氛缓和。",
+       choices:[
+        {text:"认可其成本，提出用更大订单量换更好单价",score:86,tag:"pressure",feedback:"把压力转为合作：在尊重对方约束的同时给出双赢路径，刚柔并济。",ideal:true},
+        {text:"继续强压，要求无条件降价",score:38,tag:"pressure",feedback:"对方已让步还一味施压，可能把刚建立的善意磨没。",ideal:false},
+        {text:"那我不为难你了，原价吧",score:28,tag:"pressure",feedback:"一缓和就缴械，前面的施压全部白费。",ideal:false}
+       ]},
+      {situation:"双方接近共识，供应商问\"那你们能保证年采购量吗\"。",
+       choices:[
+        {text:"可以分阶段承诺，达量再升级折扣",score:85,tag:"pressure",feedback:"用阶梯式承诺既给对方信心又保护自己，把压力转化为长期捆绑。",ideal:true},
+        {text:"全年量我现在就全包了",score:44,tag:"pressure",feedback:"一次性满足对方所有要求，放弃了分段博弈的杠杆。",ideal:false},
+        {text:"量的事以后再说",score:30,tag:"pressure",feedback:"对方要的承诺含糊带过，刚到手的折扣可能落空。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 4. 信任构建 ===== */
+  {id:"trust",name:"信任构建演练",color:"#4ade80",skill:"trust",scenarios:[
+    {context:"你与一位曾被同行坑过的客户初次合作。对方处处设防，对你的每句话都保持怀疑。",
+     objective:"练习快速建立可信度：透明、共情、兑现小承诺。",
+     tip:"\"信任不是一次性证明的，是用一连串兑现累积的。\"——谈判导师 白苏",
+     rounds:[
+      {situation:"客户冷冷地说：\"你们销售说的话，我一个字都不信。\"",
+       choices:[
+        {text:"我理解，被坑过谁都会防备，我们用事实说话",score:86,tag:"trust",feedback:"先共情对方的戒心再承诺以事实证明，比急于辩白更能化解防御。",ideal:true},
+        {text:"我们公司可不是那种骗子",score:35,tag:"trust",feedback:"急于自证清白反而像在辩解，无法触及对方的真实顾虑。",ideal:false},
+        {text:"信不信由你，反正我说的是真的",score:24,tag:"trust",feedback:"对抗式回应只会加深对立，信任无从谈起。",ideal:false}
+       ]},
+      {situation:"客户问了一个你产品确实做不到的功能。",
+       choices:[
+        {text:"坦白这块我们暂不支持，但可以这样替代",score:88,tag:"trust",feedback:"承认短板并给出替代，诚实是建立信任最快的捷径。一次坦诚胜过十句保证。",ideal:true},
+        {text:"这个嘛……基本上也能实现",score:30,tag:"trust",feedback:"含糊夸大一旦在交付时露馅，信任将彻底崩塌。",ideal:false},
+        {text:"当然能做，没问题",score:21,tag:"trust",feedback:"为成交而撒谎是信任的头号杀手，后患无穷。",ideal:false}
+       ]},
+      {situation:"客户半信半疑，说\"那你证明给我看\"。",
+       choices:[
+        {text:"提议先做一个小范围试点，用结果说话",score:87,tag:"trust",feedback:"用低风险试点让对方亲眼验证，把抽象信任转为可观测的事实。",ideal:true},
+        {text:"发一堆客户好评截图给他",score:55,tag:"trust",feedback:"第三方背书有帮助，但不如让他亲身验证来得有力。",ideal:false},
+        {text:"我以人格担保，绝对没问题",score:26,tag:"trust",feedback:"空头的人格担保对一个被坑过的人毫无分量。",ideal:false}
+       ]},
+      {situation:"试点中出现一个小问题，客户在观察你怎么处理。",
+       choices:[
+        {text:"第一时间主动告知问题与解决方案及时间表",score:88,tag:"trust",feedback:"主动暴露问题并负责到底，是信任的终极考验，处理危机的方式比不出问题更重要。",ideal:true},
+        {text:"等客户发现再说，先观望",score:32,tag:"trust",feedback:"被动隐瞒一旦被发现，前期积累的信任将一夜清零。",ideal:false},
+        {text:"把问题归咎于客户的使用方式",score:20,tag:"trust",feedback:"推卸责任会瞬间坐实对方'销售不可信'的成见。",ideal:false}
+       ]}
+     ]},
+    {context:"你接手一个被前任同事服务搞砸的老客户，对方满腹怨气，正考虑换供应商。",
+     objective:"练习修复受损信任：倾听、担责、重建可靠预期。",
+     tip:"\"修复信任的第一步，是让对方相信你真的听懂了他的不满。\"——谈判导师 白苏",
+     rounds:[
+      {situation:"客户一见面就开始数落前任的种种问题。",
+       choices:[
+        {text:"完整听完并复述他的核心不满确认理解无误",score:87,tag:"trust",feedback:"先让对方把情绪倒空并被听见，是修复的地基。复述确认能传递'我真的懂'。",ideal:true},
+        {text:"那都是过去的事了，往前看吧",score:30,tag:"trust",feedback:"急于翻篇会让对方觉得你在敷衍他的真实痛苦。",ideal:false},
+        {text:"前任确实菜，换我就不会这样",score:34,tag:"trust",feedback:"踩同事抬自己显得轻浮，客户反而担心你也会甩锅。",ideal:false}
+       ]},
+      {situation:"客户冷静下来，问\"那你打算怎么办\"。",
+       choices:[
+        {text:"承认公司有责任，给出具体补救与防再犯机制",score:88,tag:"trust",feedback:"代表公司担责并给出可验证的改进机制，把空泛的道歉变成可信的行动。",ideal:true},
+        {text:"我们会努力做得更好的",score:38,tag:"trust",feedback:"模糊的努力承诺无法重建已经受损的信任。",ideal:false},
+        {text:"这事其实也不全怪我们",score:25,tag:"trust",feedback:"在修复阶段争论责任归属，等于把好不容易缓和的关系推回对立。",ideal:false}
+       ]},
+      {situation:"客户态度软化，但提出一个有点苛刻的额外要求试探你。",
+       choices:[
+        {text:"能做的明确答应，做不到的诚实说明并给替代",score:86,tag:"trust",feedback:"既不一味讨好也不生硬拒绝，可靠的边界感本身就是信任的来源。",ideal:true},
+        {text:"全部答应下来再说",score:33,tag:"trust",feedback:"为讨好而过度承诺，一旦兑现不了将再次伤害信任。",ideal:false},
+        {text:"这个要求过分了，不行",score:40,tag:"trust",feedback:"直接拒绝守住了边界，但缺少替代方案显得不够用心。",ideal:false}
+       ]},
+      {situation:"合作重启一周后，你需要决定如何维系这份脆弱的信任。",
+       choices:[
+        {text:"主动定期同步进展，承诺的小事按时兑现",score:88,tag:"trust",feedback:"用持续兑现小承诺累积可靠预期，信任是靠频次而非一次大动作建立的。",ideal:true},
+        {text:"没消息就是好消息，不打扰他",score:42,tag:"trust",feedback:"对刚修复的关系，沉默会被解读为又开始怠慢。",ideal:false},
+        {text:"送一份大礼表达诚意",score:36,tag:"trust",feedback:"物质讨好替代不了可靠的服务，甚至显得心虚。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 5. 终局收尾 ===== */
+  {id:"endgame",name:"终局收尾演练",color:"#f6c453",skill:"endgame",scenarios:[
+    {context:"经过几轮拉锯，双方已接近一致，但临门一脚最容易翻车。对方仍在犹豫，迟迟不肯落笔。",
+     objective:"练习收口：识别成交信号、消除最后顾虑、推动签约。",
+     tip:"\"谈判的钱，都是在最后五分钟挣或丢的。\"——谈判导师 韩朔",
+     rounds:[
+      {situation:"对方说\"基本没问题了，让我再想想\"。这是典型的临门犹豫。",
+       choices:[
+        {text:"还有哪一点让您没法现在就拍板",score:87,tag:"endgame",feedback:"直接定位最后的顾虑，把模糊的'想想'变成可解决的具体问题。",ideal:true},
+        {text:"好的，那您慢慢想",score:33,tag:"endgame",feedback:"放任犹豫会让到手的成交冷却，夜长梦多。",ideal:false},
+        {text:"再不签优惠就没了哦",score:40,tag:"endgame",feedback:"此刻施压可能适得其反，把对方推向防御。",ideal:false}
+       ]},
+      {situation:"对方说出真实顾虑：担心后续服务跟不上。",
+       choices:[
+        {text:"把服务SLA写进合同并约定违约补偿",score:88,tag:"endgame",feedback:"用书面承诺把对方的顾虑钉死，消除最后障碍。可验证的承诺才能促成落笔。",ideal:true},
+        {text:"放心啦，服务肯定到位",score:35,tag:"endgame",feedback:"口头保证恰恰是对方所担心的，无法消除顾虑。",ideal:false},
+        {text:"这是行业通病，谁家都一样",score:24,tag:"endgame",feedback:"把顾虑合理化等于承认风险存在，反而吓退对方。",ideal:false}
+       ]},
+      {situation:"顾虑被打消，对方明显倾向成交，但还没明说。",
+       choices:[
+        {text:"那我们就按这版定，您看周三还是周四签",score:86,tag:"endgame",feedback:"用二择一收尾法把'是否签'巧妙转为'何时签'，顺势推进。",ideal:true},
+        {text:"那您觉得怎么样",score:48,tag:"endgame",feedback:"开放式问法又给了对方退缩的空间，错失收口时机。",ideal:false},
+        {text:"还要不要再聊聊别的条款",score:30,tag:"endgame",feedback:"在该收口时重启讨论，可能横生枝节、前功尽弃。",ideal:false}
+       ]},
+      {situation:"对方同意签约，但提出一个临门的小附加要求。",
+       choices:[
+        {text:"可以满足，但希望以此换得今天就完成签署",score:85,tag:"endgame",feedback:"用小让步交换确定性的成交，把对方的要求变成收口的助推。",ideal:true},
+        {text:"无条件答应这个要求",score:46,tag:"endgame",feedback:"白给虽能促单，但放弃了换取即时签约的机会。",ideal:false},
+        {text:"都到这一步了还提要求？不行",score:28,tag:"endgame",feedback:"为小事僵持可能让快到手的单子飞了，得不偿失。",ideal:false}
+       ]}
+     ]},
+    {context:"一笔大额合作谈了三周，今天是预定的签约日。对方高层突然到场，似乎想最后再压一把。",
+     objective:"练习高压终局：守住成果、不被最后翻盘、稳健落地。",
+     tip:"\"越接近终点，越要稳。慌乱是收尾的最大敌人。\"——谈判导师 韩朔",
+     rounds:[
+      {situation:"对方高层开场就说\"我刚看了条款，价格还得再降5%\"。",
+       choices:[
+        {text:"这版是双方三周打磨的平衡点，可微调非核心条款",score:86,tag:"endgame",feedback:"守住已达成的核心成果，把压力引向可让的边角，避免终局崩盘。",ideal:true},
+        {text:"行，降5%就降5%",score:32,tag:"endgame",feedback:"终局轻易让步会让对方觉得还有空间，可能引发连环加码。",ideal:false},
+        {text:"不可能，一分都不降",score:44,tag:"endgame",feedback:"完全僵硬可能让对方高层下不来台，导致签约破裂。",ideal:false}
+       ]},
+      {situation:"高层不满，暗示\"那今天可能签不了\"。",
+       choices:[
+        {text:"重申双方此前付出与共赢前景，邀其聚焦落地",score:85,tag:"endgame",feedback:"用沉没成本与未来收益把对方拉回理性，化解最后通牒的威胁。",ideal:true},
+        {text:"那就不签了，反正我们也有别家",score:40,tag:"endgame",feedback:"在终局对赌可能两败俱伤，三周成果毁于一旦。",ideal:false},
+        {text:"那您说怎样才肯签",score:34,tag:"endgame",feedback:"完全交出主动权，等于邀请对方继续加码。",ideal:false}
+       ]},
+      {situation:"高层缓和，提出用延长付款期代替降价。",
+       choices:[
+        {text:"评估资金成本后，以可接受的账期换取原价签约",score:87,tag:"endgame",feedback:"用对自己成本可控的让步满足对方面子，是终局解套的高招。",ideal:true},
+        {text:"账期和降价我都答应",score:33,tag:"endgame",feedback:"双重让步暴露你太想成交，可能再被压一轮。",ideal:false},
+        {text:"账期也不行，必须现款",score:42,tag:"endgame",feedback:"对方已经给了台阶却被堵回，签约风险陡增。",ideal:false}
+       ]},
+      {situation:"双方握手言定，进入最后的合同确认环节。",
+       choices:[
+        {text:"逐条复核关键条款并当场签署留存",score:88,tag:"endgame",feedback:"趁热打铁完成签署并复核，杜绝事后反悔。落笔为安才是真正的收尾。",ideal:true},
+        {text:"细节回去再核，先口头敲定",score:36,tag:"endgame",feedback:"留口子等于留风险，过夜可能生变。",ideal:false},
+        {text:"合同改天再签，今天先庆祝",score:25,tag:"endgame",feedback:"在终点前松懈，最容易功亏一篑。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 6. BATNA分析 ===== */
+  {id:"batna",name:"BATNA分析演练",color:"#c084fc",skill:"batna",scenarios:[
+    {context:"你在和唯一一家供应商谈判，对方仗着你'没得选'态度强硬。你需要评估并强化自己的最佳替代方案。",
+     objective:"练习识别、培育与运用BATNA来抬高谈判底气。",
+     tip:"\"你的力量，等于你说'不'之后还能去哪。\"——谈判导师 程屹",
+     rounds:[
+      {situation:"对方笃定地说\"反正你也找不到第二家\"。",
+       choices:[
+        {text:"暂停谈判，先去市场上摸排有无其他可行选项",score:86,tag:"batna",feedback:"主动培育替代方案是改变力量对比的根本办法，不调研就先信了对方的话最危险。",ideal:true},
+        {text:"既然没别家，那只能接受了",score:24,tag:"batna",feedback:"未经核实就相信自己没有BATNA，是谈判中最致命的自我设限。",ideal:false},
+        {text:"嘴上硬说'我有的是选择'",score:40,tag:"batna",feedback:"没有真实替代支撑的虚张，一旦被戳穿就彻底没了底气。",ideal:false}
+       ]},
+      {situation:"调研后你发现有两家潜在替代，虽不完美但可用。",
+       choices:[
+        {text:"把替代方案量化对比，算出自己的真实底线",score:88,tag:"batna",feedback:"把BATNA具体化、数字化，才能算出'保留价格'，让谈判有了客观依据。",ideal:true},
+        {text:"有备选就行，先不细算",score:46,tag:"batna",feedback:"不量化的BATNA无法转化为底线，关键时刻仍会心虚。",ideal:false},
+        {text:"赶紧告诉对方我找到别家了",score:50,tag:"batna",feedback:"过早亮牌且未量化，容易被对方反问细节而露怯。",ideal:false}
+       ]},
+      {situation:"回到谈判桌，对方依旧强硬。你已握有真实底线。",
+       choices:[
+        {text:"平静表明若超出底线，我们会转向其他方案",score:85,tag:"batna",feedback:"不带情绪地引用真实BATNA，威慑力最强。底气来自事实而非声调。",ideal:true},
+        {text:"拍桌子说大不了不合作",score:36,tag:"batna",feedback:"情绪化表达削弱了BATNA本应带来的冷静威慑。",ideal:false},
+        {text:"继续忍让，不敢提替代",score:28,tag:"batna",feedback:"手握底牌却不敢用，等于没有BATNA。",ideal:false}
+       ]},
+      {situation:"对方态度明显软化，给出了改善后的条件，接近但略低于你的预期。",
+       choices:[
+        {text:"对照BATNA判断：优于替代即可接受并锁定",score:87,tag:"batna",feedback:"用BATNA作为接受与否的标尺，避免因贪心错失优于替代的合理方案。",ideal:true},
+        {text:"既然软化了，继续往死里压",score:42,tag:"batna",feedback:"无视BATNA一味加压，可能把对方逼回强硬甚至谈崩。",ideal:false},
+        {text:"低于预期就不签，哪怕不如备选",score:30,tag:"batna",feedback:"为情绪较劲而拒绝优于替代的方案，违背了BATNA的理性原则。",ideal:false}
+       ]}
+     ]},
+    {context:"你考虑跳槽，现公司挽留并加薪，新公司offer诱人但有不确定性。你要在两者间做谈判决策。",
+     objective:"练习用BATNA框架做个人重大决策，避免被单方面话术左右。",
+     tip:"\"决策不是看哪个更好，而是看离开后你还剩什么。\"——谈判导师 程屹",
+     rounds:[
+      {situation:"现公司HR说\"外面没你想的那么好，我们给你加15%\"。",
+       choices:[
+        {text:"先独立核实新offer的真实价值与风险再回应",score:86,tag:"batna",feedback:"不被一方话术带节奏，独立评估各选项才能找到真正的最佳替代。",ideal:true},
+        {text:"既然加薪了，那就留下吧",score:34,tag:"batna",feedback:"被即时挽留打动而不评估替代，可能错过更优路径。",ideal:false},
+        {text:"管他呢，外面再差也比这儿强",score:30,tag:"batna",feedback:"凭情绪否定现状，同样是没有客观评估BATNA。",ideal:false}
+       ]},
+      {situation:"你列出两条路的薪资、成长、风险各项指标。",
+       choices:[
+        {text:"按权重打分量化，明确自己真正在乎什么",score:88,tag:"batna",feedback:"量化各维度并赋权，把模糊的纠结变成清晰的最佳替代排序。",ideal:true},
+        {text:"只比薪资，谁高去谁那",score:42,tag:"batna",feedback:"单维度比较忽略了成长与风险，BATNA分析不完整。",ideal:false},
+        {text:"凭感觉选一个就行",score:26,tag:"batna",feedback:"重大决策靠直觉，等于放弃了理性框架的保护。",ideal:false}
+       ]},
+      {situation:"新公司催你尽快答复，现公司也在等你回话。",
+       choices:[
+        {text:"用已算清的底线与对方就关键条款做最后争取",score:85,tag:"batna",feedback:"以清晰的替代为底气去争取更好条件，把分析转化为谈判筹码。",ideal:true},
+        {text:"谁催得急就答应谁",score:32,tag:"batna",feedback:"被催促裹挟做决定，正是BATNA思维要避免的。",ideal:false},
+        {text:"两边都拖着不表态",score:38,tag:"batna",feedback:"无限拖延会让两个机会同时流失，BATNA也会贬值。",ideal:false}
+       ]},
+      {situation:"现公司在你争取后给到接近新offer的总包并承诺晋升通道。",
+       choices:[
+        {text:"对照综合评估，若现公司方案不劣于替代则接受",score:87,tag:"batna",feedback:"以BATNA为尺衡量最终方案，理性收口，避免为跳槽而跳槽。",ideal:true},
+        {text:"都谈到这份上了，必须跳",score:36,tag:"batna",feedback:"被沉没的谈判成本绑架，违背了向前看的BATNA原则。",ideal:false},
+        {text:"再回去跟新公司继续抬价",score:40,tag:"batna",feedback:"无止境抬价可能让两方都失去耐心，得不偿失。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 7. 客观标准 ===== */
+  {id:"standard",name:"客观标准演练",color:"#60a5fa",skill:"standard",scenarios:[
+    {context:"你和对方就一项资产的价格各执一词，谁也说服不了谁，谈判陷入纯粹的意志比拼。",
+     objective:"练习引入客观标准，把'谁说了算'变成'什么标准说了算'。",
+     tip:"\"当你诉诸原则，对方就很难只诉诸立场。\"——谈判导师 唐砚",
+     rounds:[
+      {situation:"对方坚持'我觉得就值这个价'，你也觉得对方报高了。",
+       choices:[
+        {text:"建议参照近期同类成交价作为定价基准",score:87,tag:"standard",feedback:"用市场可比交易这一客观标准取代主观感觉，让讨论有了共同的尺子。",ideal:true},
+        {text:"我觉得就不值，你高了",score:32,tag:"standard",feedback:"以主观对主观，谈判只会变成情绪与音量的较量。",ideal:false},
+        {text:"那各让一步取中间价",score:46,tag:"standard",feedback:"折中看似公平，但若起点不合理，结果同样不合理。",ideal:false}
+       ]},
+      {situation:"对方质疑你引用的可比案例\"和这个不一样\"。",
+       choices:[
+        {text:"那我们一起约定可比性的调整口径",score:86,tag:"standard",feedback:"把分歧从结论拉回到方法论，共同确立标准的适用规则，更难被推翻。",ideal:true},
+        {text:"反正这就是市场价，没什么不一样",score:38,tag:"standard",feedback:"无视差异强推标准，会让对方觉得你在偷换概念。",ideal:false},
+        {text:"那不用案例了，我们随便谈",score:28,tag:"standard",feedback:"放弃标准等于退回意志比拼，前功尽弃。",ideal:false}
+       ]},
+      {situation:"双方在调整口径上仍有出入，谁举的标准都偏向自己。",
+       choices:[
+        {text:"提议引入第三方评估或行业指数作为中立基准",score:88,tag:"standard",feedback:"当双方各执一套标准时，引入独立第三方基准是打破僵局的关键。中立性本身就有说服力。",ideal:true},
+        {text:"坚持用对我有利的那套标准",score:34,tag:"standard",feedback:"标准一旦明显偏私，就失去了'客观'的公信力。",ideal:false},
+        {text:"算了，谁声音大听谁的",score:22,tag:"standard",feedback:"彻底放弃标准，谈判倒退回最原始的对抗。",ideal:false}
+       ]},
+      {situation:"第三方基准给出区间，双方都在其中但仍有小差距。",
+       choices:[
+        {text:"在中立区间内按各自让步成本协商落点",score:85,tag:"standard",feedback:"在已确立的客观区间内微调，让最终价格既有依据又照顾双方诉求。",ideal:true},
+        {text:"必须取区间里对我最有利的一端",score:40,tag:"standard",feedback:"刚靠标准建立的信任，可能被这种偏取消耗掉。",ideal:false},
+        {text:"差距还在就接着耗",score:30,tag:"standard",feedback:"标准已收窄分歧，此时死磕反而显得不讲理。",ideal:false}
+       ]}
+     ]},
+    {context:"团队内部就绩效奖金分配争论不休，每个人都觉得自己应得更多，情绪开始上头。",
+     objective:"练习用客观标准化解内部分配冲突，避免关系受损。",
+     tip:"\"分蛋糕的争吵，靠的不是嗓门，是一把大家都认的尺子。\"——谈判导师 唐砚",
+     rounds:[
+      {situation:"几位同事都坚称自己贡献最大，气氛紧张。",
+       choices:[
+        {text:"提议先共同确定一套可衡量的贡献评估维度",score:87,tag:"standard",feedback:"先定标准再算分配，把人际对立转化为对规则的讨论，降低火药味。",ideal:true},
+        {text:"按谁资历老多分谁",score:38,tag:"standard",feedback:"单一资历标准忽视实际贡献，难以服众。",ideal:false},
+        {text:"干脆平均分，谁也别争",score:34,tag:"standard",feedback:"绝对平均看似省事，却会打击高贡献者的积极性。",ideal:false}
+       ]},
+      {situation:"大家同意要定标准，但对该看哪些指标有分歧。",
+       choices:[
+        {text:"列出候选指标，按团队共识赋予权重",score:88,tag:"standard",feedback:"通过共识赋权让标准本身获得合法性，结果自然更易被接受。",ideal:true},
+        {text:"我来拍板用哪些指标",score:40,tag:"standard",feedback:"单方面定标准，即使合理也容易被质疑偏私。",ideal:false},
+        {text:"指标太麻烦，凭印象打分",score:24,tag:"standard",feedback:"主观印象正是冲突的根源，绕了一圈又回原点。",ideal:false}
+       ]},
+      {situation:"按标准算出结果，有人对自己的分数不满。",
+       choices:[
+        {text:"复盘其数据来源，标准之内据实修正，标准之外不改",score:86,tag:"standard",feedback:"维护标准的严肃性，只修正数据错误而非因情绪让步，标准才有公信力。",ideal:true},
+        {text:"那就给他多加一点平息一下",score:36,tag:"standard",feedback:"为安抚情绪破坏既定标准，会引发连锁讨价还价。",ideal:false},
+        {text:"结果就这样，不满憋着",score:30,tag:"standard",feedback:"不给申诉通道，标准会被视为冷冰冰的压制。",ideal:false}
+       ]},
+      {situation:"分配方案基本成形，你想让它经得起未来质疑。",
+       choices:[
+        {text:"把标准与计算过程公开存档供日后复用",score:85,tag:"standard",feedback:"透明留档让标准可追溯、可复用，把一次性争论变成长期规则。",ideal:true},
+        {text:"结果定了就行，过程不用记",score:38,tag:"standard",feedback:"不留档，明年又得重新吵一遍。",ideal:false},
+        {text:"以后看情况再随机应变",score:28,tag:"standard",feedback:"放弃固化标准，等于放弃了它最大的价值。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 8. 情绪管理 ===== */
+  {id:"emotion",name:"情绪管理演练",color:"#fb7185",skill:"emotion",scenarios:[
+    {context:"谈判中对方突然情绪爆发，提高音量、措辞激烈，会场气氛骤然紧张。",
+     objective:"练习管理对方与自己的情绪，把对抗拉回理性轨道。",
+     tip:"\"对方在气头上时，逻辑是无效的，先处理情绪再处理问题。\"——谈判导师 米岚",
+     rounds:[
+      {situation:"对方拍着桌子说\"你们这是欺负人！\"",
+       choices:[
+        {text:"放慢语速，先承认对方的不满情绪是真实的",score:87,tag:"emotion",feedback:"先接住情绪而非反驳事实，能让对方感到被理解，火气随之降温。",ideal:true},
+        {text:"你冷静点，别激动",score:34,tag:"emotion",feedback:"让人'冷静'往往火上浇油，等于否定了对方的感受。",ideal:false},
+        {text:"你才欺负人，明明是你们先的",score:20,tag:"emotion",feedback:"以情绪对情绪，谈判瞬间升级为吵架。",ideal:false}
+       ]},
+      {situation:"对方稍稍平复，但仍带着戒备看着你。",
+       choices:[
+        {text:"用平静中性的语言复述问题，回到事实层面",score:86,tag:"emotion",feedback:"在情绪降温后及时把话题导回事实，是情绪管理向问题解决的关键过渡。",ideal:true},
+        {text:"趁机反将一军，指出他的错误",score:30,tag:"emotion",feedback:"对方刚平复就反击，会立刻重新点燃冲突。",ideal:false},
+        {text:"小心翼翼什么都顺着他",score:42,tag:"emotion",feedback:"过度退让会让对方觉得情绪化施压有效，下次更甚。",ideal:false}
+       ]},
+      {situation:"谈着谈着你自己也感到被冒犯，火气上来了。",
+       choices:[
+        {text:"提议短暂休会，给自己几分钟平复",score:88,tag:"emotion",feedback:"觉察并管理自己的情绪同样重要，暂停是避免冲动决策的高级技巧。",ideal:true},
+        {text:"强压怒火继续硬谈",score:48,tag:"emotion",feedback:"带着怒气谈判容易做出非理性让步或攻击，风险高。",ideal:false},
+        {text:"当场怼回去出口气",score:22,tag:"emotion",feedback:"图一时痛快，可能毁掉整场谈判。",ideal:false}
+       ]},
+      {situation:"休会后双方都冷静下来，重新回到桌前。",
+       choices:[
+        {text:"以共同目标重启对话，把对立转为并肩解题",score:85,tag:"emotion",feedback:"用共同利益重新框定关系，把刚才的情绪冲突转化为合作动力。",ideal:true},
+        {text:"假装刚才什么都没发生",score:46,tag:"emotion",feedback:"回避未处理的情绪余波，可能在后续再次引爆。",ideal:false},
+        {text:"重提刚才谁对谁错",score:28,tag:"emotion",feedback:"翻旧账等于把熄灭的火重新点着。",ideal:false}
+       ]}
+     ]},
+    {context:"你刚收到一个对自己极为不利的消息，正心烦意乱，却必须立刻进入一场重要谈判。",
+     objective:"练习自我情绪调节，不让个人状态污染谈判判断。",
+     tip:"\"谈判桌上最先输的，往往是先乱了方寸的那个。\"——谈判导师 米岚",
+     rounds:[
+      {situation:"开谈前你心跳加速、思绪混乱，离上场只剩三分钟。",
+       choices:[
+        {text:"做几次深呼吸，快速锚定今天的核心目标",score:86,tag:"emotion",feedback:"用生理调节加目标聚焦快速稳住状态，是临场情绪管理的基本功。",ideal:true},
+        {text:"带着烦躁直接进场",score:32,tag:"emotion",feedback:"未平复的情绪会扭曲你对信息的判断与表达。",ideal:false},
+        {text:"临时找借口推迟谈判",score:40,tag:"emotion",feedback:"逃避虽能避险，但失去机会且暴露你的不稳定。",ideal:false}
+       ]},
+      {situation:"谈判中对方一句无心的话恰好戳中你的烦心事。",
+       choices:[
+        {text:"意识到是自己的触点，不外露，继续聚焦议题",score:87,tag:"emotion",feedback:"识别情绪触发点并主动隔离，避免私人情绪干扰谈判，是高阶自控。",ideal:true},
+        {text:"语气不自觉变冲",score:34,tag:"emotion",feedback:"情绪泄漏会让对方察觉你的弱点并加以利用。",ideal:false},
+        {text:"借机把烦躁发泄到谈判上",score:22,tag:"emotion",feedback:"拿谈判当出气筒，损人不利己。",ideal:false}
+       ]},
+      {situation:"对方提出一个条件，你因心烦差点想随口答应了事。",
+       choices:[
+        {text:"提醒自己别急，按预设标准评估再回应",score:88,tag:"emotion",feedback:"在情绪低谷时回归预设的决策标准，能防止状态污染重大判断。",ideal:true},
+        {text:"算了，答应了赶紧结束",score:30,tag:"emotion",feedback:"为逃离不适而草率成交，正是情绪失控的典型代价。",ideal:false},
+        {text:"烦得不想谈，直接拒绝",score:32,tag:"emotion",feedback:"用拒绝发泄情绪，可能错失本可接受的好条件。",ideal:false}
+       ]},
+      {situation:"谈判顺利结束，你意识到刚才情绪几度想作祟。",
+       choices:[
+        {text:"复盘哪些时刻情绪起伏，记录应对方法",score:85,tag:"emotion",feedback:"事后复盘情绪管理过程，把临场经验沉淀为可复制的能力。",ideal:true},
+        {text:"结束了就不想了",score:40,tag:"emotion",feedback:"不复盘就无法成长，下次同样的触点照样会乱。",ideal:false},
+        {text:"庆幸没出事，下次随缘",score:30,tag:"emotion",feedback:"把成功归于运气，等于放弃了能力的积累。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 9. 让步策略 ===== */
+  {id:"concession",name:"让步策略演练",color:"#fbbf24",skill:"concession",scenarios:[
+    {context:"谈判进入讨价还价阶段，对方步步紧逼要你让利。你需要让得有节奏、有回报。",
+     objective:"练习让步的艺术：递减、有条件、换取对等。",
+     tip:"\"每一次让步都要让对方付出代价，否则他不会珍惜。\"——谈判导师 邵景",
+     rounds:[
+      {situation:"对方第一次要求降价，幅度不小。",
+       choices:[
+        {text:"先了解对方为何需要这个价，再决定如何回应",score:85,tag:"concession",feedback:"在让步前先摸清动机，避免无谓让利。让步应建立在信息之上。",ideal:true},
+        {text:"二话不说先降一半表诚意",score:30,tag:"concession",feedback:"开局大幅让步会暴露空间，对方只会要得更多。",ideal:false},
+        {text:"一分不让，直接顶回去",score:42,tag:"concession",feedback:"完全不让显得僵硬，可能错失推进的机会。",ideal:false}
+       ]},
+      {situation:"你决定让一小步，对方立刻要求再让。",
+       choices:[
+        {text:"提出'我可以再让，但你需要在X上对等回应'",score:88,tag:"concession",feedback:"有条件让步把单向施舍变成双向交换，每一步都换回价值。这是让步策略的核心。",ideal:true},
+        {text:"那就再降同样的幅度",score:36,tag:"concession",feedback:"等幅连续让步会被解读为还有大量空间，停不下来。",ideal:false},
+        {text:"行行行，你说多少就多少",score:22,tag:"concession",feedback:"无原则妥协等于放弃谈判，对方再无理由停手。",ideal:false}
+       ]},
+      {situation:"对方接受了交换，但又提出第三轮让步要求。",
+       choices:[
+        {text:"让步幅度明显递减，并暗示已接近底线",score:86,tag:"concession",feedback:"递减的让步幅度向对方传递'空间将尽'的信号，引导谈判收敛。",ideal:true},
+        {text:"保持和前几轮一样的让步幅度",score:38,tag:"concession",feedback:"幅度不收窄，对方会认为还能继续挖。",ideal:false},
+        {text:"突然加大让步求快点结束",score:28,tag:"concession",feedback:"末段反而加码，等于鼓励对方再压一轮。",ideal:false}
+       ]},
+      {situation:"对方还想再争一点，但已是细枝末节。",
+       choices:[
+        {text:"以一个象征性小让步配合明确收口姿态",score:85,tag:"concession",feedback:"用微小让步给对方台阶，同时明确这是最后一步，优雅收尾。",ideal:true},
+        {text:"再大让一笔图个痛快",score:36,tag:"concession",feedback:"为求快在终点大让，浪费了前面的节奏经营。",ideal:false},
+        {text:"一点都不给，强行结束",score:40,tag:"concession",feedback:"最后不给台阶，可能让对方心存芥蒂。",ideal:false}
+       ]}
+     ]},
+    {context:"你作为买方预算有限，希望在不伤关系的前提下，用巧妙让步换取最大价值。",
+     objective:"练习用非价格让步与打包交换创造双赢空间。",
+     tip:"\"聪明的让步，是用你不在乎的，换对方很在乎的。\"——谈判导师 邵景",
+     rounds:[
+      {situation:"卖方价格咬得很死，但你预算确实够不着。",
+       choices:[
+        {text:"提议用更长合作期或预付款换取单价下调",score:87,tag:"concession",feedback:"用对方看重的确定性与现金流去换价格，创造了价格之外的交换维度。",ideal:true},
+        {text:"反复强调'我没钱'求降价",score:34,tag:"concession",feedback:"单纯哭穷缺乏交换价值，难以打动对方。",ideal:false},
+        {text:"那就不买了",score:30,tag:"concession",feedback:"过早放弃，错过了用非价格条件破局的机会。",ideal:false}
+       ]},
+      {situation:"卖方对长约有兴趣，但仍想保住部分单价。",
+       choices:[
+        {text:"把多个小诉求打包，整体交换而非逐项纠缠",score:88,tag:"concession",feedback:"打包交换让双方都能在不同维度各取所需，比逐项死磕更易达成双赢。",ideal:true},
+        {text:"一项一项分开抠到底",score:40,tag:"concession",feedback:"逐项硬抠容易陷入零和，错失打包腾挪的空间。",ideal:false},
+        {text:"只要单价，其他都不管",score:34,tag:"concession",feedback:"只盯一个维度，放弃了其他可交换的价值。",ideal:false}
+       ]},
+      {situation:"卖方提出一个你其实无所谓的附加条款作为交换。",
+       choices:[
+        {text:"爽快接受这个无所谓的条款，换回你真正在乎的",score:86,tag:"concession",feedback:"用自己低成本的让步换对方高价值的回报，是让步效率最大化的体现。",ideal:true},
+        {text:"出于习惯还是要争一争这个条款",score:44,tag:"concession",feedback:"对无所谓的事也死争，浪费筹码也拖慢节奏。",ideal:false},
+        {text:"怀疑其中有诈，一概拒绝",score:36,tag:"concession",feedback:"过度防御会错失低成本换高价值的良机。",ideal:false}
+       ]},
+      {situation:"双方接近成交，你想确认这次让步组合是否划算。",
+       choices:[
+        {text:"快速核算总价值，确认所得大于所让再拍板",score:85,tag:"concession",feedback:"在落定前总账核算，确保让步组合整体有利，是理性收口的保障。",ideal:true},
+        {text:"差不多就行，不算了",score:38,tag:"concession",feedback:"不核总账，可能在不知不觉中让多了。",ideal:false},
+        {text:"再加一项让步显得大方",score:30,tag:"concession",feedback:"成交在即还无谓加码，纯属浪费。",ideal:false}
+       ]}
+     ]}
+  ]},
+  /* ===== 10. 撤退判断 ===== */
+  {id:"retreat",name:"撤退判断演练",color:"#94a3b8",skill:"retreat",scenarios:[
+    {context:"一场谈判越来越偏离你的底线，对方寸步不让且条件持续恶化。你需要判断是坚持还是撤退。",
+     objective:"练习识别该走的信号，体面而坚定地撤离。",
+     tip:"\"知道什么时候离开，和知道怎么留下同样重要。\"——谈判导师 蓝衫",
+     rounds:[
+      {situation:"对方的要求已经低于你事先算好的保留价格。",
+       choices:[
+        {text:"明确指出已触及底线，请对方回到合理区间",score:86,tag:"retreat",feedback:"先亮出底线给对方修正机会，撤退前的最后通牒要清晰而不情绪化。",ideal:true},
+        {text:"硬着头皮继续谈，希望能扳回",score:42,tag:"retreat",feedback:"突破底线后还恋战，往往越陷越深、损失越大。",ideal:false},
+        {text:"什么也不说，憋着继续让",score:24,tag:"retreat",feedback:"沉默退让让对方误以为还有空间，处境更糟。",ideal:false}
+       ]},
+      {situation:"对方不为所动，反而又加了一条苛刻要求。",
+       choices:[
+        {text:"平静告知：超出底线我们只能止步于此",score:87,tag:"retreat",feedback:"在底线被反复突破时果断止损，撤退本身就是一种力量。",ideal:true},
+        {text:"再让最后一次，万一成了呢",score:36,tag:"retreat",feedback:"'最后一次'的侥幸往往是无底洞的开始。",ideal:false},
+        {text:"情绪崩溃，指责对方不讲理",score:26,tag:"retreat",feedback:"带情绪的撤退会烧掉以后合作的桥。",ideal:false}
+       ]},
+      {situation:"你决定撤退，对方似乎没料到，态度有所松动。",
+       choices:[
+        {text:"保持冷静，给一个回到底线内即可重谈的台阶",score:85,tag:"retreat",feedback:"撤退不等于撕破脸，留一扇门让对方有回头空间，进退皆有余地。",ideal:true},
+        {text:"立刻欣喜地坐回去继续让",score:34,tag:"retreat",feedback:"一见松动就反悔撤退，前面的姿态全部作废。",ideal:false},
+        {text:"既然要走就走得决绝，不留余地",score:48,tag:"retreat",feedback:"过于决绝会关死本可重启的机会，略显刚硬。",ideal:false}
+       ]},
+      {situation:"对方未能回到合理区间。你需要完成最终的撤离。",
+       choices:[
+        {text:"礼貌结束并表达未来仍愿合作的开放态度",score:86,tag:"retreat",feedback:"体面收场维护了关系与声誉，今天的撤退为明天留了机会。",ideal:true},
+        {text:"撂下狠话表达不满后离开",score:30,tag:"retreat",feedback:"情绪化告别会让你显得不专业，也断了后路。",ideal:false},
+        {text:"反复纠缠不舍得走",score:28,tag:"retreat",feedback:"决定撤退却拖泥带水，既失气场又无收益。",ideal:false}
+       ]}
+     ]},
+    {context:"你投入大量时间精力推进一个项目谈判，但越来越多迹象表明对方根本没有诚意。",
+     objective:"练习对抗沉没成本，理性判断何时该果断抽身。",
+     tip:"\"已经花掉的，不该成为你继续浪费的理由。\"——谈判导师 蓝衫",
+     rounds:[
+      {situation:"对方多次爽约、反复变卦，但你已投入两个月。",
+       choices:[
+        {text:"抛开已投入成本，只评估未来的成功概率",score:87,tag:"retreat",feedback:"决策应基于未来收益而非沉没成本，这是撤退判断中最反直觉也最重要的一课。",ideal:true},
+        {text:"都投了两个月，不能白费",score:30,tag:"retreat",feedback:"被沉没成本绑架是继续失血的典型陷阱。",ideal:false},
+        {text:"再等等，也许对方会变好",score:36,tag:"retreat",feedback:"无依据的乐观等待，多半只是不愿面对现实。",ideal:false}
+       ]},
+      {situation:"你列出继续与放弃的预期收益对比。",
+       choices:[
+        {text:"用客观概率与机会成本量化两种选择",score:88,tag:"retreat",feedback:"把'舍不得'变成可计算的得失，机会成本视角能照亮被情绪遮蔽的真相。",ideal:true},
+        {text:"只看继续下去最好的结果",score:34,tag:"retreat",feedback:"只算最优情形而忽略概率，是自欺欺人。",ideal:false},
+        {text:"懒得算，凭感觉再撑撑",score:26,tag:"retreat",feedback:"在该止损时拒绝理性评估，代价高昂。",ideal:false}
+       ]},
+      {situation:"分析显示继续的期望收益为负。你要做出决定。",
+       choices:[
+        {text:"果断止损，把资源转向更有价值的机会",score:86,tag:"retreat",feedback:"及时止损并重新配置资源，撤退的真正价值在于解放被困住的精力。",ideal:true},
+        {text:"再给最后一周看看",score:38,tag:"retreat",feedback:"期望为负还加码时间，只是延长亏损。",ideal:false},
+        {text:"硬撑到底，赌一把翻盘",score:28,tag:"retreat",feedback:"用赌博心态对抗负期望，往往输得更多。",ideal:false}
+       ]},
+      {situation:"你向团队与对方传达退出决定。",
+       choices:[
+        {text:"清晰说明理由，专业收尾并归档复盘",score:85,tag:"retreat",feedback:"专业地结束并复盘，把一次撤退转化为组织的经验资产。",ideal:true},
+        {text:"含糊其辞，不敢明说退出",score:34,tag:"retreat",feedback:"不清不楚的退出会留下误解与隐患。",ideal:false},
+        {text:"把责任全推给对方",score:30,tag:"retreat",feedback:"甩锅会损害你的专业形象，也无助于成长。",ideal:false}
+       ]}
+     ]}
+  ]}
+  ]
+};
+
+/* =========================================================================
+   TRACK B — 对手专项训练 (6 modules, 2 scenarios each, 4 rounds)
+   ========================================================================= */
+const TRACK_B = {
+  id:"B", name:"对手专项训练", icon:"🎯",
+  sub:"六大对手类型的针对性破解", color:"#ff6b6b",
+  modules:[
+  {id:"vs_rational",name:"理性分析型",color:"#3aa7ff",skill:"info",scenarios:[
+    {context:"对手是一位数据驱动的采购总监，每句话都有数字支撑，逻辑严密。他不会被情绪打动，只认数据和证据。",
+     objective:"用更硬的数据和更精准的逻辑反制理性型对手。",
+     tip:"\"对理性者动之以理，你的数据必须比他更完整。\"——谈判导师 林楷",
+     rounds:[
+      {situation:"对手用三张表格论证你的报价高于市场均价15%。",
+       choices:[
+        {text:"展示差异化价值的量化对比，证明总成本更优",score:87,tag:"standard",feedback:"用同样的数据语言回应，但把比较维度从单价拉到总拥有成本。以彼之道还施彼身。",ideal:true},
+        {text:"这些数据不准确，我不认可",score:30,tag:"info",feedback:"空口否认数据会让理性型对手彻底不信任你。",ideal:false},
+        {text:"价格虽高但我们服务好",score:45,tag:"trust",feedback:"模糊的定性回答对数据型对手说服力极弱。",ideal:false}
+       ]},
+      {situation:"对手要求你提供过去三年的交付数据和客户满意度。",
+       choices:[
+        {text:"提供核心指标并附带第三方审计报告",score:86,tag:"standard",feedback:"用可验证的第三方数据增强可信度，正面回应理性型对手的信息需求。",ideal:true},
+        {text:"这属于商业机密，不方便提供",score:40,tag:"info",feedback:"对数据型对手藏数据会被解读为心虚，信任崩塌。",ideal:false},
+        {text:"我口头保证没问题就行了",score:25,tag:"trust",feedback:"口头保证在理性型对手眼里约等于零。",ideal:false}
+       ]},
+      {situation:"对手用逻辑推演指出你的方案在第三年存在一个成本风险点。",
+       choices:[
+        {text:"承认风险并展示你的风控预案与成本锁定方案",score:88,tag:"standard",feedback:"不回避问题而是展示解决方案，在理性型对手眼里这才是专业。",ideal:true},
+        {text:"第三年的事太远了，到时候再说",score:32,tag:"info",feedback:"理性型对手恰恰重视长期规划，回避远期问题等于暴露短板。",ideal:false},
+        {text:"不可能有这个问题",score:28,tag:"info",feedback:"否认一个合理的逻辑推演会让对手质疑你的专业度。",ideal:false}
+       ]},
+      {situation:"对手最终要求把所有承诺写入合同附件作为考核条款。",
+       choices:[
+        {text:"同意并提出双向考核条件，确保义务对等",score:85,tag:"standard",feedback:"接受量化考核同时要求对等，用理性型对手尊重的方式推进公平。",ideal:true},
+        {text:"全部答应不加条件",score:35,tag:"concession",feedback:"单向考核义务让你完全被动，对方却没有对等承诺。",ideal:false},
+        {text:"合同太复杂了，口头约定就好",score:22,tag:"trust",feedback:"拒绝书面化在理性型对手眼里等于不可信。",ideal:false}
+       ]}
+     ]},
+    {context:"你在投标会上面对一位工程背景的评委，他对技术参数了如指掌，任何模糊表述都会被追问。",
+     objective:"用精确的技术语言和客观标准赢得理性型评委的认可。",
+     tip:"\"精确是对理性者最好的尊重。\"——谈判导师 林楷",
+     rounds:[
+      {situation:"评委问你的系统吞吐量，你只记得大概数字。",
+       choices:[
+        {text:"给出已知范围并承诺会后补充精确测试报告",score:85,tag:"info",feedback:"诚实给范围加后续补充，比胡编一个精确数字安全得多。",ideal:true},
+        {text:"随口报一个好听的数字",score:28,tag:"info",feedback:"虚报技术参数一旦被验证就是致命伤。",ideal:false},
+        {text:"吞吐量不是最重要的，看整体方案",score:42,tag:"agenda",feedback:"回避直接问题会让技术型评委怀疑你在藏短板。",ideal:false}
+       ]},
+      {situation:"评委拿你的方案与竞品做了一张详细的参数对比表。",
+       choices:[
+        {text:"逐项回应，在弱项上说明补偿方案",score:86,tag:"standard",feedback:"正面回应每一项而非回避弱项，展示全面的工程思维。",ideal:true},
+        {text:"这种对比不公平，条件不一样",score:38,tag:"pressure",feedback:"质疑对比方法而不回应内容，会显得心虚。",ideal:false},
+        {text:"总体来说我们更好",score:34,tag:"info",feedback:"笼统的结论说服不了看参数的人。",ideal:false}
+       ]},
+      {situation:"评委认可你的大部分参数，但在一项关键指标上你确实不如竞品。",
+       choices:[
+        {text:"坦诚承认差距并展示路线图与弥补时间表",score:87,tag:"standard",feedback:"用诚实加具体计划赢得理性型评委的尊重，远好于掩饰。",ideal:true},
+        {text:"那项指标其实不太重要",score:33,tag:"agenda",feedback:"否定评委关注的指标等于否定他的专业判断。",ideal:false},
+        {text:"我们价格更低能补回来",score:42,tag:"concession",feedback:"用低价弥补技术短板，在技术型评委眼里逻辑不通。",ideal:false}
+       ]},
+      {situation:"评委最终总结，问你有没有什么要补充的。",
+       choices:[
+        {text:"用三句话总结核心优势与差异化价值，附一页数据",score:85,tag:"info",feedback:"精炼有力的收尾加数据留底，让理性型评委在后续讨论时有据可查。",ideal:true},
+        {text:"没什么补充了",score:35,tag:"info",feedback:"放弃最后的表达机会太可惜。",ideal:false},
+        {text:"再把所有优势从头讲一遍",score:30,tag:"agenda",feedback:"重复已知信息浪费评委的时间和耐心。",ideal:false}
+       ]}
+     ]}
+  ]},
+  {id:"vs_emotional",name:"情感共鸣型",color:"#fb7185",skill:"trust",scenarios:[
+    {context:"客户是一位重感情的家族企业负责人，决策很受个人关系和情感印象的影响。逻辑在他这里不如感觉管用。",
+     objective:"用共情建立信任，再巧妙地引导回业务议题。",
+     tip:"\"先连接心，再连接事。\"——谈判导师 米岚",
+     rounds:[
+      {situation:"客户花了十分钟聊他父亲创业的故事，似乎在试探你是否真心在听。",
+       choices:[
+        {text:"认真倾听并真诚回应故事中的核心价值",score:87,tag:"trust",feedback:"真诚的倾听和回应是与情感型对手建立信任的第一步。他需要感到你理解他。",ideal:true},
+        {text:"礼貌打断，说咱们聊正事吧",score:32,tag:"agenda",feedback:"打断情感型对手的故事等于关上信任之门，后续谈判会极其困难。",ideal:false},
+        {text:"敷衍点头，心里想着怎么切入报价",score:38,tag:"info",feedback:"虚假的倾听很容易被感知，情感型对手对此尤为敏感。",ideal:false}
+       ]},
+      {situation:"客户开始信任你，主动聊起他对公司的担忧和愿景。",
+       choices:[
+        {text:"回应他的愿景，并自然地把方案与愿景挂钩",score:88,tag:"trust",feedback:"把业务方案嵌入对方的愿景叙事中，情感认同与理性决策自然融合。",ideal:true},
+        {text:"抓住弱点猛推促单",score:25,tag:"pressure",feedback:"利用对方的坦诚推销会被感知为背叛信任，关系瞬间破裂。",ideal:false},
+        {text:"继续纯聊感情不谈业务",score:45,tag:"trust",feedback:"只有感情没有转化，最终会沦为朋友而非合作伙伴。",ideal:false}
+       ]},
+      {situation:"客户说他很看好你，但他家人可能有不同意见。",
+       choices:[
+        {text:"提议一起见家人，用同样的真诚态度赢得他们",score:86,tag:"trust",feedback:"扩大信任圈到决策链上的其他人，用同样的方式复制关系。",ideal:true},
+        {text:"你说了算就行，何必问家人",score:30,tag:"pressure",feedback:"否定家人的角色会让重视家庭的对手非常反感。",ideal:false},
+        {text:"家人的事我管不了",score:28,tag:"trust",feedback:"回避关键阻碍不代表它不存在，它会在后面跳出来。",ideal:false}
+       ]},
+      {situation:"即将签约时客户犹豫了，说'总觉得哪里不踏实'。",
+       choices:[
+        {text:"温和地问他具体是哪种感觉，帮他梳理顾虑",score:85,tag:"emotion",feedback:"帮助情感型对手把模糊的不安变成具体的顾虑，然后逐一化解。",ideal:true},
+        {text:"给更大的折扣打消犹豫",score:40,tag:"concession",feedback:"用价格压不住情感上的不安，折扣解决不了信任问题。",ideal:false},
+        {text:"再不签就来不及了",score:28,tag:"pressure",feedback:"催促会加重情感型对手的不安全感。",ideal:false}
+       ]}
+     ]},
+    {context:"你的客户因为之前的一次交付延迟非常不满，情绪激动地打来电话。你需要修复关系并挽留这个重要客户。",
+     objective:"用情感共鸣化解怒火，把投诉转化为更深的信任。",
+     tip:"\"投诉是一次比初次合作更深的信任建设机会。\"——谈判导师 米岚",
+     rounds:[
+      {situation:"客户一上来就说'你们太让我失望了'，语气很重。",
+       choices:[
+        {text:"先认真道歉并承认他的失望完全合理",score:86,tag:"emotion",feedback:"先共情后解释。在情绪面前，道歉不是示弱，是开启对话的钥匙。",ideal:true},
+        {text:"马上解释原因和客观困难",score:40,tag:"info",feedback:"在情绪高峰期解释原因会被听成推卸责任。",ideal:false},
+        {text:"我们也很难，互相理解一下",score:30,tag:"trust",feedback:"让愤怒中的人理解你的困难，只会火上浇油。",ideal:false}
+       ]},
+      {situation:"客户听到道歉后稍微平复，但说'说说你们打算怎么办'。",
+       choices:[
+        {text:"提出具体的补救方案和防止再犯的改进措施",score:88,tag:"trust",feedback:"道歉之后是行动方案，让对方看到你不只是嘴上说说。",ideal:true},
+        {text:"我回去再想想",score:35,tag:"info",feedback:"没有立即拿出方案会让道歉显得空洞。",ideal:false},
+        {text:"给你打折补偿",score:48,tag:"concession",feedback:"折扣能解决账面问题，但解决不了信任问题。方案比折扣重要。",ideal:false}
+       ]},
+      {situation:"客户对补救方案表示认可，但仍有些犹豫是否继续合作。",
+       choices:[
+        {text:"回忆合作中的好时刻并表达珍惜这段合作关系",score:85,tag:"trust",feedback:"唤起正面记忆帮助情感型客户重新连接信任感。",ideal:true},
+        {text:"继续加码补偿条件",score:42,tag:"concession",feedback:"过度补偿反而显得心虚，也不解决感情层面的修复。",ideal:false},
+        {text:"不续就不续，我也没办法",score:22,tag:"retreat",feedback:"放弃态度等于承认你不在乎这段关系。",ideal:false}
+       ]},
+      {situation:"客户决定继续合作，但要求更高的保障承诺。",
+       choices:[
+        {text:"给出合理的升级保障并设立定期沟通机制",score:85,tag:"trust",feedback:"用机制化的沟通修复并加固信任，比一次性承诺更持久。",ideal:true},
+        {text:"所有条件都答应",score:36,tag:"concession",feedback:"无条件答应所有要求会在后续执行时造成新的失望。",ideal:false},
+        {text:"这次是例外，以后按原来的来",score:30,tag:"standard",feedback:"把修复当例外处理，等于告诉对方你并没有真正改变。",ideal:false}
+       ]}
+     ]}
+  ]},
+  {id:"vs_aggressive",name:"强势主导型",color:"#ff4f6a",skill:"pressure",scenarios:[
+    {context:"对手是一位以强硬著称的谈判老手，喜欢用威胁、最后通牒和情绪施压来逼你就范。",
+     objective:"用BATNA和沉默破解高压战术，不被恐惧驱动。",
+     tip:"\"面对强势者，你的底气来自你的替代方案。\"——谈判导师 顾余",
+     rounds:[
+      {situation:"对手一上来就说'这是最终报价，不接受就走人'。",
+       choices:[
+        {text:"平静地说你需要评估，并提到自己也有其他选择",score:86,tag:"batna",feedback:"不被最后通牒吓住，用替代方案暗示你有退路。强势者最怕你不怕。",ideal:true},
+        {text:"好的好的，我接受",score:22,tag:"concession",feedback:"秒怂正是强势者想要的结果，你从此毫无筹码。",ideal:false},
+        {text:"你走啊，谁怕谁",score:35,tag:"pressure",feedback:"硬碰硬可能真把对方推走，除非你确实不在乎。",ideal:false}
+       ]},
+      {situation:"对手提高音量，拍桌子说'别浪费时间'。",
+       choices:[
+        {text:"保持沉默三秒，然后用平静的语气继续",score:88,tag:"pressure",feedback:"沉默是强势者最不适应的武器。你的平静会消解他的攻击性。",ideal:true},
+        {text:"你也别冲动，有话好好说",score:45,tag:"emotion",feedback:"说教语气可能激怒强势者更多。",ideal:false},
+        {text:"也提高音量对吼回去",score:25,tag:"pressure",feedback:"互吼只会升级冲突，没人能在愤怒中做出好决策。",ideal:false}
+       ]},
+      {situation:"对手见你不为所动，开始改变策略，抛出一些'善意'条件。",
+       choices:[
+        {text:"冷静评估条件是否真的改善，不因气氛变化而放松警惕",score:85,tag:"batna",feedback:"强势者的'善意'可能是另一种操控形式，用你的BATNA标准而非情绪来评估。",ideal:true},
+        {text:"终于友好了，赶紧答应",score:32,tag:"trust",feedback:"在施压后突然让步的对手可能在用情绪反差来获取不当优势。",ideal:false},
+        {text:"之前态度那么差，现在甜没用",score:38,tag:"emotion",feedback:"翻旧账会让对话再次恶化。",ideal:false}
+       ]},
+      {situation:"谈判接近尾声，对手再次试图用deadline施压：'今天不定就没了'。",
+       choices:[
+        {text:"确认deadline的真实性，如果是虚假的就直接指出",score:86,tag:"batna",feedback:"测试最后通牒的真假：如果你有替代方案，虚假deadline对你无效。",ideal:true},
+        {text:"被催促成交",score:30,tag:"concession",feedback:"不验证就接受deadline，可能错过更好的条件。",ideal:false},
+        {text:"也给对方设一个deadline",score:48,tag:"pressure",feedback:"互设deadline虽有一定效果，但不如验证对方deadline真假来得精准。",ideal:false}
+       ]}
+     ]},
+    {context:"你的老板是一个强势型管理者，总在会议上否定你的提案。你需要在不对抗的前提下推动自己的方案。",
+     objective:"在权力不对等的场景下用影响力替代对抗。",
+     tip:"\"不能硬来时，就用数据和盟友作为你的杠杆。\"——谈判导师 顾余",
+     rounds:[
+      {situation:"你刚开始汇报，老板就说'这个方向不对'。",
+       choices:[
+        {text:"不急于辩护，先问老板期望的方向是什么",score:86,tag:"info",feedback:"用提问而非对抗来理解权力方的期望，先顺后引。",ideal:true},
+        {text:"直接说'您先听我讲完再说'",score:30,tag:"pressure",feedback:"正面对抗上级在大多数职场环境里会适得其反。",ideal:false},
+        {text:"默默放弃方案不说了",score:25,tag:"retreat",feedback:"不为自己的方案争取，就不会有任何改变。",ideal:false}
+       ]},
+      {situation:"老板说了他的想法，你发现他的方向其实有盲点。",
+       choices:[
+        {text:"认可他的大方向，在细节上用数据补充你的角度",score:88,tag:"standard",feedback:"顺着大方向补充细节，用数据说话而非直接否定。以柔克刚。",ideal:true},
+        {text:"直接指出他的盲点",score:38,tag:"info",feedback:"直接指出上级的盲点在公开场合风险较高。",ideal:false},
+        {text:"完全按他说的来",score:32,tag:"concession",feedback:"完全服从放弃了你的专业判断和价值。",ideal:false}
+       ]},
+      {situation:"老板对你补充的数据有了兴趣，但仍在犹豫。",
+       choices:[
+        {text:"引用团队其他人和客户的支持作为佐证",score:85,tag:"trust",feedback:"借助他人背书分散提案的归属感，让老板不觉得是在被你说服。",ideal:true},
+        {text:"继续自己一个人苦劝",score:42,tag:"pressure",feedback:"单打独斗在权力不对称场景中效率很低。",ideal:false},
+        {text:"说'反正您定'",score:28,tag:"retreat",feedback:"消极态度既帮不了方案也帮不了自己。",ideal:false}
+       ]},
+      {situation:"老板最终让你试试看，但给的资源很少。",
+       choices:[
+        {text:"接受并设定一个小里程碑来证明可行性",score:85,tag:"agenda",feedback:"用最小可行的里程碑去赢得下一步的资源和信任，积小胜为大胜。",ideal:true},
+        {text:"抱怨资源太少没法做",score:30,tag:"emotion",feedback:"抱怨不会带来更多资源，只会消耗好不容易争取到的机会。",ideal:false},
+        {text:"要求一步到位拿到全部资源",score:35,tag:"pressure",feedback:"刚获得初步信任就要全部资源，会让老板觉得你不知进退。",ideal:false}
+       ]}
+     ]}
+  ]},
+  {id:"vs_risk_averse",name:"谨慎防御型",color:"#60a5fa",skill:"trust",scenarios:[
+    {context:"客户对你的方案很感兴趣，但总在说'让我再想想''风险太大了''万一出问题呢'。他不是不想买，而是害怕做错决定。",
+     objective:"通过降低感知风险和提供安全保障来帮助谨慎型客户做出决定。",
+     tip:"\"谨慎者不需要被说服，需要被安心。\"——谈判导师 蓝衫",
+     rounds:[
+      {situation:"客户说'你们的方案看起来不错，但我还是很担心'。",
+       choices:[
+        {text:"请他具体说说最担心哪三个点",score:86,tag:"info",feedback:"把模糊的担忧具体化，才能逐一化解。谨慎型对手的恐惧往往是被想象放大的。",ideal:true},
+        {text:"没什么好担心的，放心！",score:28,tag:"trust",feedback:"笼统的保证对谨慎型对手毫无安抚效果。",ideal:false},
+        {text:"犹豫太久机会就没了",score:35,tag:"pressure",feedback:"催促谨慎型对手会加剧他们的焦虑而非减轻。",ideal:false}
+       ]},
+      {situation:"客户列出了三个担忧：技术适配、迁移风险、售后响应。",
+       choices:[
+        {text:"逐一提供案例、数据和保障承诺来消除每个顾虑",score:88,tag:"standard",feedback:"用证据而非口号化解每一个具体顾虑。谨慎型对手需要的是安全感的支撑物。",ideal:true},
+        {text:"这些问题都不会发生",score:30,tag:"trust",feedback:"否认风险存在会让谨慎型对手更加不信任你。",ideal:false},
+        {text:"别想那么多，干就完了",score:22,tag:"pressure",feedback:"风格完全不匹配，会让对手退缩更远。",ideal:false}
+       ]},
+      {situation:"客户对你的案例和保障感到安心，但仍说'要不先试个小的？'",
+       choices:[
+        {text:"支持先做小规模试点，设定清晰的验收标准",score:85,tag:"trust",feedback:"接受试点是对谨慎型对手最好的尊重。一次成功的小试点会打开后续大合同。",ideal:true},
+        {text:"试什么试，直接大合同",score:28,tag:"pressure",feedback:"跳过谨慎型对手需要的安全步骤，会让他直接退出。",ideal:false},
+        {text:"试可以但费用不降",score:42,tag:"concession",feedback:"试点阶段死咬费用会让对手怀疑你的诚意。",ideal:false}
+       ]},
+      {situation:"试点即将启动，客户又开始问'如果试点不成功怎么办'。",
+       choices:[
+        {text:"提供明确的退出机制和无风险承诺",score:86,tag:"trust",feedback:"给谨慎型对手一个安全网，反而会让他更愿意迈出第一步。",ideal:true},
+        {text:"不会不成功的，你放心",score:32,tag:"trust",feedback:"又是笼统保证，谨慎型对手已经听腻了。",ideal:false},
+        {text:"不成功你自己承担后果",score:20,tag:"pressure",feedback:"把全部风险推给对手，他一定不会启动试点。",ideal:false}
+       ]}
+     ]},
+    {context:"你向公司管理层提议一项改革，但管理层保守谨慎，害怕变革带来动荡。",
+     objective:"用渐进策略和风控框架说服风险厌恶型决策者。",
+     tip:"\"让保守者看到不变的风险，比让他看到变的好处更有效。\"——谈判导师 蓝衫",
+     rounds:[
+      {situation:"管理层说'现在这样也挺好的，为什么要改'。",
+       choices:[
+        {text:"展示不改的潜在成本和竞争对手已变的事实",score:87,tag:"standard",feedback:"让决策者看到不变的代价比鼓吹变革的收益更能触动保守型思维。",ideal:true},
+        {text:"因为别人都在改，不改就落后了",score:42,tag:"pressure",feedback:"从众压力有一定效果但缺乏具体性。",ideal:false},
+        {text:"现在不好，必须改",score:30,tag:"pressure",feedback:"否定现状会让管理层感到被否定。",ideal:false}
+       ]},
+      {situation:"管理层开始认真听，但表情仍充满顾虑。",
+       choices:[
+        {text:"提出分三阶段渐进实施的方案",score:86,tag:"agenda",feedback:"化整为零降低每一步的风险感知，让保守型决策者每一步都能审视和决定。",ideal:true},
+        {text:"提出一步到位的激进改革",score:30,tag:"pressure",feedback:"激进方案正是保守型决策者最害怕的。",ideal:false},
+        {text:"先做了再说，灵活调整",score:38,tag:"trust",feedback:"缺乏计划的灵活等于没有方向，加深而非减轻焦虑。",ideal:false}
+       ]},
+      {situation:"管理层对分阶段方案感兴趣，但问'第一步出了问题怎么办'。",
+       choices:[
+        {text:"展示第一阶段的回滚机制和止损标准",score:88,tag:"standard",feedback:"有退出机制的改革方案对保守型决策者来说才是安全的。",ideal:true},
+        {text:"第一步很简单，不会出问题",score:35,tag:"trust",feedback:"任何'不会出问题'在保守者耳中都等于'没考虑过'。",ideal:false},
+        {text:"出了问题我负责",score:40,tag:"trust",feedback:"个人担保在组织决策中分量不够。",ideal:false}
+       ]},
+      {situation:"管理层接近同意，但要求先看到试运行数据。",
+       choices:[
+        {text:"同意并提议选一个低风险部门做试运行",score:85,tag:"trust",feedback:"用最小的试错成本获取保守型决策者需要的安全感数据。",ideal:true},
+        {text:"不需要试运行，方案已经很成熟了",score:30,tag:"pressure",feedback:"跳过验证步骤会让保守者立刻撤回支持。",ideal:false},
+        {text:"试运行太慢了，竞争对手不等人",score:38,tag:"pressure",feedback:"继续施压不如配合节奏让对方自己说服自己。",ideal:false}
+       ]}
+     ]}
+  ]},
+  {id:"vs_cooperative",name:"灵活妥协型",color:"#4ade80",skill:"concession",scenarios:[
+    {context:"对手是一位好说话的合作方，几乎什么条件都可以谈。但你发现他的'灵活'可能意味着很多承诺无法兑现。",
+     objective:"在合作氛围中保持清醒，确保承诺有约束力。",
+     tip:"\"最好说话的对手，往往藏着最大的执行风险。\"——谈判导师 邵景",
+     rounds:[
+      {situation:"对手笑呵呵地说'这些条件都没问题，你说了算'。",
+       choices:[
+        {text:"追问每个'没问题'背后的具体执行方案",score:86,tag:"agenda",feedback:"把口头的'没问题'转化为具体的执行承诺，避免合作型对手的空头支票。",ideal:true},
+        {text:"太好了，赶紧签约",score:30,tag:"concession",feedback:"急于成交忽略了执行保障，后续交付可能一地鸡毛。",ideal:false},
+        {text:"不信他这么好说话，拒绝合作",score:25,tag:"retreat",feedback:"因为对方好说话就拒绝太极端了。",ideal:false}
+       ]},
+      {situation:"你追问之后发现他对几个条件其实没有想清楚。",
+       choices:[
+        {text:"帮他一起梳理可行方案并共同设定边界",score:88,tag:"agenda",feedback:"与合作型对手共创方案，既保护自己也帮对方落实，形成真正的双赢。",ideal:true},
+        {text:"既然没想清楚那就算了",score:30,tag:"retreat",feedback:"放弃一个愿意合作的对手太可惜。",ideal:false},
+        {text:"不管细节，先把大条款定了",score:40,tag:"concession",feedback:"跳过细节正是日后扯皮的根源。",ideal:false}
+       ]},
+      {situation:"合作方案梳理好了，你需要确保承诺有约束力。",
+       choices:[
+        {text:"提议把关键条款写入合同并约定违约条件",score:85,tag:"standard",feedback:"对好说话的对手更需要白纸黑字，不是不信任而是保护双方。",ideal:true},
+        {text:"口头说好就行，都是朋友",score:35,tag:"trust",feedback:"友谊不能替代合同，执行期一长什么都可能变。",ideal:false},
+        {text:"设置过重的违约条款以防万一",score:38,tag:"pressure",feedback:"过重的违约条款会破坏合作氛围，过犹不及。",ideal:false}
+       ]},
+      {situation:"签约后第一次执行审查，发现合作方确实在一些细节上没跟上。",
+       choices:[
+        {text:"及时友善地指出偏差并帮助纠偏",score:86,tag:"trust",feedback:"早发现早纠正，用合作而非指责的方式保持关系和质量。",ideal:true},
+        {text:"算了，下次注意就好",score:38,tag:"trust",feedback:"纵容第一次偏差会变成默认标准。",ideal:false},
+        {text:"直接按违约条款处罚",score:30,tag:"pressure",feedback:"首次偏差就罚款会破坏合作关系的基础。",ideal:false}
+       ]}
+     ]},
+    {context:"你的合作伙伴提议一个双赢方案，看似很有吸引力，但你需要确保自己没有被'合作'的表象蒙蔽。",
+     objective:"在合作表象中识别真正的价值分配和潜在不对等。",
+     tip:"\"双赢不等于各得一半，要看实际价值分配。\"——谈判导师 邵景",
+     rounds:[
+      {situation:"对手提出一个'双赢'方案：你们出技术，他们出渠道，利润五五分。",
+       choices:[
+        {text:"分析双方投入的实际成本和风险再谈分配",score:87,tag:"standard",feedback:"五五分不等于公平。只有基于实际投入和风险的分配才是真正的双赢。",ideal:true},
+        {text:"五五分听起来很公平，同意",score:35,tag:"concession",feedback:"不计算实际投入就接受表面的公平，可能吃大亏。",ideal:false},
+        {text:"我要六成",score:42,tag:"pressure",feedback:"不分析就反压，缺乏说服力。",ideal:false}
+       ]},
+      {situation:"分析后发现你的技术投入远高于对方的渠道贡献。",
+       choices:[
+        {text:"用数据提议调整分配比例并给出合理依据",score:86,tag:"standard",feedback:"用事实重新定义公平，比情绪化的要求更有说服力。",ideal:true},
+        {text:"直接指责对方的方案不公平",score:35,tag:"pressure",feedback:"指责语气会让合作型对手的好意转为防御。",ideal:false},
+        {text:"算了，当交学费",score:28,tag:"retreat",feedback:"明知不公平仍接受，不是大度是软弱。",ideal:false}
+       ]},
+      {situation:"对手接受调整但提出他负责的渠道有独家资源价值。",
+       choices:[
+        {text:"承认渠道价值并提议引入独立估值",score:85,tag:"standard",feedback:"用独立估值来化解双方对价值的主观分歧。",ideal:true},
+        {text:"渠道不值那么多",score:38,tag:"info",feedback:"直接否定对方的价值主张会让谈判陷入争论。",ideal:false},
+        {text:"随便他怎么算",score:30,tag:"concession",feedback:"放弃定价话语权是最大的让步。",ideal:false}
+       ]},
+      {situation:"最终方案需要双方确认价值分配和退出机制。",
+       choices:[
+        {text:"设立分阶段审计和触发再谈判的条件",score:86,tag:"endgame",feedback:"用机制保障合作的公平持续性，比一次性谈定更可靠。",ideal:true},
+        {text:"先这样吧，以后再说",score:35,tag:"retreat",feedback:"没有审查机制的合作，随时可能变质。",ideal:false},
+        {text:"写死条件不许改",score:38,tag:"standard",feedback:"商业环境变化快，完全固化条件会让合作失去弹性。",ideal:false}
+       ]}
+     ]}
+  ]},
+  {id:"vs_manipulative",name:"诡辩操控型",color:"#c084fc",skill:"info",scenarios:[
+    {context:"你在谈一笔大合同，对方谈判代表以话术高超闻名。他善用模糊承诺、偷换概念和信息不对称来获取优势。",
+     objective:"识别操控模式并用事实核查回归核心议题。",
+     tip:"\"操控者最怕的不是吵架，是被冷静地拆穿。\"——谈判导师 沈知遥",
+     rounds:[
+      {situation:"对手说'行业里大家都是这个条款'，但你从未见过这种条款。",
+       choices:[
+        {text:"要求对方出示具体的行业惯例文件或案例",score:87,tag:"info",feedback:"要求证据是破解'行业惯例'操控的最直接方式。真的行业惯例经得起核实。",ideal:true},
+        {text:"那就按行业惯例吧",score:25,tag:"concession",feedback:"不核实就接受可能是对方编造的惯例。",ideal:false},
+        {text:"我不管什么行业惯例",score:40,tag:"pressure",feedback:"强硬拒绝虽守住了底线，但没有拆穿操控本身。",ideal:false}
+       ]},
+      {situation:"对手在一个条款上用了大量模糊词汇，如'适当''必要时''原则上'。",
+       choices:[
+        {text:"逐一要求定义每个模糊词的具体含义和边界",score:88,tag:"info",feedback:"消除模糊是反操控的核心动作。每个模糊词都是日后扯皮的炸弹。",ideal:true},
+        {text:"这些都是正常法律用语",score:30,tag:"standard",feedback:"不是所有模糊都正常。操控者刻意用模糊来保留解释权。",ideal:false},
+        {text:"太细了，大方向对就行",score:32,tag:"agenda",feedback:"在操控者面前放弃细节审查就是放弃保护。",ideal:false}
+       ]},
+      {situation:"对手突然改变之前口头同意的条件，否认说过某些话。",
+       choices:[
+        {text:"拿出会议记录或邮件确认，冷静还原事实",score:86,tag:"info",feedback:"书面记录是对付否认和翻供的最强武器。与操控者打交道务必留痕。",ideal:true},
+        {text:"你明明说过！吵起来",score:30,tag:"emotion",feedback:"情绪化争论正是操控者希望的局面，让你分心于情绪而非事实。",ideal:false},
+        {text:"那就按你现在说的来",score:25,tag:"concession",feedback:"每次都接受翻供等于鼓励对方继续操控。",ideal:false}
+       ]},
+      {situation:"谈判快结束时对手突然抛出一个'小问题'要求你让步——这明显是最后时刻的操控战术。",
+       choices:[
+        {text:"识别这是蚕食战术，要求对方把'小问题'放回主条款重新谈",score:85,tag:"endgame",feedback:"蚕食战术靠的是你在成交压力下松懈。识别并拒绝是反操控的最后一道防线。",ideal:true},
+        {text:"都快签了就同意吧",score:30,tag:"concession",feedback:"在终局松懈正中操控者下怀，每次一小步加起来可能是巨大让步。",ideal:false},
+        {text:"不签了，整个deal作废",score:35,tag:"retreat",feedback:"因一个蚕食战术否定整个交易太极端了。",ideal:false}
+       ]}
+     ]},
+    {context:"你在团队中发现一位同事总在用信息不对称和选择性汇报来操控会议方向，影响决策对你不利。",
+     objective:"在职场政治中用透明化和事实核查来反制操控。",
+     tip:"\"阳光是最好的消毒剂。\"——谈判导师 沈知遥",
+     rounds:[
+      {situation:"同事在会上引用了一组对他有利的数据，但你知道完整数据并非如此。",
+       choices:[
+        {text:"补充完整数据并建议以后用全口径数据做决策",score:86,tag:"standard",feedback:"用补充而非攻击的方式揭示真相，既纠偏又不制造对抗。",ideal:true},
+        {text:"当场揭穿他在撒谎",score:32,tag:"pressure",feedback:"公开指控会把战场升级，即使你是对的也可能引火烧身。",ideal:false},
+        {text:"懒得管，让他去吧",score:25,tag:"retreat",feedback:"沉默等于默认，操控会变本加厉。",ideal:false}
+       ]},
+      {situation:"同事事后私下来找你说'别在会上为难我，我们私下解决'。",
+       choices:[
+        {text:"同意私下谈但坚持关键数据必须在会上透明",score:85,tag:"standard",feedback:"给对方面子的同时守住透明底线，平衡关系与原则。",ideal:true},
+        {text:"在哪里说都一样，你别操控就行",score:38,tag:"pressure",feedback:"过于直接可能让对方彻底变成敌人。",ideal:false},
+        {text:"好好好，以后不说了",score:28,tag:"retreat",feedback:"妥协等于放弃原则，操控者会更加肆无忌惮。",ideal:false}
+       ]},
+      {situation:"接下来的几次会议，同事变得更加隐蔽，开始在会前单独游说其他人。",
+       choices:[
+        {text:"也在会前做信息同步，确保决策者看到全面的数据",score:87,tag:"info",feedback:"用透明化对冲操控。当所有人都有完整信息时，选择性汇报就失效了。",ideal:true},
+        {text:"去老板那告状",score:38,tag:"pressure",feedback:"告状不一定有效，可能还被扣上'打小报告'的帽子。",ideal:false},
+        {text:"也开始拉帮结派",score:28,tag:"pressure",feedback:"以操控对操控会让整个团队文化变质。",ideal:false}
+       ]},
+      {situation:"局面渐渐被你扳回，同事的影响力在减弱。",
+       choices:[
+        {text:"保持透明化习惯并主动与同事建立工作协作",score:85,tag:"trust",feedback:"赢了战术后用合作修复关系，避免制造永久的敌人。",ideal:true},
+        {text:"趁机踩他一脚",score:22,tag:"pressure",feedback:"得理不饶人会在职场制造长期的敌对风险。",ideal:false},
+        {text:"从此老死不相往来",score:35,tag:"retreat",feedback:"在同一个团队里冷战只会让协作效率持续低下。",ideal:false}
+       ]}
+     ]}
+  ]}
+  ]
+};
+
+/* =========================================================================
+   TRACK C — 全场景综合演练 (3 full simulations, 6 rounds each)
+   ========================================================================= */
+const TRACK_C = {
+  id:"C", name:"全场景综合演练", icon:"🏆",
+  sub:"完整模拟真实谈判全流程", color:"#f6c453",
+  modules:[
+  {id:"sim_salary",name:"职场薪资谈判",color:"#f6c453",skill:"endgame",scenarios:[
+    {context:"你在一家中型科技公司工作三年，绩效一直优秀。猎头带来了一个外部offer，薪资比现在高30%。你想用这个机会和HR总监谈加薪，但又不想以威胁离职的方式开场。你的直属领导支持你，但最终决定权在HR。",
+     objective:"完成一场从锚定到收尾的完整薪资谈判，综合运用多种技能。",
+     tip:"\"薪资谈判是关于你的市场价值的商业讨论，不是求恩赐。\"——谈判导师 林楷",
+     rounds:[
+      {situation:"HR约你面谈，开场问'听说你有一些想法想聊聊？'",
+       choices:[
+        {text:"用市场数据和个人贡献作为锚点，提出加薪期望",score:86,tag:"pressure",feedback:"用数据而非情绪开场，先锚定了专业讨论的基调。让HR知道你做过功课。",ideal:true},
+        {text:"直接亮出外部offer要求match",score:48,tag:"batna",feedback:"过早亮底牌虽有冲击力但把谈判变成了'要不要留人'的单维度讨论。",ideal:false},
+        {text:"嗯……就是觉得工资有点低",score:30,tag:"info",feedback:"模糊且被动的开场让HR掌握节奏。",ideal:false}
+       ],adaptation:"HR开始评估你的信息准备程度，决定是敷衍还是认真谈。"},
+      {situation:"HR说'公司有薪资体系，不能随意调整'，用制度当挡箭牌。",
+       choices:[
+        {text:"问这个体系如何评估超出预期的贡献和市场稀缺性",score:87,tag:"standard",feedback:"不否认体系的存在但质疑其覆盖范围，在体系内寻找例外的空间。",ideal:true},
+        {text:"那我只能去看外面的机会了",score:40,tag:"batna",feedback:"过早威胁会把谈判推向对抗，HR可能直接说'那你去吧'。",ideal:false},
+        {text:"那就算了，没办法",score:22,tag:"retreat",feedback:"一遇阻力就放弃，你的筹码白白浪费。",ideal:false}
+       ],adaptation:"HR注意到你不会被轻易打发，开始思考如何回应。"},
+      {situation:"HR松口说'可以看看特殊调薪通道'，但幅度可能不如你预期。",
+       choices:[
+        {text:"提出除了底薪还可以谈年终奖、期权、培训预算等组合",score:88,tag:"concession",feedback:"把谈判从单维度的底薪扩展到多维度的总薪酬包，创造更大的腾挪空间。",ideal:true},
+        {text:"只要底薪不够我就不接受",score:38,tag:"pressure",feedback:"死盯底薪会让HR很难操作，你也错过了其他价值。",ideal:false},
+        {text:"差不多就行，感恩有得谈",score:34,tag:"concession",feedback:"过度感恩等于提前投降，压缩了自己的空间。",ideal:false}
+       ],adaptation:"HR开始在多维度上与你协商，气氛转向建设性。"},
+      {situation:"双方接近达成一致，HR问'还有什么要补充的吗？'",
+       choices:[
+        {text:"确认所有条款并要求书面确认和生效时间",score:85,tag:"endgame",feedback:"终局不能含糊。口头协议加上书面确认才是真正的成果。",ideal:true},
+        {text:"没了，就这样吧",score:40,tag:"endgame",feedback:"不确认细节可能导致后续落实出现偏差。",ideal:false},
+        {text:"再加一个要求试试运气",score:35,tag:"concession",feedback:"终局再加码可能引起HR反感，把达成的共识也推翻。",ideal:false}
+       ],adaptation:"HR根据你的终局表现决定执行的优先级。"},
+      {situation:"HR说需要走一个审批流程，大概两周。你担心夜长梦多。",
+       choices:[
+        {text:"表示理解并约定两周后跟进，同时发一封邮件记录今天的共识",score:86,tag:"agenda",feedback:"用邮件锁定共识、用约定时间推进流程。让行政流程为你服务而非拖延你。",ideal:true},
+        {text:"两周太久了，明天就要答复",score:35,tag:"pressure",feedback:"不尊重内部流程的催促会让HR反感。",ideal:false},
+        {text:"好的，我等消息",score:42,tag:"trust",feedback:"被动等待缺乏主动跟进，容易被搁置。",ideal:false}
+       ],adaptation:"HR感受到你的专业度，处理优先级提升。"},
+      {situation:"两周后审批通过，但HR说最终方案比你预期略低5%。",
+       choices:[
+        {text:"权衡全局后接受并约定下一次评审的条件和时间",score:85,tag:"endgame",feedback:"最后5%的差距不值得重启整个谈判。接受并为下一轮谈判埋下锚点才是真正的长期思维。",ideal:true},
+        {text:"不接受，重新谈",score:35,tag:"pressure",feedback:"审批已过还要推翻，成本极高且可能搞砸关系。",ideal:false},
+        {text:"很不满意但默默接受",score:40,tag:"emotion",feedback:"心有不甘但不表达，既不影响结果也不为下次做铺垫。",ideal:false}
+       ],adaptation:"谈判完成。HR把你标记为高潜人才还是难搞的人，取决于你全程的表现。"}
+     ]}
+  ]},
+  {id:"sim_purchase",name:"商业采购谈判",color:"#3aa7ff",skill:"info",scenarios:[
+    {context:"你是某电商平台的采购负责人，需要与一家新兴品牌谈年度供货协议。品牌方产品质量好但产能有限，市场上还有三家同类供应商。你希望拿到独家合作或至少优先供货权，同时把成本控制在预算内。",
+     objective:"完成一场多维度的商业采购谈判，从议程到收尾全程综合运用。",
+     tip:"\"好的采购不只是砍价，而是构建一个让双方都赢的合作框架。\"——谈判导师 邵景",
+     rounds:[
+      {situation:"品牌方带了三个人来谈，明显准备充分。你需要先掌控议程。",
+       choices:[
+        {text:"提出先对齐双方目标再逐项讨论的议程框架",score:87,tag:"agenda",feedback:"用议程框架把对方的人数优势化解为结构化讨论，避免被多人轮番施压。",ideal:true},
+        {text:"直接报你的目标采购价",score:38,tag:"pressure",feedback:"开局就谈价格会被对方的多人团队围攻。",ideal:false},
+        {text:"让对方先介绍",score:45,tag:"info",feedback:"让对方控制开场节奏，你就在被动等待。",ideal:false}
+       ],adaptation:"品牌方开始评估你的谈判能力和准备程度。"},
+      {situation:"品牌方透露产能紧张，暗示供货优先级取决于合作诚意（即采购量和价格）。",
+       choices:[
+        {text:"挖掘他们产能瓶颈的具体原因和扩产计划",score:88,tag:"info",feedback:"信息获取在此刻价值最大。了解产能限制的根源才能找到破局点。",ideal:true},
+        {text:"那我们加量，换优先供货权",score:48,tag:"concession",feedback:"不了解产能真相就加量可能多承诺了不必要的库存。",ideal:false},
+        {text:"产能不够那我找别家",score:35,tag:"batna",feedback:"威胁找别家可能是真的好策略，但应该在了解完信息后再用。",ideal:false}
+       ],adaptation:"品牌方根据你的信息搜集深度决定透露多少实情。"},
+      {situation:"你发现他们的产能瓶颈其实在包装环节，核心产品有富余。",
+       choices:[
+        {text:"提议由你方承担包装环节，换取核心产品的优先供货和价格优惠",score:86,tag:"concession",feedback:"用自己擅长的包装能力去解决对方的瓶颈，创造了一个双方都得利的新维度。",ideal:true},
+        {text:"既然你产品有富余那就降价",score:42,tag:"pressure",feedback:"只盯价格错过了创造双赢的机会。",ideal:false},
+        {text:"包装问题是你们自己的事",score:30,tag:"pressure",feedback:"不帮助对方解决瓶颈，就没法用它作为筹码。",ideal:false}
+       ],adaptation:"品牌方对你的创意方案产生兴趣，态度转为积极。"},
+      {situation:"品牌方接受了包装方案，开始讨论价格。对方首报了一个高于你预算20%的价格。",
+       choices:[
+        {text:"用客观标准（同品类市场价、你的包装贡献、量价曲线）来反锚",score:87,tag:"standard",feedback:"用多维度的客观标准回应首报，比简单还价更有力量。",ideal:true},
+        {text:"太高了，给你砍一半",score:30,tag:"pressure",feedback:"离谱的还价会破坏刚建立的合作氛围。",ideal:false},
+        {text:"让我回去算算",score:45,tag:"info",feedback:"回去算当然可以，但当场反锚能抢占价格谈判的主动权。",ideal:false}
+       ],adaptation:"品牌方开始认真考虑你的价格逻辑。"},
+      {situation:"经过几轮价格协商，距离你的目标价还差8%。双方都有些疲惫。",
+       choices:[
+        {text:"提出打包方案：价格再降5%，你承诺年度保底量并预付部分货款",score:85,tag:"concession",feedback:"用打包交换而非逐项死磕来缩小差距，让双方都能宣称赢了。",ideal:true},
+        {text:"8%差距太大，谈不拢走人",score:32,tag:"retreat",feedback:"8%在打包方案中完全可以消化，过早放弃太可惜。",ideal:false},
+        {text:"算了按对方的价来",score:35,tag:"concession",feedback:"放弃了8%的空间等于放弃了团队交给你的谈判任务。",ideal:false}
+       ],adaptation:"品牌方权衡保底量和预付款的价值。"},
+      {situation:"品牌方原则上接受了打包方案，进入合同条款阶段。",
+       choices:[
+        {text:"确认核心条款、设立季度review机制和年度重新谈判触发条件",score:86,tag:"endgame",feedback:"好的终局不只是签字，还要为这段合作关系的持续健康运营设好框架。",ideal:true},
+        {text:"赶紧签字怕对方反悔",score:40,tag:"endgame",feedback:"急于签字可能遗漏重要条款。",ideal:false},
+        {text:"合同让法务去处理吧",score:38,tag:"retreat",feedback:"在核心条款确认前就交给法务，可能出现理解偏差。",ideal:false}
+       ],adaptation:"最终合同质量取决于你对细节的关注程度。"}
+     ]}
+  ]},
+  {id:"sim_crisis",name:"危机客户处理",color:"#ff4f6a",skill:"emotion",scenarios:[
+    {context:"你管理的一个大客户（年营收贡献500万）因为本月连续两次发货延迟大发雷霆。客户负责人在电话里威胁'如果不给我一个满意的解释，下周我就启动供应商替换流程'。你的老板让你今天就去客户那里面谈解决。",
+     objective:"在愤怒客户面前完成从情绪安抚到关系修复的完整危机处理。",
+     tip:"\"危机不是终点，是关系升华的起点——如果你处理得当。\"——谈判导师 米岚",
+     rounds:[
+      {situation:"你到了客户公司，对方负责人一见面就甩过来一份投诉清单，语气冰冷。",
+       choices:[
+        {text:"不辩解，先认真看清单，然后诚恳道歉并确认每一条",score:87,tag:"emotion",feedback:"在愤怒面前先接住而非反弹。逐条确认清单展示你对问题的重视程度。",ideal:true},
+        {text:"马上解释每一条的原因",score:38,tag:"info",feedback:"对方还在火头上，解释会被当成辩解。",ideal:false},
+        {text:"这些问题不全是我们的责任",score:25,tag:"standard",feedback:"推卸责任是危机处理的大忌，即使你说的是事实。",ideal:false}
+       ],adaptation:"客户观察你的态度来决定是否愿意继续对话。"},
+      {situation:"你的道歉让气氛缓和了一些。客户叹了口气说'这些问题已经影响到我在公司的信誉了'。",
+       choices:[
+        {text:"表达对他个人处境的理解，并承诺帮他向其管理层解释",score:88,tag:"trust",feedback:"看到投诉背后的人——他也在承受内部压力。帮他解决内部信誉问题是最高级的安抚。",ideal:true},
+        {text:"我们尽快修复问题",score:48,tag:"agenda",feedback:"只回应业务层面忽略了情感层面的需求。",ideal:false},
+        {text:"那是你们内部的事",score:22,tag:"info",feedback:"冷漠的回应会让刚缓和的气氛再度恶化。",ideal:false}
+       ],adaptation:"客户开始把你当成盟友而非对手。"},
+      {situation:"客户问你具体打算怎么解决发货延迟的问题。",
+       choices:[
+        {text:"提出三层方案：紧急补救、流程改进、预防监控，附时间表",score:86,tag:"agenda",feedback:"分层的解决方案展示你不是在打补丁而是在做系统改进。附时间表让承诺可验证。",ideal:true},
+        {text:"保证以后不会再发生",score:32,tag:"trust",feedback:"笼统的保证在两次延迟后已经不够了。",ideal:false},
+        {text:"给你补偿两批免费货",score:42,tag:"concession",feedback:"用补偿解决信任问题治标不治本。",ideal:false}
+       ],adaptation:"客户开始评估你的方案是否可行和可持续。"},
+      {situation:"客户对你的方案基本认可，但要求在合同里增加违约赔偿条款。",
+       choices:[
+        {text:"接受合理的赔偿条款并提出双向的服务级别协议",score:85,tag:"standard",feedback:"用SLA把赔偿条款制度化，展示你对自己方案的信心。",ideal:true},
+        {text:"赔偿条款太苛刻，拒绝",score:32,tag:"pressure",feedback:"在危机修复阶段拒绝对方的保障需求会重新引爆信任危机。",ideal:false},
+        {text:"所有条件都接受",score:38,tag:"concession",feedback:"无条件接受可能给自己套上过重的义务。",ideal:false}
+       ],adaptation:"客户根据你的回应调整对这段合作的信心水平。"},
+      {situation:"事情基本解决了。临走前客户说'我本来是想换供应商的'。",
+       choices:[
+        {text:"感谢他给你这个机会，并提议建立月度沟通机制预防问题",score:87,tag:"trust",feedback:"把危机的教训转化为制度化的沟通机制，让这次事件成为关系升华的转折点。",ideal:true},
+        {text:"幸好你没换，我们是最好的",score:35,tag:"pressure",feedback:"自夸在此刻显得不够谦逊。",ideal:false},
+        {text:"换供应商也是你的权利",score:40,tag:"retreat",feedback:"虽然是事实但语气太冷，没有利用这个修复关系的好时机。",ideal:false}
+       ],adaptation:"危机处理结束。这位客户会成为你最忠实的合作伙伴还是随时可能离开的人，取决于后续的跟进。"},
+      {situation:"回到公司后你需要向老板汇报并推动内部改进。",
+       choices:[
+        {text:"如实汇报问题根因并提交系统性改进提案",score:85,tag:"agenda",feedback:"不是只灭了客户的火就完事。推动内部改进才是防止危机重演的根本。",ideal:true},
+        {text:"轻描淡写说客户已经搞定了",score:35,tag:"info",feedback:"不推动内部改进，下一次危机一定会来。",ideal:false},
+        {text:"把责任推到运营部门",score:25,tag:"pressure",feedback:"甩锅不解决问题，还会破坏内部协作。",ideal:false}
+       ],adaptation:"你的汇报质量决定了管理层对你的评价和未来资源投入。"}
+     ]}
+  ]}
+  ]
+};
+
+const ALL_TRACKS = [TRACK_A, TRACK_B, TRACK_C];
+
+/* =========================================================================
+   State & Persistence
+   ========================================================================= */
+const LS_KEY = 'tss_progress';
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { const p = JSON.parse(raw); p.skillMastery = p.skillMastery || {}; return p; }
+  } catch(e) {}
+  return { moduleScores:{}, skillMastery:{}, totalPoints:0, lastPlayed:null };
+}
+function saveProgress(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch(e){} }
+
+let progress = loadProgress();
+
+function addScore(moduleId, scenarioIdx, score, skillTags) {
+  const key = moduleId + '_' + scenarioIdx;
+  const prev = progress.moduleScores[key] || 0;
+  progress.moduleScores[key] = Math.max(prev, score);
+  const delta = Math.max(0, score - prev);
+  progress.totalPoints += delta;
+  if (skillTags) {
+    skillTags.forEach(t => { progress.skillMastery[t] = (progress.skillMastery[t] || 0) + Math.round(delta * 0.6); });
+  }
+  progress.lastPlayed = Date.now();
+  saveProgress(progress);
+}
+
+function getRank() {
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (progress.totalPoints >= RANKS[i].min) return RANKS[i];
+  }
+  return RANKS[0];
+}
+
+function getModuleBest(moduleId) {
+  let best = 0;
+  for (let i = 0; i < 10; i++) {
+    const s = progress.moduleScores[moduleId + '_' + i] || 0;
+    if (s > best) best = s;
+  }
+  return best;
+}
+
+function getStars(score) {
+  if (score >= 90) return 3;
+  if (score >= 70) return 2;
+  if (score >= 50) return 1;
+  return 0;
+}
+
+function starsHtml(n, size) {
+  size = size || 18;
+  let h = '';
+  for (let i = 0; i < 3; i++) h += '<span class="star ' + (i < n ? 'on' : '') + '" style="font-size:' + size + 'px">★</span>';
+  return h;
+}
+
+/* =========================================================================
+   Router
+   ========================================================================= */
+const $app = () => document.getElementById('app');
+
+let currentScreen = null;
+let screenParams = {};
+
+function goto(screen, params) {
+  currentScreen = screen;
+  screenParams = params || {};
+  render();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function render() {
+  const r = getRank();
+  document.getElementById('rankName').textContent = r.name;
+  document.getElementById('rankPts').textContent = progress.totalPoints + ' 训练分';
+  const el = $app();
+  switch(currentScreen) {
+    case 'HUB':          el.innerHTML = renderHub(); break;
+    case 'TRACK_MAP':    el.innerHTML = renderTrackMap(); break;
+    case 'DRILL_INTRO':  el.innerHTML = renderDrillIntro(); break;
+    case 'DRILL_ROUND':  el.innerHTML = renderDrillRound(); break;
+    case 'DRILL_FEEDBACK': el.innerHTML = renderDrillFeedback(); break;
+    case 'DRILL_RESULT': el.innerHTML = renderDrillResult(); break;
+    case 'STATS':        el.innerHTML = renderStats(); break;
+    default:             el.innerHTML = renderHub(); break;
+  }
+  bindEvents();
+}
+
+function bindEvents() {
+  document.querySelectorAll('[data-goto]').forEach(el => {
+    el.onclick = function() {
+      const target = this.getAttribute('data-goto');
+      const p = {};
+      for (const attr of this.attributes) {
+        if (attr.name.startsWith('data-p-')) p[attr.name.slice(7)] = attr.value;
+      }
+      goto(target, p);
+    };
+  });
+  document.querySelectorAll('[data-choice]').forEach(el => {
+    el.onclick = function() { handleChoice(parseInt(this.getAttribute('data-choice'))); };
+  });
+}
+
+/* =========================================================================
+   Toast
+   ========================================================================= */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* =========================================================================
+   Screen: HUB
+   ========================================================================= */
+function renderHub() {
+  const total = countAll();
+  const done = countDone();
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  const r = 70, stroke = 8;
+  const circ = 2 * Math.PI * r;
+  const dash = circ * pct / 100;
+
+  let h = '<div class="panel"><div class="panel-t">训练总览</div>';
+  h += '<div class="center">';
+  h += '<svg width="180" height="180" viewBox="0 0 180 180">';
+  h += '<circle cx="90" cy="90" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="' + stroke + '"/>';
+  h += '<circle cx="90" cy="90" r="' + r + '" fill="none" stroke="var(--cyan)" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + dash + ' ' + circ + '" transform="rotate(-90 90 90)" style="transition:stroke-dasharray 1.2s ease"/>';
+  h += '<text x="90" y="85" text-anchor="middle" fill="var(--white)" font-size="28" font-weight="800">' + pct + '%</text>';
+  h += '<text x="90" y="105" text-anchor="middle" fill="var(--dim)" font-size="11">完成进度</text>';
+  h += '</svg>';
+  h += '<div class="muted mt8">' + done + ' / ' + total + ' 场景已完成</div>';
+  h += '</div></div>';
+
+  ALL_TRACKS.forEach(track => {
+    const tDone = countTrackDone(track);
+    const tTotal = countTrackTotal(track);
+    const tPct = tTotal > 0 ? Math.round(tDone / tTotal * 100) : 0;
+    h += '<div class="panel" style="cursor:pointer;border-left:3px solid ' + track.color + '" data-goto="TRACK_MAP" data-p-track="' + track.id + '">';
+    h += '<div class="spread"><div><div class="panel-t" style="margin-bottom:4px">' + track.icon + ' ' + track.name + '</div><div class="muted" style="font-size:12px">' + track.sub + '</div></div>';
+    h += '<div style="text-align:right"><div style="color:var(--white);font-weight:700;font-size:18px">' + tPct + '%</div><div class="muted" style="font-size:11px">' + tDone + '/' + tTotal + '</div></div></div>';
+    h += '<div class="minibar mt8"><i style="width:' + tPct + '%;background:' + track.color + '"></i></div>';
+    h += '</div>';
+  });
+
+  h += '<div class="panel" style="cursor:pointer;border-left:3px solid var(--purple)" data-goto="STATS">';
+  h += '<div class="panel-t">📊 能力分析</div><div class="muted" style="font-size:12px">查看十维技能雷达图与成长轨迹</div></div>';
+  return h;
+}
+
+function countAll() { let n=0; ALL_TRACKS.forEach(t => t.modules.forEach(m => { n += m.scenarios.length; })); return n; }
+function countDone() { let n=0; ALL_TRACKS.forEach(t => t.modules.forEach(m => { m.scenarios.forEach((s,i) => { if (progress.moduleScores[m.id+'_'+i] > 0) n++; }); })); return n; }
+function countTrackTotal(track) { let n=0; track.modules.forEach(m => { n += m.scenarios.length; }); return n; }
+function countTrackDone(track) { let n=0; track.modules.forEach(m => { m.scenarios.forEach((s,i) => { if (progress.moduleScores[m.id+'_'+i] > 0) n++; }); }); return n; }
+
+/* =========================================================================
+   Screen: TRACK_MAP
+   ========================================================================= */
+function renderTrackMap() {
+  const track = ALL_TRACKS.find(t => t.id === screenParams.track) || ALL_TRACKS[0];
+  let h = '<div class="spread mb12"><div class="panel-t">' + track.icon + ' ' + track.name + '</div>';
+  h += '<button class="btn-back" data-goto="HUB">← 返回</button></div>';
+  h += '<div class="modgrid">';
+  track.modules.forEach(mod => {
+    const best = getModuleBest(mod.id);
+    const stars = getStars(best);
+    const scenarioCount = mod.scenarios.length;
+    let doneSc = 0;
+    for (let i = 0; i < scenarioCount; i++) { if (progress.moduleScores[mod.id+'_'+i] > 0) doneSc++; }
+    h += '<div class="modcard" style="--mc:' + mod.color + '">';
+    h += '<div class="mc-bar" style="background:' + mod.color + '"></div>';
+    h += '<div class="mc-body">';
+    h += '<div class="spread"><div class="mc-name">' + mod.name + '</div>';
+    h += '<div>' + starsHtml(stars, 14) + '</div></div>';
+    h += '<div class="muted" style="font-size:11px;margin-top:4px">场景 ' + doneSc + '/' + scenarioCount;
+    if (best > 0) h += ' · 最高 ' + best + '分';
+    h += '</div>';
+    h += '<div class="mc-scenarios mt8">';
+    mod.scenarios.forEach((sc, si) => {
+      const scScore = progress.moduleScores[mod.id + '_' + si] || 0;
+      const scStars = getStars(scScore);
+      h += '<div class="mc-sc" data-goto="DRILL_INTRO" data-p-track="' + track.id + '" data-p-module="' + mod.id + '" data-p-scenario="' + si + '">';
+      h += '<span class="mc-sc-idx">' + (si+1) + '</span>';
+      h += '<span class="mc-sc-label">' + (scScore > 0 ? starsHtml(scStars, 11) + ' ' + scScore + '分' : '未完成') + '</span>';
+      h += '<span class="mc-sc-go">→</span>';
+      h += '</div>';
+    });
+    h += '</div></div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+/* =========================================================================
+   Drill state
+   ========================================================================= */
+let drill = { track:null, module:null, scenario:null, scenarioIdx:0, roundIdx:0, totalScore:0, roundScores:[], skillGains:{}, lastChoice:null };
+
+function startDrill(trackId, moduleId, scenarioIdx) {
+  const track = ALL_TRACKS.find(t => t.id === trackId);
+  const mod = track.modules.find(m => m.id === moduleId);
+  const sc = mod.scenarios[scenarioIdx];
+  drill = { track, module:mod, scenario:sc, scenarioIdx: parseInt(scenarioIdx), roundIdx:0, totalScore:0, roundScores:[], skillGains:{}, lastChoice:null };
+}
+
+/* =========================================================================
+   Screen: DRILL_INTRO
+   ========================================================================= */
+function renderDrillIntro() {
+  const trackId = screenParams.track;
+  const moduleId = screenParams.module;
+  const si = parseInt(screenParams.scenario);
+  startDrill(trackId, moduleId, si);
+  const sc = drill.scenario;
+  let h = '<div class="spread"><div class="panel-t">' + drill.module.name + ' · 场景 ' + (si+1) + '</div>';
+  h += '<button class="btn-back" data-goto="TRACK_MAP" data-p-track="' + trackId + '">← 返回</button></div>';
+  h += '<div class="scenebox"><div class="lbl">场景背景</div>' + sc.context + '</div>';
+  h += '<div class="objbox"><div class="lbl">训练目标</div>' + sc.objective + '</div>';
+  h += '<div class="tipbox">' + sc.tip + '</div>';
+  h += '<div class="center mt16"><button class="btn-primary" data-goto="DRILL_ROUND">开始演练</button></div>';
+  return h;
+}
+
+/* =========================================================================
+   Screen: DRILL_ROUND
+   ========================================================================= */
+function renderDrillRound() {
+  const rd = drill.scenario.rounds[drill.roundIdx];
+  const total = drill.scenario.rounds.length;
+  let h = '<div class="roundhdr"><div class="rd">第 ' + (drill.roundIdx+1) + ' / ' + total + ' 回合</div><div class="dots">';
+  for (let i = 0; i < total; i++) {
+    const cls = i < drill.roundIdx ? 'done' : (i === drill.roundIdx ? 'cur' : '');
+    h += '<i class="' + cls + '"></i>';
+  }
+  h += '</div></div>';
+  h += '<div class="scenebox"><div class="lbl">当前情境</div>' + rd.situation + '</div>';
+  h += '<div class="choices">';
+  const badges = ['①','②','③'];
+  rd.choices.forEach((c, ci) => {
+    h += '<div class="choice" data-choice="' + ci + '" style="animation-delay:' + (ci*0.1) + 's">';
+    h += '<div class="badge">' + badges[ci] + '</div>';
+    h += '<div class="ctext">' + c.text + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function handleChoice(idx) {
+  const rd = drill.scenario.rounds[drill.roundIdx];
+  const choice = rd.choices[idx];
+  drill.lastChoice = { idx, choice, round: rd };
+  drill.roundScores.push(choice.score);
+  drill.totalScore += choice.score;
+  const tag = choice.tag;
+  drill.skillGains[tag] = (drill.skillGains[tag] || 0) + choice.score;
+  goto('DRILL_FEEDBACK');
+}
+
+/* =========================================================================
+   Screen: DRILL_FEEDBACK
+   ========================================================================= */
+function renderDrillFeedback() {
+  const lc = drill.lastChoice;
+  const score = lc.choice.score;
+  const rd = lc.round;
+  const ideal = rd.choices.find(c => c.ideal);
+  const vClass = score >= 75 ? 'v-great' : (score >= 45 ? 'v-ok' : 'v-bad');
+  const vLabel = score >= 75 ? '出色' : (score >= 45 ? '尚可' : '需改进');
+  const scoreColor = score >= 75 ? 'var(--green)' : (score >= 45 ? 'var(--yellow)' : 'var(--red)');
+
+  let h = '<div class="fb-score"><div class="delta" style="color:' + scoreColor + '">+' + score + '</div><div class="deltalbl">本回合得分</div></div>';
+  h += '<div class="center"><span class="fb-verdict ' + vClass + '">' + vLabel + '</span></div>';
+  h += '<div class="fb-exp"><div class="lbl">你的选择</div>"' + lc.choice.text + '"<br><br>' + lc.choice.feedback + '</div>';
+  if (ideal && ideal !== lc.choice) {
+    h += '<div class="fb-ideal">💡 最佳选择："' + ideal.text + '"<br>' + ideal.feedback + '</div>';
+  }
+  if (rd.adaptation) {
+    h += '<div class="oppbox"><div class="lbl">对手适应</div>' + rd.adaptation + '</div>';
+  }
+
+  const isLast = drill.roundIdx >= drill.scenario.rounds.length - 1;
+  if (isLast) {
+    h += '<div class="center mt16"><button class="btn-primary" onclick="finishDrill()">查看结果</button></div>';
+  } else {
+    h += '<div class="center mt16"><button class="btn-primary" onclick="nextRound()">下一回合 →</button></div>';
+  }
+  return h;
+}
+
+function nextRound() {
+  drill.roundIdx++;
+  goto('DRILL_ROUND');
+}
+
+function finishDrill() {
+  const total = drill.scenario.rounds.length;
+  const maxPossible = total * 90;
+  const pct = Math.round(drill.totalScore / maxPossible * 100);
+  const tags = [drill.module.skill];
+  Object.keys(drill.skillGains).forEach(t => { if (!tags.includes(t)) tags.push(t); });
+  addScore(drill.module.id, drill.scenarioIdx, pct, tags);
+  goto('DRILL_RESULT');
+}
+
+/* =========================================================================
+   Screen: DRILL_RESULT
+   ========================================================================= */
+function renderDrillResult() {
+  const total = drill.scenario.rounds.length;
+  const maxPossible = total * 90;
+  const pct = Math.round(drill.totalScore / maxPossible * 100);
+  const stars = getStars(pct);
+
+  let h = '<div class="result-hero">';
+  h += '<div class="bigscore">' + pct + '</div>';
+  h += '<div class="muted mt8">综合得分</div>';
+  h += '<div class="stars">' + starsHtml(stars, 40) + '</div>';
+  h += '<div class="muted">' + (stars === 3 ? '完美通关！' : stars === 2 ? '表现不错！' : stars === 1 ? '继续加油！' : '需要更多练习') + '</div>';
+  h += '</div>';
+
+  h += '<div class="panel"><div class="panel-t">回合明细</div>';
+  drill.roundScores.forEach((s, i) => {
+    const sc = s >= 75 ? 'var(--green)' : (s >= 45 ? 'var(--yellow)' : 'var(--red)');
+    h += '<div class="gainrow"><span>第 ' + (i+1) + ' 回合</span><span class="gp" style="color:' + sc + '">+' + s + '</span></div>';
+  });
+  h += '</div>';
+
+  if (Object.keys(drill.skillGains).length > 0) {
+    h += '<div class="panel"><div class="panel-t">技能成长</div><div class="gainlist">';
+    Object.keys(drill.skillGains).forEach(tag => {
+      const sk = SKILLS[tag] || {name:tag, color:'var(--cyan)'};
+      h += '<div class="gainrow"><span style="color:' + sk.color + '">' + sk.name + '</span><span class="gp">+' + Math.round(drill.skillGains[tag] * 0.6) + '</span></div>';
+    });
+    h += '</div></div>';
+  }
+
+  h += '<div class="center mt16" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">';
+  h += '<button class="btn-primary" data-goto="DRILL_INTRO" data-p-track="' + drill.track.id + '" data-p-module="' + drill.module.id + '" data-p-scenario="' + drill.scenarioIdx + '">重新挑战</button>';
+  h += '<button class="btn-back" data-goto="TRACK_MAP" data-p-track="' + drill.track.id + '">返回模块</button>';
+  h += '<button class="btn-back" data-goto="HUB">返回首页</button>';
+  h += '</div>';
+  return h;
+}
+
+/* =========================================================================
+   Screen: STATS — SVG Radar Chart + Skill Bars
+   ========================================================================= */
+function renderStats() {
+  let h = '<div class="spread"><div class="panel-t">📊 能力分析</div>';
+  h += '<button class="btn-back" data-goto="HUB">← 返回</button></div>';
+
+  // Radar chart
+  const cx = 225, cy = 225, maxR = 170;
+  const n = SKILL_ORDER.length;
+  const vals = SKILL_ORDER.map(k => Math.min(100, progress.skillMastery[k] || 0));
+
+  h += '<div class="panel center"><div class="panel-t">十维技能雷达图</div>';
+  h += '<svg width="450" height="450" viewBox="0 0 450 450" style="max-width:100%">';
+
+  // Grid rings
+  for (let ring = 1; ring <= 4; ring++) {
+    const rr = maxR * ring / 4;
+    let pts = '';
+    for (let i = 0; i < n; i++) {
+      const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+      pts += (cx + rr * Math.cos(angle)) + ',' + (cy + rr * Math.sin(angle)) + ' ';
+    }
+    h += '<polygon points="' + pts + '" fill="none" stroke="var(--border)" stroke-width="1"/>';
+  }
+
+  // Axis lines + labels
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const ex = cx + maxR * Math.cos(angle);
+    const ey = cy + maxR * Math.sin(angle);
+    h += '<line x1="' + cx + '" y1="' + cy + '" x2="' + ex + '" y2="' + ey + '" stroke="var(--border)" stroke-width="0.5"/>';
+    const lx = cx + (maxR + 22) * Math.cos(angle);
+    const ly = cy + (maxR + 22) * Math.sin(angle);
+    const sk = SKILLS[SKILL_ORDER[i]];
+    h += '<text x="' + lx + '" y="' + (ly+4) + '" text-anchor="middle" fill="' + sk.color + '" font-size="11" font-weight="600">' + sk.name + '</text>';
+  }
+
+  // Data polygon
+  let dataPts = '';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const vr = maxR * vals[i] / 100;
+    dataPts += (cx + vr * Math.cos(angle)) + ',' + (cy + vr * Math.sin(angle)) + ' ';
+  }
+  h += '<polygon points="' + dataPts + '" fill="rgba(0,212,255,.15)" stroke="var(--cyan)" stroke-width="2"/>';
+
+  // Data dots
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const vr = maxR * vals[i] / 100;
+    const dx = cx + vr * Math.cos(angle);
+    const dy = cy + vr * Math.sin(angle);
+    h += '<circle cx="' + dx + '" cy="' + dy + '" r="4" fill="var(--cyan)" stroke="var(--bg1)" stroke-width="2"/>';
+  }
+
+  h += '</svg></div>';
+
+  // Skill bars
+  h += '<div class="panel"><div class="panel-t">各项技能掌握度</div>';
+  SKILL_ORDER.forEach(k => {
+    const sk = SKILLS[k];
+    const val = Math.min(100, progress.skillMastery[k] || 0);
+    h += '<div class="skillbar"><div class="sb-top"><span class="nm">' + sk.name + '</span><span class="muted">' + val + ' / 100</span></div>';
+    h += '<div class="sb-track"><div class="sb-fill" style="width:' + val + '%;background:' + sk.color + '"></div></div></div>';
+  });
+  h += '</div>';
+
+  // Rank progress
+  h += '<div class="panel"><div class="panel-t">段位进度</div>';
+  const r = getRank();
+  const nextIdx = RANKS.findIndex(rk => rk.min > progress.totalPoints);
+  const nextRank = nextIdx >= 0 ? RANKS[nextIdx] : null;
+  h += '<div class="center" style="font-size:24px;font-weight:800;color:var(--yellow)">' + r.name + '</div>';
+  h += '<div class="center muted mt8">总训练分：' + progress.totalPoints + '</div>';
+  if (nextRank) {
+    const needed = nextRank.min - progress.totalPoints;
+    h += '<div class="center muted mt8">距离 ' + nextRank.name + ' 还需 ' + needed + ' 分</div>';
+  }
+  h += '</div>';
+
+  return h;
+}
+
+/* =========================================================================
+   Bootstrap
+   ========================================================================= */
+goto('HUB');
+
+
+</script>
+</body>
+</html>

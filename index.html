@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系博弈实战演练系统 v3</title>
+<title>全谱系谈判博弈模拟系统 v5 Final</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -5589,7 +5589,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系博弈实战演练系统  v3.0        ║<br>
+║  全谱系谈判博弈模拟系统  v5 Final    ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -5601,7 +5601,7 @@ function renderWelcome() {
         <input class="inp" id="player-name-input" placeholder="例如：谈判精英" maxlength="20" autocomplete="off">
       </div>
       <button class="btn btn-green" style="width:100%" id="btn-enter">进入训练系统 →</button>
-      ${C.hint('数据保存在本地浏览器（LocalStorage），兼容 v2.0 老存档。')}
+      ${C.hint('数据保存在本地浏览器（LocalStorage），兼容历史存档。')}
     </div>
   `;
 }
@@ -6678,7 +6678,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系博弈演练系统 v3',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5 Final',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },
@@ -6691,7 +6691,7 @@ const _TOURS = {
     {
       selector: '#btn-enter',
       title: '② 进入系统',
-      body: '输入代号后点击此按钮（或按 Enter）进入主菜单。<br>若代号已存在，系统自动加载历史档案，<b>兼容 v2.0 存档</b>。',
+      body: '输入代号后点击此按钮（或按 Enter）进入主菜单。<br>若代号已存在，系统自动加载历史档案，<b>自动兼容旧版存档</b>。',
       position: 'top',
     },
   ],

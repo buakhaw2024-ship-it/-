@@ -11755,6 +11755,197 @@ function renderSkillCardArt(card) {
   return fallbackSkillCardArt(card);
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   SVG 肖像生成器（为 6 大宗师 + 二战三巨头 提供与 JPEG 同尺寸的人物图像）
+   ────────────────────────────────────────────────────────────────────────── */
+function buildMentorSvgPortrait(cfg) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 320'>
+<defs>
+  <linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'>
+    <stop offset='0%' stop-color='${cfg.bgTop}'/>
+    <stop offset='100%' stop-color='${cfg.bgBot}'/>
+  </linearGradient>
+  <radialGradient id='glow' cx='0.5' cy='0.4' r='0.6'>
+    <stop offset='0%' stop-color='${cfg.glow}' stop-opacity='0.45'/>
+    <stop offset='100%' stop-color='${cfg.glow}' stop-opacity='0'/>
+  </radialGradient>
+  <linearGradient id='skin' x1='0' y1='0' x2='0' y2='1'>
+    <stop offset='0%' stop-color='#f5e0c0'/>
+    <stop offset='100%' stop-color='#d8b890'/>
+  </linearGradient>
+</defs>
+<rect width='240' height='320' fill='url(#bg)'/>
+<rect width='240' height='320' fill='url(#glow)'/>
+<g opacity='0.18'>
+  <circle cx='40' cy='40' r='2' fill='${cfg.accent}'/>
+  <circle cx='200' cy='60' r='2' fill='${cfg.accent}'/>
+  <circle cx='220' cy='200' r='2' fill='${cfg.accent}'/>
+  <circle cx='30' cy='220' r='2' fill='${cfg.accent}'/>
+</g>
+<!-- shoulders / coat -->
+<path d='M 30 320 Q 30 230 80 215 L 160 215 Q 210 230 210 320 Z' fill='${cfg.coat}'/>
+<path d='M 105 215 L 120 245 L 135 215 Z' fill='${cfg.collar || cfg.accent}'/>
+<!-- head -->
+<ellipse cx='120' cy='135' rx='48' ry='56' fill='url(#skin)'/>
+<!-- neck -->
+<rect x='105' y='180' width='30' height='25' fill='${cfg.skinShade || '#c8a878'}'/>
+${cfg.accessory || ''}
+<!-- name plate -->
+<rect x='20' y='258' width='200' height='44' rx='4' fill='#000' opacity='0.55'/>
+<rect x='20' y='258' width='200' height='44' rx='4' fill='none' stroke='${cfg.accent}' stroke-width='1' opacity='0.7'/>
+<text x='120' y='280' text-anchor='middle' fill='${cfg.nameColor}' font-size='18' font-weight='bold' font-family='SimHei,serif' letter-spacing='2'>${cfg.name}</text>
+<text x='120' y='296' text-anchor='middle' fill='#d4cfb8' font-size='9.5' font-family='SimHei,sans-serif' letter-spacing='1.5'>${cfg.subtitle}</text>
+</svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+const MENTOR_SVG_PORTRAITS = {
+  // ── 六大谈判宗师（SSR）─────────────────────────────
+  master_dawson: buildMentorSvgPortrait({
+    name: '罗杰·道森', subtitle: '优势谈判 · 阶段掌控',
+    bgTop: '#1a3a5c', bgBot: '#0a1a2c', glow: '#4a90c2', accent: '#7ab8e6',
+    coat: '#1a2a3a', collar: '#c2843a', nameColor: '#f5d488',
+    accessory: `<!-- bald top + glasses -->
+      <ellipse cx='120' cy='95' rx='42' ry='25' fill='#e8c898'/>
+      <rect x='90' y='130' width='25' height='14' rx='5' fill='none' stroke='#1a1a1a' stroke-width='2.5'/>
+      <rect x='125' y='130' width='25' height='14' rx='5' fill='none' stroke='#1a1a1a' stroke-width='2.5'/>
+      <line x1='115' y1='137' x2='125' y2='137' stroke='#1a1a1a' stroke-width='2'/>
+      <!-- book icon -->
+      <rect x='40' y='240' width='30' height='38' fill='#4a90c2' opacity='0.5'/>
+      <line x1='55' y1='240' x2='55' y2='278' stroke='#fff' stroke-width='1' opacity='0.6'/>`
+  }),
+  master_fisher_ury: buildMentorSvgPortrait({
+    name: '费希尔·尤里', subtitle: '原则谈判 · 利益而非立场',
+    bgTop: '#2d5016', bgBot: '#0f2008', glow: '#7eb55a', accent: '#c2e088',
+    coat: '#3a4a2a', collar: '#8a6a3a', nameColor: '#e8d488',
+    accessory: `<!-- hair -->
+      <path d='M 70 130 Q 70 75 120 75 Q 170 75 170 130 L 170 110 Q 165 95 120 92 Q 75 95 70 110 Z' fill='#5a4a2a'/>
+      <!-- glasses -->
+      <circle cx='100' cy='138' r='9' fill='none' stroke='#1a1a1a' stroke-width='2'/>
+      <circle cx='140' cy='138' r='9' fill='none' stroke='#1a1a1a' stroke-width='2'/>
+      <line x1='109' y1='138' x2='131' y2='138' stroke='#1a1a1a' stroke-width='1.5'/>
+      <!-- harvard shield -->
+      <path d='M 180 235 L 195 235 L 195 255 L 187.5 263 L 180 255 Z' fill='#7eb55a' opacity='0.7'/>
+      <text x='187.5' y='251' text-anchor='middle' fill='#fff' font-size='10' font-weight='bold' font-family='serif'>H</text>`
+  }),
+  master_voss: buildMentorSvgPortrait({
+    name: '克里斯·沃斯', subtitle: '战术同理心 · 镜像标签',
+    bgTop: '#1f1f24', bgBot: '#0a0a10', glow: '#a08060', accent: '#d4b890',
+    coat: '#1a1a20', collar: '#a08060', nameColor: '#f0d8a8',
+    accessory: `<!-- short hair -->
+      <path d='M 75 110 Q 75 82 120 80 Q 165 82 165 110 L 165 95 Q 160 88 120 86 Q 80 88 75 95 Z' fill='#2a2520'/>
+      <!-- earpiece -->
+      <ellipse cx='168' cy='140' rx='6' ry='10' fill='#1a1a1a'/>
+      <path d='M 168 150 Q 168 165 155 168' fill='none' stroke='#1a1a1a' stroke-width='2'/>
+      <!-- subtle beard -->
+      <path d='M 88 170 Q 120 195 152 170 Q 145 188 120 192 Q 95 188 88 170 Z' fill='#3a302a' opacity='0.6'/>
+      <!-- FBI badge -->
+      <circle cx='55' cy='250' r='12' fill='#a08060' opacity='0.7'/>
+      <text x='55' y='254' text-anchor='middle' fill='#fff' font-size='8' font-weight='bold'>FBI</text>`
+  }),
+  master_cohen: buildMentorSvgPortrait({
+    name: '赫布·科恩', subtitle: '权力 · 时间 · 信息',
+    bgTop: '#3a2a08', bgBot: '#1a1208', glow: '#e8b850', accent: '#f6d878',
+    coat: '#2a2018', collar: '#c08838', nameColor: '#ffe098',
+    accessory: `<!-- curly hair -->
+      <ellipse cx='120' cy='95' rx='50' ry='22' fill='#3a2a18'/>
+      <circle cx='85' cy='95' r='10' fill='#3a2a18'/>
+      <circle cx='155' cy='95' r='10' fill='#3a2a18'/>
+      <!-- glasses -->
+      <rect x='92' y='133' width='22' height='13' rx='2' fill='none' stroke='#1a1a1a' stroke-width='2'/>
+      <rect x='126' y='133' width='22' height='13' rx='2' fill='none' stroke='#1a1a1a' stroke-width='2'/>
+      <!-- triangle of power/time/info -->
+      <polygon points='180,235 200,235 190,253' fill='none' stroke='#e8b850' stroke-width='1.5' opacity='0.8'/>
+      <text x='180' y='245' fill='#e8b850' font-size='6'>权</text>
+      <text x='200' y='245' fill='#e8b850' font-size='6'>时</text>
+      <text x='190' y='250' fill='#e8b850' font-size='6'>息</text>`
+  }),
+  master_diamond: buildMentorSvgPortrait({
+    name: '斯图尔特·戴蒙德', subtitle: '目标第一 · 感知管理',
+    bgTop: '#5a1a1a', bgBot: '#200808', glow: '#e85050', accent: '#f8a0a0',
+    coat: '#3a2020', collar: '#a85030', nameColor: '#ffd0a0',
+    accessory: `<!-- hair -->
+      <path d='M 75 115 Q 75 78 120 76 Q 165 78 165 115 L 165 100 Q 160 90 120 88 Q 80 90 75 100 Z' fill='#4a3520'/>
+      <!-- moustache -->
+      <path d='M 100 168 Q 120 175 140 168 L 138 175 Q 120 178 102 175 Z' fill='#3a2818'/>
+      <!-- target/bullseye -->
+      <circle cx='187' cy='245' r='12' fill='none' stroke='#e85050' stroke-width='1.5'/>
+      <circle cx='187' cy='245' r='7' fill='none' stroke='#e85050' stroke-width='1.5'/>
+      <circle cx='187' cy='245' r='2.5' fill='#e85050'/>`
+  }),
+  master_shell: buildMentorSvgPortrait({
+    name: '理查德·谢尔', subtitle: '风格适配 · 谈判风格学',
+    bgTop: '#3a1f5a', bgBot: '#16082a', glow: '#a070d8', accent: '#d8b0f0',
+    coat: '#2a1840', collar: '#7050a0', nameColor: '#e8c8ff',
+    accessory: `<!-- hair greying -->
+      <path d='M 75 115 Q 75 78 120 76 Q 165 78 165 115 L 165 100 Q 160 90 120 88 Q 80 90 75 100 Z' fill='#88827a'/>
+      <!-- thin glasses -->
+      <ellipse cx='100' cy='140' rx='12' ry='7' fill='none' stroke='#1a1a1a' stroke-width='1.5'/>
+      <ellipse cx='140' cy='140' rx='12' ry='7' fill='none' stroke='#1a1a1a' stroke-width='1.5'/>
+      <line x1='112' y1='140' x2='128' y2='140' stroke='#1a1a1a' stroke-width='1.5'/>
+      <!-- 5 style faces -->
+      <circle cx='40' cy='235' r='4' fill='#e85050' opacity='0.7'/>
+      <circle cx='52' cy='235' r='4' fill='#e8b850' opacity='0.7'/>
+      <circle cx='64' cy='235' r='4' fill='#7eb55a' opacity='0.7'/>
+      <circle cx='76' cy='235' r='4' fill='#4a90c2' opacity='0.7'/>
+      <circle cx='88' cy='235' r='4' fill='#a070d8' opacity='0.7'/>`
+  }),
+  // ── 二战权力谈判三巨头（UR_LEGEND）──────────────────
+  mentor_churchill: buildMentorSvgPortrait({
+    name: '丘吉尔', subtitle: '战时雄辩者 · 危机意志导师',
+    bgTop: '#1a2a4a', bgBot: '#08101e', glow: '#6890c8', accent: '#a0c0e8',
+    coat: '#1a1a1a', collar: '#5a4030', nameColor: '#ffd070', skinShade: '#d8a890',
+    accessory: `<!-- bald head + top hat -->
+      <ellipse cx='120' cy='100' rx='44' ry='18' fill='#ddb898'/>
+      <rect x='75' y='62' width='90' height='10' fill='#0a0a0a'/>
+      <rect x='88' y='28' width='64' height='38' fill='#0a0a0a'/>
+      <rect x='88' y='28' width='64' height='5' fill='#1a1a1a'/>
+      <!-- bow tie -->
+      <polygon points='100,205 120,212 100,219' fill='#8a1a1a'/>
+      <polygon points='140,205 120,212 140,219' fill='#8a1a1a'/>
+      <rect x='118' y='208' width='4' height='8' fill='#8a1a1a'/>
+      <!-- cigar -->
+      <rect x='145' y='168' width='28' height='5' rx='1' fill='#5a3018'/>
+      <circle cx='173' cy='170.5' r='2' fill='#f8a830'/>
+      <!-- stern brow -->
+      <path d='M 92 130 L 110 134 M 130 134 L 148 130' stroke='#3a2818' stroke-width='3' stroke-linecap='round'/>`
+  }),
+  mentor_roosevelt: buildMentorSvgPortrait({
+    name: '罗斯福', subtitle: '大局协调者 · 制度型谈判导师',
+    bgTop: '#2a3a1a', bgBot: '#10180a', glow: '#88a050', accent: '#c0d088',
+    coat: '#1a2818', collar: '#5a4828', nameColor: '#f0d878', skinShade: '#d8b890',
+    accessory: `<!-- side-parted hair -->
+      <path d='M 75 110 Q 75 80 120 78 Q 165 80 165 110 L 165 95 Q 145 85 120 88 Q 90 88 75 95 Z' fill='#5a4828'/>
+      <line x1='118' y1='80' x2='105' y2='105' stroke='#3a2818' stroke-width='1.5'/>
+      <!-- pince-nez glasses -->
+      <ellipse cx='102' cy='138' rx='10' ry='7' fill='none' stroke='#1a1a1a' stroke-width='1.8'/>
+      <ellipse cx='138' cy='138' rx='10' ry='7' fill='none' stroke='#1a1a1a' stroke-width='1.8'/>
+      <line x1='112' y1='138' x2='128' y2='138' stroke='#1a1a1a' stroke-width='1.5'/>
+      <line x1='102' y1='145' x2='100' y2='160' stroke='#1a1a1a' stroke-width='1'/>
+      <!-- cigarette holder -->
+      <line x1='140' y1='170' x2='175' y2='160' stroke='#2a2018' stroke-width='2'/>
+      <rect x='175' y='158' width='8' height='4' fill='#f8c878'/>
+      <!-- confident smile -->
+      <path d='M 105 172 Q 120 182 135 172' stroke='#3a2818' stroke-width='2' fill='none' stroke-linecap='round'/>`
+  }),
+  mentor_stalin: buildMentorSvgPortrait({
+    name: '斯大林', subtitle: '钢铁控制者 · 安全边界型谈判者',
+    bgTop: '#4a1a1a', bgBot: '#1a0808', glow: '#c83a3a', accent: '#e88080',
+    coat: '#3a2818', collar: '#8a6840', nameColor: '#ffc870', skinShade: '#c8a880',
+    accessory: `<!-- military cap -->
+      <path d='M 70 100 Q 70 80 120 76 Q 170 80 170 100 L 170 108 L 70 108 Z' fill='#3a3a2a'/>
+      <ellipse cx='120' cy='100' rx='52' ry='10' fill='#2a2a1c'/>
+      <rect x='70' y='105' width='100' height='6' fill='#1a1a10'/>
+      <!-- red star on cap -->
+      <polygon points='120,82 124,90 132,90 126,95 128,103 120,99 112,103 114,95 108,90 116,90' fill='#e83030'/>
+      <!-- heavy moustache -->
+      <path d='M 80 168 Q 100 172 120 170 Q 140 172 160 168 L 158 178 Q 140 184 120 182 Q 100 184 82 178 Z' fill='#2a1a10'/>
+      <!-- thick eyebrows -->
+      <path d='M 90 128 Q 100 124 112 128' stroke='#2a1a10' stroke-width='3.5' fill='none' stroke-linecap='round'/>
+      <path d='M 128 128 Q 140 124 150 128' stroke='#2a1a10' stroke-width='3.5' fill='none' stroke-linecap='round'/>`
+  })
+};
+
 const MENTOR_PORTRAITS = {
   mentor_sunzi: 'data:image/jpeg;base64,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',
   mentor_zhangyi: 'data:image/jpeg;base64,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',
@@ -13369,8 +13560,8 @@ function renderMentorCard(d, isOwned, isEquipped, fragments, stars) {
     <div class="mentor-card-rarity" style="background:${cfg.color}">${cfg.label}</div>
     ${genderTag}
     <div class="mentor-card-portrait-wrap">
-      ${MENTOR_PORTRAITS[d.id]
-        ? '<img class="mentor-portrait" src="' + MENTOR_PORTRAITS[d.id] + '" alt="' + d.name + '">'
+      ${(MENTOR_PORTRAITS[d.id] || MENTOR_SVG_PORTRAITS[d.id])
+        ? '<img class="mentor-portrait" src="' + (MENTOR_PORTRAITS[d.id] || MENTOR_SVG_PORTRAITS[d.id]) + '" alt="' + d.name + '">'
         : '<div class="mentor-chibi">' + (d.chibi || '👤') + '</div>'}
     </div>
     <div class="mentor-card-name">${d.name}</div>
@@ -13526,7 +13717,9 @@ function renderDuelSelect() {
     const rec = (player.duelRecords && player.duelRecords[d.id]) || { plays: 0, wins: 0, bestOutcome: null };
     const cfg = LEGEND_RARITIES[d.rarity];
     return `<div class="duel-pick-card ${isOwned ? '' : 'duel-locked'}" data-duel="${d.id}" style="--card-color:${cfg.color}">
-      <div class="duel-pick-icon">${d.chibi || '👤'}</div>
+      <div class="duel-pick-icon">${(MENTOR_PORTRAITS[d.id] || MENTOR_SVG_PORTRAITS[d.id])
+        ? `<img src="${MENTOR_PORTRAITS[d.id] || MENTOR_SVG_PORTRAITS[d.id]}" alt="${d.name}">`
+        : (d.chibi || '👤')}</div>
       <div class="duel-pick-body">
         <div class="duel-pick-name">${d.name} <span style="font-size:10px;color:${cfg.color}">${cfg.label}</span></div>
         <div class="duel-pick-style">${d.style}</div>
@@ -14303,7 +14496,8 @@ function injectV2Styles() {
 .duel-pick-card{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);border:1.5px solid var(--card-color,var(--border));border-radius:6px;padding:12px 14px;cursor:pointer;transition:all .2s}
 .duel-pick-card:hover{transform:translateX(2px);box-shadow:0 0 12px var(--card-color,rgba(0,212,255,.2))}
 .duel-locked{opacity:.55}
-.duel-pick-icon{font-size:32px;line-height:1;flex-shrink:0}
+.duel-pick-icon{font-size:32px;line-height:1;flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden}
+.duel-pick-icon img{width:100%;height:100%;object-fit:cover;object-position:center 20%}
 .duel-pick-body{flex:1;min-width:0}
 .duel-pick-name{font-size:13px;font-weight:bold;color:var(--white);margin-bottom:2px}
 .duel-pick-style{font-size:11px;color:var(--text);margin-bottom:4px}

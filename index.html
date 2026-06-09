@@ -932,6 +932,28 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
   .sk-card-effect,.sk-card-flavor{font-size:9.5px}
 }
 
+/* ── 教学UI模式切换 ── */
+.teaching-mode-toggle{display:flex;gap:8px;margin-bottom:10px}
+.teaching-mode-toggle button{padding:8px 14px;border:1px solid rgba(255,215,0,.35);background:rgba(255,255,255,.04);color:#e8d39a;border-radius:8px;cursor:pointer;font-size:12px}
+.teaching-mode-toggle button.active{background:rgba(255,215,0,.18);border-color:#f0c45c;color:var(--yellow)}
+.teaching-layout.learner{display:grid;grid-template-columns:1fr 320px;gap:14px}
+.round-learning-goal{background:rgba(10,18,32,.92);border:1px solid rgba(78,114,170,.55);border-radius:12px;padding:14px;border-left:4px solid #20d7ff;margin-bottom:10px}
+.goal-title{color:#20d7ff;font-weight:bold;margin-bottom:6px;font-size:12px}
+.goal-text{font-size:15px;color:#f4e7c0;line-height:1.5}
+.opponent-line-panel{background:rgba(10,18,32,.92);border:1px solid rgba(78,114,170,.55);border-radius:12px;padding:14px;margin-bottom:10px}
+.opponent-name{color:#e8c46a;font-weight:bold;font-size:12px}
+.opponent-line{font-size:18px;line-height:1.6;color:#f5f2e8;margin-top:8px;background:rgba(255,255,255,.05);padding:10px;border-radius:8px}
+.after-action-feedback{background:rgba(10,18,32,.92);border:1px solid rgba(78,114,170,.55);border-radius:12px;padding:14px;margin-bottom:10px}
+.feedback-block{margin:8px 0;line-height:1.6}
+.feedback-block.coach{border-left:4px solid #20d7ff;padding-left:10px;background:rgba(32,215,255,.08)}
+/* ── 行为画像 ── */
+.evidence-chain{background:rgba(255,255,255,.04);border-radius:8px;padding:10px;margin-top:8px}
+.evidence-item{border-left:2px solid var(--border);padding-left:8px;margin-bottom:8px;font-size:12px}
+.profile-judgment-card{}
+.profile-theory-replay-block{margin-top:12px}
+.theory-prescription{margin-top:8px}
+@media(max-width:900px){.teaching-layout.learner{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -2051,6 +2073,10 @@ function loadPlayer(name) {
       p.skillCardPacks = p.skillCardPacks || [];
       p.skillCardLoadout = p.skillCardLoadout || [];
       p.skillCardPity = p.skillCardPity || { total: 0, sinceSR: 0, sinceSSR: 0, sinceUR: 0 };
+      // 谈判行为画像（v5新增）
+      p.negotiationBehaviorProfile = p.negotiationBehaviorProfile || null;
+      // 教学UI模式（v5新增）
+      p.ui = p.ui || { teachingMode: 'learner', dataDisclosure: 'collapsed' };
       return p;
     }
   } catch (e) {
@@ -5460,6 +5486,10 @@ function initRecorder() {
         oppScore: result.oppScore,
         outcome: result.outcome,
       });
+      // 更新谈判行为画像（v5新增）
+      if (typeof integrateProfileAndTheoryAfterReplay === 'function') {
+        integrateProfileAndTheoryAfterReplay(player, { actions: rounds, avgScore: result.playerScore, score: result.playerScore, rounds });
+      }
       // 更新跨局记忆（对手记住玩家风格）
       if (opp && opp.id) {
         const ps = player.behaviorStats || {};
@@ -5583,7 +5613,7 @@ const MENU = [
   ['①', '场景实战训练', '选择博弈场景，与AI对手对决', 'nav', SCREENS.SCENARIO_SELECT],
   ['②', '快速训练模式', '随机场景与随机对手，快速提升', 'quick', null],
   ['③', '策略理论库', '策略卡 / 沟通技术 / 心理防御 / 六大宗师理论', 'nav', SCREENS.STRATEGY],
-  ['④', '心理档案分析', '查看您的8维博弈心理画像', 'nav', SCREENS.PSYCHOLOGY],
+  ['④', '谈判行为画像分析', '行为画像 / 依据意识 / 让步习惯 / 训练处方', 'nav', SCREENS.PSYCHOLOGY],
   ['⑤', '训练成绩看板', '历史战绩、胜率统计、成长曲线', 'nav', SCREENS.DASHBOARD],
   ['⑥', '卡牌收藏册', '收集对局卡片，解锁稀有 SSR/SP 卡', 'nav', SCREENS.CARD_ALBUM],
   ['⑦', '谈判弧线模式', '7 条剧情弧线 · 5 阶段决策链 · 多分支结局', 'nav', SCREENS.ARC_SELECTION],
@@ -6152,6 +6182,7 @@ function renderResult() {
     ${replayPanel}
     ${tipsPanel}
     ${bossReviewPanel}
+    ${typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
       <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>
@@ -6196,6 +6227,7 @@ const TABS = [
   ['comm', '沟通技术'],
   ['defense', '心理防御'],
   ['masters', '六大宗师'],
+  ['prescription', '训练处方'],
 ];
 
 function renderStrategyLib() {
@@ -6228,6 +6260,30 @@ function contentFor(tab) {
   if (tab === 'defense') {
     return DEFENSE_TACTICS.map((c) =>
       `<div class="tactic" style="border-left-color:var(--red);margin-bottom:8px"><div class="tactic-name" style="color:var(--red)">${c.name}</div><div class="tactic-desc">${c.desc}</div></div>`).join('');
+  }
+  if (tab === 'prescription') {
+    const symptomsHtml = Object.entries(THEORY_PRESCRIPTION_MAP).map(([problem, pres]) => `
+      <div class="panel" style="margin-bottom:10px">
+        <div class="panel-title" style="color:var(--yellow)">症状：${problem}</div>
+        <div style="margin-bottom:4px"><b>主要理论：</b>${(pres.primaryTheories || []).join('、')}</div>
+        <div style="margin-bottom:4px"><b>推荐技能卡：</b>${(pres.recommendedCards || []).join('、')}</div>
+        <div style="margin-bottom:4px"><b>推荐导师：</b>${(pres.recommendedMentors || []).join('、')}</div>
+        <div style="margin-bottom:4px"><b>推荐训练：</b>${(pres.recommendedScenes || []).join('、')}</div>
+        <div class="hint hint-cyan">可直接使用："${pres.sampleLine}"</div>
+      </div>`).join('');
+    const archHtml = Object.entries(MASTER_THEORY_ARCHITECTURES).map(([k, arch]) => `
+      <div class="panel" style="margin-bottom:10px">
+        <div class="panel-title">${arch.master} <span style="color:var(--dim);font-size:10px">· ${arch.systemRole}</span></div>
+        <div style="margin-bottom:4px;font-size:11px"><b>解决：</b>${(arch.solves || []).join('、')}</div>
+        <div style="margin-bottom:4px;font-size:11px"><b>核心框架：</b>${(arch.architecture || []).join(' · ')}</div>
+        <div class="hint hint-cyan">示例："${arch.sampleLine}"</div>
+      </div>`).join('');
+    return `<div>
+      <div class="panel-title" style="margin-bottom:8px">按症状找处方</div>
+      ${symptomsHtml}
+      <div class="panel-title" style="margin:12px 0 8px">六大宗师理论架构库</div>
+      ${archHtml}
+    </div>`;
   }
   // masters
   return `<div class="grid2">${Object.entries(MASTERS).map(([k, m]) => `
@@ -6299,13 +6355,19 @@ function renderPsychology() {
 
   const head = `
     <div class="flex-between">
-      <div class="section-title">▶ 心理档案分析</div>
+      <div class="section-title">▶ 谈判行为画像分析</div>
       <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
     </div>`;
 
   if (!hasEnoughData(total)) {
-    return `${head}${C.hint('您还没有足够的训练数据。请先完成至少 2 场博弈训练，心理档案将更加准确。', 'yellow')}`;
+    return `${head}${C.hint('您还没有足够的训练数据。请先完成至少 2 场博弈训练，行为画像将更加准确。', 'yellow')}`;
   }
+
+  // 新版行为画像（如果有 negotiationBehaviorProfile）
+  const nbp = player && player.negotiationBehaviorProfile;
+  const behaviorSection = nbp
+    ? renderNegotiationBehaviorProfilePage(player, null)
+    : `<div class="panel" style="margin-bottom:8px"><div class="panel-title" style="color:var(--purple)">谈判行为画像</div><div class="hint hint-yellow">完成3局后系统将自动生成你的谈判行为画像，分析依据意识、让步习惯、BATNA意识等8个维度。</div></div>`;
 
   const profile = computeProfile(player);
   const bars = PSYCH_DIMENSIONS.map((d) => C.bar(d.label, profile[d.key] || 0, d.color)).join('');
@@ -6334,6 +6396,7 @@ function renderPsychology() {
   }).join('');
 
   return `${head}
+    ${behaviorSection}
     ${C.panel('博弈心理类型', `
       <div style="text-align:center;padding:12px 0">
         <div style="font-size:24px;color:var(--cyan);font-weight:bold">${pt.name}</div>
@@ -11401,6 +11464,39 @@ const LEGEND_DUELISTS = [
     style: '风格适配', passive: { name: '风格适配', effect: '局前根据对手风格给出 1 条最优应对建议。' },
     styleTags: ['standard', 'trust'], adjacentTags: ['emotion'],
     chibi: '📖', mentorSeries: '风格适配'
+  },
+
+  // ── UR · 二战权力谈判三巨头（特别系列） ───────────────────────────────
+  {
+    id: 'mentor_churchill', name: '丘吉尔', title: '战时雄辩者 · 危机意志导师',
+    rarity: 'UR_LEGEND', gender: '男', series: 'ww2_power_negotiators',
+    style: '危机动员 / 强硬联盟 / 战时意志',
+    passive: { name: '危机演说', effect: '玩家连续劣势时提供一次坚定、克制、有方向的回应建议。' },
+    styleTags: ['pressure', 'trust'], adjacentTags: ['endgame', 'emotion'],
+    bias: { pressure: -10 }, weakness: '强硬动员对柔性协作型对手反弹较大',
+    signature: ['We shall never surrender.'], chibi: '🎩', mentorSeries: '二战三巨头',
+    quote: { text: 'We shall never surrender.', type: 'historical_quote' }
+  },
+  {
+    id: 'mentor_roosevelt', name: '罗斯福', title: '大局协调者 · 制度型谈判导师',
+    rarity: 'UR_LEGEND', gender: '男', series: 'ww2_power_negotiators',
+    style: '联盟构建 / 制度设计 / 资源整合 / 长线布局',
+    passive: { name: '大局框架', effect: '局内陷入局部争执时提示大局框架重构，从资源、规则、阶段角度重新定义议题。' },
+    styleTags: ['agenda', 'standard'], adjacentTags: ['trust', 'endgame'],
+    bias: { agenda: -8 }, weakness: '大局视角在短期压价场景优势不明显',
+    signature: ['The only thing we have to fear is fear itself.'], chibi: '🏛️', mentorSeries: '二战三巨头',
+    quote: { text: 'The only thing we have to fear is fear itself.', type: 'historical_quote' }
+  },
+  {
+    id: 'mentor_stalin', name: '斯大林', title: '钢铁控制者 · 安全边界型谈判者',
+    rarity: 'UR_LEGEND_HIDDEN', gender: '男', series: 'ww2_power_negotiators',
+    style: '高压控制 / 安全边界 / 不信任博弈 / 强权交换',
+    passive: { name: '安全边界', effect: '对手持续压缩空间或要求无条件让步时，提示安全边界判断：哪些条件必须书面写清、哪些承诺必须验证。' },
+    styleTags: ['pressure', 'endgame'], adjacentTags: ['batna', 'standard'],
+    bias: { trust: -15 }, weakness: '极度不信任风格在需建立关系的场景代价高',
+    signature: ['数量本身就是质量。'], chibi: '⚒️', mentorSeries: '二战三巨头',
+    quote: { text: '数量本身就是质量。', type: 'attributed_quote' },
+    note: '训练价值：识别安全边界缺失、识别单方面让步压力、学习可验证承诺结构'
   }
 ];
 
@@ -12110,6 +12206,26 @@ const LEGENDARY_STORY_CHAINS = [
       { title: '幕二 · 反压', briefing: '面对压迫，反向加压。', focusTag: 'pressure' },
       { title: '幕三 · 终局', briefing: '让对方在你的框架里选择。', focusTag: 'endgame' }
     ]
+  },
+  // ── 二战三巨头 · 高阶多方剧情链 ──────────────────────────────────────
+  {
+    id: 'big_three_crisis_order_chain',
+    mentorId: null, // 三方联动，不绑定单一导师
+    title: '二战权力谈判三巨头 · 危机秩序谈判',
+    subtitle: '高阶多方剧情链 · 需解锁三巨头各得 B 级',
+    mode: 'legendary_multi_party_story_chain',
+    playerRole: '危机谈判协调者',
+    desc: '三国代表、五组隐藏变量、五幕结构。你的任务：在不信任与博弈之间，谈成一份可执行、可验证的有限协议。',
+    prerequisites: { churchillTrialGrade: 'B', rooseveltTrialGrade: 'B', stalinTrialGrade: 'B' },
+    hiddenVariables: { allianceCohesion: 50, crisisResolve: 50, orderFramework: 50, securityBoundary: 50, verificationLevel: 50 },
+    acts: [
+      { title: '幕一 · 危机同盟', briefing: '稳住会谈，不让开局破裂。', focusTag: 'trust' },
+      { title: '幕二 · 资源与代价', briefing: '资源投入、阶段目标、可验证承诺。', focusTag: 'agenda' },
+      { title: '幕三 · 秩序蓝图', briefing: '从眼前危机转向长期规则。', focusTag: 'standard' },
+      { title: '幕四 · 安全边界', briefing: '把不信任转成可验证机制。', focusTag: 'batna' },
+      { title: '幕五 · 有限协议', briefing: '形成可执行、可验证、可复盘的有限协议。', focusTag: 'endgame' }
+    ],
+    endings: ['perfectAgreement', 'defensiveAgreement', 'surfaceAgreement', 'strategicDelay', 'collapse']
   }
 ];
 
@@ -12125,7 +12241,7 @@ const StoryChain = (() => {
   function start(chainId) {
     const chain = LEGENDARY_STORY_CHAINS.find((c) => c.id === chainId);
     if (!chain) return null;
-    const mentor = getMentor(chain.mentorId);
+    const mentor = chain.mentorId ? getMentor(chain.mentorId) : { id: 'big_three', name: '三巨头', chibi: '⚔️', rarity: 'UR_LEGEND', styleTags: [] };
     const state = {
       mode: 'story_chain',
       chainId, chain, mentor,
@@ -12298,8 +12414,19 @@ const StoryChain = (() => {
     if (!player) return false;
     const chain = LEGENDARY_STORY_CHAINS.find((c) => c.id === chainId);
     if (!chain) return false;
-    // 门槛：对应人物碎片 ≥30 或拥有该人物卡
-    const mentors = player.legendaryMentors || { owned: [], fragments: {} };
+    const mentors = player.legendaryMentors || { owned: [], fragments: {}, duelRecords: {} };
+    // 三巨头高阶剧情链：需要拥有三人或各完成1次试炼且至少1次胜利
+    if (chain.prerequisites) {
+      const records = player.duelRecords || {};
+      return ['mentor_churchill', 'mentor_roosevelt', 'mentor_stalin'].every((id) => {
+        // 拥有该导师卡直接计入
+        if (mentors.owned.includes(id)) return true;
+        // 或该导师至少打过1次且有胜利记录
+        const rec = records[id] || {};
+        return rec.plays > 0 && rec.wins > 0;
+      });
+    }
+    // 普通剧情链：对应人物碎片 ≥30 或拥有该人物卡
     return mentors.owned.includes(chain.mentorId) ||
            (mentors.fragments[chain.mentorId] || 0) >= 30;
   }
@@ -12790,16 +12917,31 @@ function renderDuelPlay(params) {
     </div>` : ''}
   </div>` : '';
 
+  const player = Store.get('player');
+  const uiToggle = player ? renderTeachingModeToggle(player) : '';
+  const isLearner = player ? isLearnerMode(player) : true;
+  const roundGoalHtml = isLearner ? `<div class="round-learning-goal">
+    <div class="goal-title">本回合练习目标</div>
+    <div class="goal-text">${phase.brief}</div>
+  </div>` : '';
+  const oppLine = `<div class="opponent-line-panel">
+    <div class="opponent-name">${state.duelist.name} 的策略意图：</div>
+    <div class="opponent-line">${signal}</div>
+  </div>`;
+
   return `<div class="flex-between">
     <div class="section-title">${state.duelist.name} · ${phase.title}</div>
     <button class="back-btn" data-back>← 退出</button>
   </div>
-  <div class="duel-phase-banner">第 ${state.round + 1} / 6 回合 · ${phase.title}<br><span style="color:var(--dim);font-size:11px">${phase.brief}</span></div>
-  <div class="duel-metrics">${metricsHtml}</div>
+  ${uiToggle}
+  ${roundGoalHtml}
+  ${isLearner ? oppLine : `<div class="hint hint-purple" style="font-size:11.5px;margin:10px 0">▸ 对手意图：${signal}</div>`}
+  <div class="duel-phase-banner">第 ${state.round + 1} / 6 回合 · ${phase.title}</div>
+  ${isLearner ? '' : `<div class="duel-metrics">${metricsHtml}</div>`}
   ${mentorBar}
-  <div class="hint hint-purple" style="font-size:11.5px;margin:10px 0">▸ 对手意图：${signal}</div>
   <div class="sk-section-head" style="--card-color:var(--cyan)">▸ 你的选择 · 5 个策略方向</div>
   <div class="duel-choice-list">${choicesHtml}</div>
+  ${!isLearner ? `<div class="duel-metrics" style="margin-top:10px">${metricsHtml}</div>` : ''}
   ${state.log.length ? `<div class="duel-log">
     <div class="sk-section-head" style="--card-color:var(--dim)">▸ 回合记录</div>
     ${state.log.slice(-4).map((l) => `<div class="duel-log-item">
@@ -12810,6 +12952,13 @@ function renderDuelPlay(params) {
 }
 
 renderDuelPlay.afterRender = function () {
+  // 教学模式切换
+  document.querySelectorAll('[data-ui-mode]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      if (player) { setTeachingUiMode(player, b.getAttribute('data-ui-mode')); savePlayer(player); }
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: {} });
+    }));
   document.querySelectorAll('[data-back]').forEach((b) =>
     b.addEventListener('click', () => {
       Store.set('duelState', null);
@@ -12910,18 +13059,22 @@ function renderStorySelect() {
   const owned = new Set(player.legendaryMentors.owned);
   const cards = LEGENDARY_STORY_CHAINS.map((c) => {
     const unlocked = StoryChain.isUnlocked(c.id);
-    const mentor = getMentor(c.mentorId);
+    const mentor = c.mentorId ? getMentor(c.mentorId) : null;
     const rec = (player.storyRuns && player.storyRuns[c.id]) || { plays: 0, bestEnding: null };
-    const cfg = LEGEND_RARITIES[mentor.rarity];
+    const cfg = mentor ? (LEGEND_RARITIES[mentor.rarity] || { color: 'var(--yellow)', label: 'UR' }) : { color: '#ffd700', label: 'UR' };
+    const icon = mentor ? mentor.chibi : '⚔️';
+    const unlockHint = c.prerequisites
+      ? '解锁条件：三巨头各获得 B 级以上试炼成绩'
+      : (mentor ? `解锁条件：${mentor.name} 碎片 ≥ 30 或拥有该导师卡` : '解锁条件：见详情');
     return `<div class="story-card ${unlocked ? '' : 'story-locked'}" data-chain="${c.id}" style="--card-color:${cfg.color}">
-      <div class="story-card-icon">${mentor.chibi}</div>
+      <div class="story-card-icon">${icon}</div>
       <div class="story-card-body">
         <div class="story-card-title">${c.title} <span style="font-size:10px;color:${cfg.color}">${cfg.label}</span></div>
         <div class="story-card-subtitle">${c.subtitle} · ${c.acts.length} 幕</div>
         <div class="story-card-desc">${c.desc}</div>
         ${unlocked
-          ? `<div class="story-card-record">已挑战 ${rec.plays} 次 · 最佳：${rec.bestEnding ? STORY_ENDINGS[rec.bestEnding].icon + ' ' + STORY_ENDINGS[rec.bestEnding].name : '—'}</div>`
-          : `<div class="story-card-record" style="color:var(--dim)">解锁条件：${mentor.name} 碎片 ≥ 30 或拥有该导师卡</div>`}
+          ? `<div class="story-card-record">已挑战 ${rec.plays} 次 · 最佳：${rec.bestEnding ? (STORY_ENDINGS[rec.bestEnding] || {}).icon + ' ' + (STORY_ENDINGS[rec.bestEnding] || {}).name : '—'}</div>`
+          : `<div class="story-card-record" style="color:var(--dim)">${unlockHint}</div>`}
       </div>
     </div>`;
   }).join('');
@@ -13560,6 +13713,227 @@ function injectV2Styles() {
 })();
 
 /* ════════════════════════════════════════════════════════════════════════════
+   谈判行为画像系统 · Negotiation Behavior Profile Engine
+   ════════════════════════════════════════════════════════════════════════════ */
+const NEGOTIATION_PROFILE_DIMENSIONS = {
+  pressureResponse: '压力反应',
+  boundaryExpression: '边界表达',
+  evidenceAwareness: '依据意识',
+  concessionHabit: '让步习惯',
+  emotionControl: '情绪控制',
+  endgameControl: '终局能力',
+  batnaAwareness: 'BATNA意识',
+  strategySwitch: '策略切换'
+};
+
+function ensureNegotiationBehaviorProfile(player) {
+  player.negotiationBehaviorProfile = player.negotiationBehaviorProfile || { dimensions: {}, judgments: [], lastUpdatedAt: null };
+  Object.keys(NEGOTIATION_PROFILE_DIMENSIONS).forEach((key) => {
+    player.negotiationBehaviorProfile.dimensions[key] = player.negotiationBehaviorProfile.dimensions[key] || { score: 50, evidenceCount: 0, trend: 'unknown' };
+  });
+  return player.negotiationBehaviorProfile;
+}
+
+function collectEvidenceChain(replay, relatedTags = []) {
+  const rounds = (replay && (replay.rounds || replay.perRound || replay.log)) || [];
+  const evidence = [];
+  rounds.forEach((r, idx) => {
+    const text = `${r.actionTag || ''} ${r.playerLine || ''} ${r.label || ''} ${r.text || ''}`;
+    const matched = relatedTags.some((tag) => text.includes(tag));
+    if (matched || evidence.length < 3) {
+      evidence.push({
+        round: r.round || idx + 1,
+        playerAction: r.playerLine || r.action || r.label || '未记录具体话术',
+        result: r.result || r.score || r.label || '本轮结果未细化',
+        whyItMatters: matched ? '与本画像判断直接相关。' : '作为近期行为样本参考。'
+      });
+    }
+  });
+  return evidence.slice(0, 5);
+}
+
+function renderEvidenceChain(judgment) {
+  const items = (judgment.evidenceChain || []).map((e) =>
+    `<div class="evidence-item">第${e.round}轮：${e.playerAction} → ${e.result}<br><span style="color:var(--dim);font-size:11px">${e.whyItMatters}</span></div>`).join('');
+  return `<div class="evidence-chain">
+    <div style="color:var(--dim);font-size:11px;margin-bottom:4px">置信度：${judgment.confidence || 'low'}</div>
+    ${items}
+    <div style="color:var(--yellow);font-size:11px;margin-top:6px">反证条件：${judgment.counterEvidenceCondition || '—'}</div>
+  </div>`;
+}
+
+function buildProfileJudgments(profile, replay) {
+  const judgments = [];
+  const dims = profile.dimensions;
+  if ((dims.evidenceAwareness?.score || 50) < 45) {
+    judgments.push({
+      id: 'low_evidence_awareness', title: '依据意识偏弱',
+      judgment: '你在强压场景中较少要求对方说明依据，容易被对方的态度牵着走。',
+      confidence: (dims.evidenceAwareness?.evidenceCount || 0) >= 5 ? 'high' : 'medium',
+      evidenceChain: collectEvidenceChain(replay, ['standard', 'objective']),
+      counterEvidenceCondition: '接下来3场强硬型对手训练中，连续做到先问依据再让步。',
+      nextTrainingPrescription: '下一局只练一件事：对方第一次强硬时，先问"这个要求的依据是什么？"',
+      recommendedTheories: ['fisherUry', 'cohen'], recommendedCards: ['客观标准', 'BATNA分析'],
+      recommendedMentors: ['费希尔 / 尤里', '赫布·科恩', '丘吉尔']
+    });
+  }
+  if ((dims.concessionHabit?.score || 50) < 45) {
+    judgments.push({
+      id: 'early_concession_risk', title: '过早让步风险',
+      judgment: '你不是不能合作，而是合作前缺少边界，容易让对方继续压缩空间。',
+      confidence: (dims.concessionHabit?.evidenceCount || 0) >= 5 ? 'high' : 'medium',
+      evidenceChain: collectEvidenceChain(replay, ['concession']),
+      counterEvidenceCondition: '连续3局做到每次让步都绑定对方承诺。',
+      nextTrainingPrescription: '下一局所有让步都必须带一句：这一步对应你方什么承诺？',
+      recommendedTheories: ['dawson', 'fisherUry'], recommendedCards: ['条件让步', '终局控制'],
+      recommendedMentors: ['罗杰·道森', '芒格', '撒切尔夫人']
+    });
+  }
+  return judgments;
+}
+
+function updateNegotiationBehaviorProfile(player, replay) {
+  const profile = ensureNegotiationBehaviorProfile(player);
+  const actions = (replay && (replay.actions || replay.playerActions)) || [];
+  const usedEvidence = actions.some((a) => /依据|标准|objective|standard/.test(a.actionTag || a.text || ''));
+  const usedBatna = actions.some((a) => /BATNA|替代/.test(a.actionTag || a.text || ''));
+  const earlyConcession = actions.slice(0, 2).some((a) => /让步|concession/.test(a.actionTag || a.text || ''));
+  const applyDelta = (key, delta) => {
+    const item = profile.dimensions[key];
+    if (item) { item.score = Math.max(0, Math.min(100, item.score + delta)); item.evidenceCount += 1; item.trend = delta >= 0 ? 'improving' : 'risk'; }
+  };
+  if (!usedEvidence) applyDelta('evidenceAwareness', -6); else applyDelta('evidenceAwareness', 4);
+  if (!usedBatna) applyDelta('batnaAwareness', -4); else applyDelta('batnaAwareness', 4);
+  if (earlyConcession) applyDelta('concessionHabit', -6);
+  if ((replay?.avgScore || replay?.score || 0) >= 75) applyDelta('strategySwitch', 3);
+  profile.judgments = buildProfileJudgments(profile, replay).slice(0, 8);
+  profile.lastUpdatedAt = Date.now();
+  return profile;
+}
+
+/* ── 对手行为画像 ── */
+const OPPONENT_BEHAVIOR_PROFILE_TEMPLATES = {
+  aggressive: { opponentType:'强硬鹰派型', surfaceDemand:'要求你立即给出明确结果', realConcern:'测试你有没有底线和替代方案', pressureStyle:'压缩时间、提高语气、逼迫表态', influencePoint:'客观标准、替代方案、明确边界', redLine:'不要用情绪反击让他确认你已失控', recommendedResponse:'先要求依据，再提出条件交换', sampleLine:'可以谈，但请先说明你的依据。没有依据的压力，我不会接。' },
+  rational:   { opponentType:'理性分析型', surfaceDemand:'要求计算依据、数据来源和逻辑一致性', realConcern:'担心方案不可验证或风险没有说清', pressureStyle:'追问漏洞、拆解前提、要求证明', influencePoint:'数据、标准、责任边界、风险对冲', redLine:'不要只讲态度或关系', recommendedResponse:'先给判断标准，再进入条件讨论', sampleLine:'我们先把计算口径统一，再看这个条件是否合理。' },
+  emotional:  { opponentType:'情绪敏感型', surfaceDemand:'希望被理解、被尊重、被认真对待', realConcern:'担心自己的感受和损失被忽视', pressureStyle:'把问题从事情转向态度', influencePoint:'承接感受、复述顾虑、再回到问题', redLine:'不要直接否定对方感受', recommendedResponse:'先承接情绪，再表达边界', sampleLine:'我听到你最在意的是被认真对待，我们先把这个顾虑说清楚。' },
+  risk_averse:{ opponentType:'风险规避型', surfaceDemand:'要求保障、责任边界和确定性', realConcern:'担心承担后续风险', pressureStyle:'拖慢推进、反复确认、要求补充条件', influencePoint:'阶段协议、保障机制、退出条件', redLine:'不要催他马上表态', recommendedResponse:'把风险拆成可验证节点', sampleLine:'我们可以先确认风险点、责任边界和下一步验证方式。' }
+};
+function buildOpponentBehaviorProfile(opp) {
+  const type = (opp && (opp.type || opp.profileType)) || 'aggressive';
+  return { name: (opp && opp.name) || '对手', ...(OPPONENT_BEHAVIOR_PROFILE_TEMPLATES[type] || OPPONENT_BEHAVIOR_PROFILE_TEMPLATES.aggressive) };
+}
+
+/* ── 理论架构数据 ── */
+const MASTER_THEORY_ARCHITECTURES = {
+  dawson:    { master:'罗杰·道森',       systemRole:'让步节奏导师',   architecture:['开局策略','中场策略','终局策略','让步策略','蚕食策略','钳子策略','更高权威策略','白脸黑脸策略','沉默与时间压力'], solves:['让步过快','终局被加码','被时间压力压住','被对方蚕食'], sampleLine:'我可以调整一步，但这一步必须对应一个明确承诺。' },
+  fisherUry: { master:'费希尔 / 尤里',   systemRole:'标准与利益导师', architecture:['人和问题分开','关注利益而非立场','创造共同利益选项','坚持客观标准','BATNA','ZOPA','关系与问题拆分'], solves:['立场冲突','无依据压价','情绪对抗'], sampleLine:'这个条件可以讨论，但我需要知道它的依据是什么。' },
+  voss:      { master:'克里斯·沃斯',     systemRole:'信息与情绪导师', architecture:['镜像','标签','校准问题','战术同理心','不是的价值','黑天鹅信息','指控审计','延迟让步','声音控制'], solves:['对方情绪很高','对方不说真实原因','对方防御很重'], sampleLine:'听起来你真正担心的不是价格，而是后面执行会失控。' },
+  cohen:     { master:'赫布·科恩',       systemRole:'权时信判断导师', architecture:['权力','时间','信息','谁更急','谁知道更多','谁有替代方案','谁掌握决策权','谁承担失败成本'], solves:['期限压迫','信息不足','筹码误判','虚假紧迫'], sampleLine:'这个期限是固定要求，还是可以根据条件调整？' },
+  diamond:   { master:'斯图尔特·戴蒙德', systemRole:'感知管理导师',   architecture:['目标第一','对方脑中的画面','情绪与感知','循序渐进','小步骤推进','标准不是重点，人的感知才是入口'], solves:['你说得有理但对方不接受','对方把你听成威胁','推进过快导致防御'], sampleLine:'我不是要否定你的担心，我想先确认你最在意的结果是什么。' },
+  shell:     { master:'理查德·谢尔',     systemRole:'风格适配导师',   architecture:['谈判风格识别','竞争型','合作型','回避型','妥协型','迁就型','风格适配','情境选择','道德边界','准备清单'], solves:['同一打法对不同对手失效','合作打法被强硬型压制','强硬打法激化情绪型对手'], sampleLine:'我先确认一下：你现在更在意的是结果、风险，还是推进速度？' }
+};
+
+/* ── 理论处方地图 ── */
+const THEORY_PRESCRIPTION_MAP = {
+  '被强硬压价':   { primaryTheories:['fisherUry.objectiveStandard','dawson.concessionRhythm','cohen.powerTimeInfo'], recommendedCards:['客观标准','BATNA分析','条件让步'], recommendedMentors:['撒切尔夫人','丘吉尔','芒格'], recommendedScenes:['钢铁王强压训练','特朗普极限锚定试炼','斯大林安全边界试炼'], sampleLine:'这个条件可以讨论，但请先说明依据。没有依据的压力，我不会接。' },
+  '让步太快':     { primaryTheories:['dawson.concessionRhythm','fisherUry.batna','munger.inversion'], recommendedCards:['条件让步','BATNA分析','终局控制'], recommendedMentors:['罗杰·道森','芒格','撒切尔夫人'], recommendedScenes:['终局逼单','临门加码','芒格反向思维试炼'], sampleLine:'我可以让一步，但这一步必须换回一个明确承诺。' },
+  '对方拖延':     { primaryTheories:['cohen.time','fisherUry.objectiveStandard','cixi.delayControl'], recommendedCards:['时间表确认','书面承诺','阶段协议'], recommendedMentors:['慈禧太后','赫布·科恩','罗斯福'], recommendedScenes:['拖延承诺训练','慈禧垂帘控局','阶段协议训练'], sampleLine:'可以继续研究，但我们需要明确下一个确认节点和责任边界。' },
+  '对方情绪很大': { primaryTheories:['voss.tacticalEmpathy','diamond.perception','fisherUry.separatePeopleProblem'], recommendedCards:['情绪拆弹','复述确认','校准问题'], recommendedMentors:['克里斯·沃斯','斯图尔特·戴蒙德','默克尔'], recommendedScenes:['情绪冲突训练','战术同理心训练'], sampleLine:'听起来你现在最担心的不是条件本身，而是后面结果不确定。我们先把这个风险拆开。' },
+  '终局承诺模糊': { primaryTheories:['fisherUry.objectiveStandard','dawson.endgame','stalin.verification'], recommendedCards:['书面确认','安全边界','阶段协议'], recommendedMentors:['斯大林','费希尔/尤里','罗斯福'], recommendedScenes:['安全边界试炼','终局控制训练','三巨头有限协议'], sampleLine:'方向一致还不够，我们需要把承诺、节点和验证方式写清楚。' }
+};
+
+function prescribeTheory(problemKey, replay, profile) {
+  const preset = THEORY_PRESCRIPTION_MAP[problemKey] || THEORY_PRESCRIPTION_MAP['终局承诺模糊'];
+  return { problem: problemKey, ...preset };
+}
+function inferTheoryPrescription(replay, profile) {
+  const lowest = profile?.lowestDimension || '';
+  if (lowest === 'evidenceAwareness') return THEORY_PRESCRIPTION_MAP['被强硬压价'];
+  if (lowest === 'concessionHabit') return THEORY_PRESCRIPTION_MAP['让步太快'];
+  return THEORY_PRESCRIPTION_MAP['终局承诺模糊'];
+}
+function renderTheoryPrescription(pres) {
+  if (!pres) return '';
+  return `<div class="theory-prescription panel">
+    <div class="panel-title" style="color:var(--yellow)">理论处方</div>
+    <div style="margin-bottom:6px"><b>问题：</b>${pres.problem}</div>
+    <div style="margin-bottom:4px"><b>推荐理论：</b>${(pres.primaryTheories || []).join('、')}</div>
+    <div style="margin-bottom:4px"><b>推荐技能卡：</b>${(pres.recommendedCards || []).join('、')}</div>
+    <div style="margin-bottom:4px"><b>推荐导师：</b>${(pres.recommendedMentors || []).join('、')}</div>
+    <div class="hint hint-cyan" style="margin-top:8px">可直接使用："${pres.sampleLine}"</div>
+  </div>`;
+}
+
+/* ── 画像与理论整合 · 复盘后调用 ── */
+function integrateProfileAndTheoryAfterReplay(player, replay) {
+  const profile = updateNegotiationBehaviorProfile(player, replay);
+  const topJudgment = profile.judgments && profile.judgments[0];
+  const problemMap = { low_evidence_awareness: '被强硬压价', early_concession_risk: '让步太快' };
+  const problemKey = (topJudgment && problemMap[topJudgment.id]) || '终局承诺模糊';
+  const prescription = prescribeTheory(problemKey, replay, { lowestDimension: topJudgment?.id === 'low_evidence_awareness' ? 'evidenceAwareness' : 'concessionHabit' });
+  if (replay) { replay.profileInsight = topJudgment; replay.theoryPrescription = prescription; }
+  return { profile, prescription };
+}
+function renderProfileTheoryReplayBlock(replay) {
+  if (!replay || (!replay.profileInsight && !replay.theoryPrescription)) return '';
+  const insightHtml = replay.profileInsight ? `<div class="profile-judgment-card panel" style="margin-bottom:8px">
+    <div class="panel-title" style="color:var(--purple)">${replay.profileInsight.title}</div>
+    <div style="margin-bottom:6px">${replay.profileInsight.judgment}</div>
+    <div class="hint hint-cyan">${replay.profileInsight.nextTrainingPrescription}</div>
+    <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--dim);font-size:11px">查看证据链</summary>${renderEvidenceChain(replay.profileInsight)}</details>
+  </div>` : '';
+  return `<div class="profile-theory-replay-block">${insightHtml}${renderTheoryPrescription(replay.theoryPrescription)}</div>`;
+}
+
+/* ── 画像页 UI ── */
+function renderNegotiationBehaviorProfilePage(player, recentReplay) {
+  const profile = ensureNegotiationBehaviorProfile(player);
+  const judgments = profile.judgments || [];
+  const dimBars = Object.entries(profile.dimensions || {}).map(([key, val]) =>
+    `<div class="bar-wrap"><div class="bar-label"><span>${NEGOTIATION_PROFILE_DIMENSIONS[key]}</span><span>${val.score}</span></div>
+     <div class="bar-bg"><div class="bar-fill ${val.trend === 'improving' ? 'bar-green' : val.trend === 'risk' ? 'bar-red' : 'bar-cyan'}" style="width:${val.score}%"></div></div></div>`).join('');
+  const judgmentHtml = judgments.length
+    ? judgments.map((j) => `<div class="profile-judgment-card panel" style="margin-bottom:8px">
+        <div class="panel-title" style="color:var(--purple)">${j.title}</div>
+        <div style="margin-bottom:6px">${j.judgment}</div>
+        <div class="hint hint-cyan">${j.nextTrainingPrescription}</div>
+        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--dim);font-size:11px">查看证据链</summary>${renderEvidenceChain(j)}</details>
+      </div>`).join('')
+    : `<div class="hint hint-yellow">完成3局训练后生成画像判断。</div>`;
+  return `<div class="profile-page">
+    <div class="panel" style="margin-bottom:8px">
+      <div class="panel-title">谈判行为画像分析</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:10px">画像基于模拟谈判行为生成，仅用于训练与复盘。不输出临床心理判断。</div>
+      ${dimBars}
+    </div>
+    ${judgmentHtml}
+  </div>`;
+}
+
+/* ── 教学UI模式切换 ── */
+const TEACHING_UI_MODES = { learner: 'learner', advanced: 'advanced' };
+function ensureTeachingUiState(player) {
+  player.ui = player.ui || {};
+  player.ui.teachingMode = player.ui.teachingMode || TEACHING_UI_MODES.learner;
+  player.ui.dataDisclosure = player.ui.dataDisclosure || 'collapsed';
+  return player.ui;
+}
+function setTeachingUiMode(player, mode) {
+  ensureTeachingUiState(player);
+  if (!Object.values(TEACHING_UI_MODES).includes(mode)) mode = TEACHING_UI_MODES.learner;
+  player.ui.teachingMode = mode;
+  return player.ui;
+}
+function isLearnerMode(player) { return ensureTeachingUiState(player).teachingMode === TEACHING_UI_MODES.learner; }
+function renderTeachingModeToggle(player) {
+  const mode = ensureTeachingUiState(player).teachingMode;
+  return `<div class="teaching-mode-toggle">
+    <button class="${mode === 'learner' ? 'active' : ''}" data-ui-mode="learner">学员模式</button>
+    <button class="${mode === 'advanced' ? 'active' : ''}" data-ui-mode="advanced">高阶模式</button>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    公开 API
    ════════════════════════════════════════════════════════════════════════════ */
 const LegendMasterAPI = {
@@ -13567,7 +13941,12 @@ const LegendMasterAPI = {
   LegendBlindBox, LegendDuel, StoryChain,
   SkillProfile, RetrievalReview, LocalReplay,
   AIMemoryV2, CARD_USAGE_RULES, MENTOR_ENERGY_RULES,
-  ensureSkillCardFieldsV2, grantBeginnerDeckIfNeeded, setWishlist
+  ensureSkillCardFieldsV2, grantBeginnerDeckIfNeeded, setWishlist,
+  NEGOTIATION_PROFILE_DIMENSIONS, MASTER_THEORY_ARCHITECTURES, THEORY_PRESCRIPTION_MAP,
+  ensureNegotiationBehaviorProfile, updateNegotiationBehaviorProfile, integrateProfileAndTheoryAfterReplay,
+  OPPONENT_BEHAVIOR_PROFILE_TEMPLATES, buildOpponentBehaviorProfile,
+  prescribeTheory, renderTheoryPrescription, renderProfileTheoryReplayBlock,
+  TEACHING_UI_MODES, ensureTeachingUiState, setTeachingUiMode, isLearnerMode, renderTeachingModeToggle
 };
 /* ===== core/bootstrap.js ===== */
 // core/bootstrap.js — 应用启动入口（组合根）

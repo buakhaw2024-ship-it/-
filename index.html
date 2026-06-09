@@ -976,6 +976,26 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .coach-replay-summary li{font-size:12px;color:var(--text);line-height:1.7}
 .memory-card{background:rgba(78,114,170,.15);border-radius:8px;padding:10px;margin-top:10px;color:var(--cyan);font-size:13px;text-align:center}
 .sample-line{color:var(--yellow);font-style:italic;font-size:13px;background:rgba(246,196,83,.1);padding:10px;border-radius:8px;margin:8px 0}
+/* ── 教学式回应选项 ── */
+.teaching-response-options{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.teaching-response-card{background:rgba(10,20,40,.9);border:1px solid rgba(78,114,170,.45);border-radius:12px;padding:14px;text-align:left;cursor:pointer;transition:border-color .2s,background .2s;width:100%;display:block}
+.teaching-response-card:hover,.teaching-response-card:focus{background:rgba(30,58,138,.3);border-color:var(--cyan);outline:none}
+.option-head{font-size:11px;color:var(--dim);margin-bottom:4px;font-weight:bold}
+.option-line{font-size:14px;color:var(--white);font-style:italic;line-height:1.6;margin-bottom:4px}
+.option-meaning{font-size:11px;color:var(--cyan)}
+.option-risk{font-size:11px;color:#e8a250;margin-top:2px}
+/* ── 对话反馈 ── */
+.dialogue-feedback{background:rgba(10,18,32,.92);border:1px solid rgba(78,114,170,.55);border-radius:12px;padding:14px;margin:8px 0}
+.player-line{font-size:13px;margin-bottom:8px;color:var(--white)}
+.opponent-hearing{color:var(--cyan);font-size:12px;line-height:1.6;margin-bottom:6px}
+.opponent-response{color:var(--text);font-size:12px;font-style:italic;margin-bottom:6px}
+.coach-note{color:var(--yellow);font-size:12px;border-left:3px solid var(--yellow);padding-left:8px}
+.rewrite{font-size:11px;color:var(--dim);margin-top:6px}
+/* ── 训练路径推荐 ── */
+.training-recommendation{background:rgba(10,18,32,.92);border:1px solid rgba(32,215,255,.35);border-radius:12px;padding:16px;margin-bottom:12px}
+.training-rec-title{color:var(--cyan);font-weight:bold;margin-bottom:8px;font-size:13px}
+.training-rec-tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.training-rec-tag{padding:3px 10px;background:rgba(32,215,255,.1);border:1px solid rgba(32,215,255,.3);border-radius:20px;font-size:11px;color:var(--cyan)}
 
 </style>
 </head>
@@ -6428,6 +6448,7 @@ function renderPsychology() {
       </div>`)}
     ${C.panel('8维心理向量分析（基于真实决策序列）', bars)}
     ${C.panel('当前短板', weakHtml)}
+    ${typeof renderTrainingRecommendation === 'function' ? renderTrainingRecommendation(player) : ''}
     ${C.panel('成长建议', pt.advice.map((a) => C.hint(`• ${a}`)).join(''))}
     <div class="panel">
       <div class="panel-title">6 种心理类型对照 <span style="color:var(--dim);font-size:10px">▶ 标注为当前类型</span></div>
@@ -6561,6 +6582,7 @@ function renderDashboard() {
     ${C.panel('场景胜率', scenarioHtml || '<div style="color:var(--dim)">暂无数据</div>')}
     ${C.panel('对手胜率', oppHtml + bossHtml)}
     ${C.panel('当前短板', weakHtml)}
+    ${typeof renderTrainingRecommendation === 'function' ? renderTrainingRecommendation(p) : ''}
     ${C.panel('难度分布', `<div style="padding:4px 0">${diffHtml}</div>`)}
     ${C.panel('最近训练记录', histHtml)}
   `;
@@ -9172,6 +9194,27 @@ function generateArcRoundPayload(arc, stage) {
     return { key, label: t.label, desc: t.desc, sample };
   });
 
+  // 语言一致性守门器：检查 openLine 是否符合对手类型和当前议题
+  if (typeof scoreDialogueCoherence === 'function') {
+    const coherenceCtx = {
+      currentIssue: stage.scenario || stage.title || '',
+      opponentProfile: opp,
+      playerLastLine: (arcState && arcState.stageResults && arcState.stageResults.length)
+        ? choices[0].sample : ''
+    };
+    const quality = scoreDialogueCoherence({ opponentLine: openLine }, coherenceCtx);
+    if (!quality.pass && stageDialogue && stageDialogue.opening) {
+      // 即使质检不过，坚持使用场景化剧本（已经是最佳的）
+    } else if (!quality.pass) {
+      // 通用 fallback：选择最符合情境的对手声音
+      const voiceId = typeof getDuelistVoiceProfileId === 'function'
+        ? getDuelistVoiceProfileId(opp) : 'steel_king';
+      const fallbackLine = typeof pickOpponentLine === 'function'
+        ? pickOpponentLine(voiceId, 'pressure') : openLine;
+      if (fallbackLine && fallbackLine.length > openLine.length) openLine = fallbackLine;
+    }
+  }
+
   return {
     opponent: opp,
     opening: openLine,
@@ -10147,17 +10190,44 @@ function renderArcNegotiation(params) {
     ? `<div class="arc-mirror-note">⚪ 本次镜像对手由你的历史行为画像生成，对应原型：${arcEscape(payload.opponent.name)}。</div>`
     : '';
 
-  const choicesHtml = payload.choices.map((c) => `
-    <button class="arc-choice-btn" data-arc-choice="${c.key}">
-      <div class="arc-choice-label">${arcEscape(c.label)} · ${arcEscape(c.desc)}</div>
-      <div>${arcEscape(c.sample)}</div>
-    </button>`).join('');
+  const arcPlayer = Store.get('player');
+  const arcIsLearner = arcPlayer ? isLearnerMode(arcPlayer) : true;
+
+  // 教学模式：用层级标签包装选项；高阶模式：保持原有紧凑样式
+  let choicesHtml;
+  if (arcIsLearner) {
+    const leveledOptions = payload.choices.map((c) => {
+      const meta = ARC_CHOICE_LEVEL_META[c.key] || { level: 'steady', plainMeaning: '', risk: '' };
+      return { id: c.key, playerLine: c.sample, level: meta.level, plainMeaning: meta.plainMeaning, risk: meta.risk };
+    });
+    choicesHtml = `<div class="teaching-response-options">${leveledOptions.map((opt, idx) => `
+      <button class="teaching-response-card" data-arc-choice="${opt.id}">
+        <div class="option-head" style="color:${{ steady:'#4ade80', direct:'#f6c453', probe:'#20d4ff', advanced:'#c084fc' }[opt.level] || 'var(--text)'}">${String.fromCharCode(65 + idx)} · ${OPTION_LEVEL_LABELS[opt.level] || opt.level}</div>
+        <div class="option-line">"${arcEscape(opt.playerLine)}"</div>
+        ${opt.plainMeaning ? `<div class="option-meaning">${opt.plainMeaning}</div>` : ''}
+        ${opt.risk ? `<div class="option-risk">⚠ 风险：${opt.risk}</div>` : ''}
+      </button>`).join('')}</div>`;
+  } else {
+    choicesHtml = `<div class="arc-choice-list">${payload.choices.map((c) => `
+      <button class="arc-choice-btn" data-arc-choice="${c.key}">
+        <div class="arc-choice-label">${arcEscape(c.label)} · ${arcEscape(c.desc)}</div>
+        <div>${arcEscape(c.sample)}</div>
+      </button>`).join('')}</div>`;
+  }
 
   // 暂存 opening 给后续 render 使用（避免重新生成不同台词）
   window.__arcLastPayload = { arcId, stageId: stage.id, opening: payload.opening, opp: payload.opponent };
 
+  // 学员模式：显示回合目标 + 模式切换
+  const arcUiToggle = arcPlayer ? renderTeachingModeToggle(arcPlayer) : '';
+  const arcGoalHtml = arcIsLearner ? `<div class="round-learning-goal" style="margin:8px 0">
+    <div class="goal-title">本阶段训练目标</div>
+    <div class="goal-text">${stage.focus || '读懂对手真实诉求，选一句最贴近现实的回应。'}</div>
+  </div>` : '';
+
   return `<div class="arc-scope">${arcTopbar(`${arc.title} · 阶段 ${state.stageIndex + 1}`, { backTo: SCREENS.ARC_BRIEFING, backParams: { arcId }, showHome: true })}
     <div class="arc-screen">
+      ${arcUiToggle}
       <div class="arc-opp-bar">
         <div>
           <div class="arc-opp-name">${arcEscape(payload.opponent.name)}${payload.mirrorResolved ? ' <span style="font-size:10px;color:var(--dim)">(镜像)</span>' : ''}</div>
@@ -10166,6 +10236,7 @@ function renderArcNegotiation(params) {
         <div class="arc-diff-badge arc-diff-${stage.difficulty}">${stage.difficulty.toUpperCase()}</div>
       </div>
       ${mirrorNote}
+      ${arcGoalHtml}
       <div class="arc-card-base">
         <h4 class="arc-section-title">${arcEscape(stage.title)}</h4>
         <p style="font-size:13px;color:var(--text);line-height:1.7;margin-top:6px">${arcEscape(stage.scenario)}</p>
@@ -10174,7 +10245,7 @@ function renderArcNegotiation(params) {
         <strong>${arcEscape(payload.opponent.name)}：</strong>${arcEscape(payload.opening)}
       </div>
       <h4 class="arc-section-title" style="margin-top:14px">▶ 你的回应</h4>
-      <div class="arc-choice-list">${choicesHtml}</div>
+      ${choicesHtml}
     </div></div>`;
 }
 
@@ -10186,6 +10257,13 @@ renderArcNegotiation.afterRender = function (params) {
       handleArcNegotiationChoice(params.arcId, btn.getAttribute('data-arc-choice'));
     });
   });
+  // 学员/高阶模式切换（弧线场内）
+  document.querySelectorAll('[data-ui-mode]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const player = Store.get('player');
+      if (player) { setTeachingUiMode(player, b.getAttribute('data-ui-mode')); savePlayer(player); }
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.ARC_NEGOTIATION, params: { arcId: params.arcId } });
+    }));
 };
 
 function handleArcNegotiationChoice(arcId, choiceKey) {
@@ -10315,10 +10393,34 @@ function renderArcRoundResult(params) {
     </div>`;
   }
 
+  // 学员模式：生成出牌后反馈
+  const arcResultPlayer = Store.get('player');
+  const arcResultIsLearner = arcResultPlayer ? isLearnerMode(arcResultPlayer) : true;
+  let arcAfterActionHtml = '';
+  if (arcResultIsLearner && justEndedIdx >= 0 && typeof evaluateOpponentHearing === 'function') {
+    const justStage = arc.stages[justEndedIdx];
+    const justOppId = resolveArcOpponentId(justStage.opponent);
+    const justOpp = arcGetOpponent(justOppId);
+    const stageDialogueForResult = getArcStageDialogue(arc.id, justStage.id);
+    const playerLine = (stageDialogueForResult && stageDialogueForResult.choices && stageDialogueForResult.choices[lastResult.choice])
+      || ARC_CHOICE_TEMPLATES[lastResult.choice]?.samples?.[0] || lastResult.choice;
+    const lineItem = { playerLine };
+    const voiceId = typeof getDuelistVoiceProfileId === 'function' ? getDuelistVoiceProfileId(justOpp) : 'steel_king';
+    const hearing = evaluateOpponentHearing(lineItem, justOpp);
+    const expr = evaluatePlayerExpression(lineItem);
+    arcAfterActionHtml = `<div class="after-action-feedback">
+      <div class="feedback-title" style="color:var(--cyan);font-weight:bold;margin-bottom:8px">本回合表达反馈</div>
+      <div class="feedback-block"><b>你说：</b>"${playerLine}"</div>
+      <div class="feedback-block"><b>对手听感：</b>${hearing}</div>
+      <div class="feedback-block coach"><b>教练提示：</b>${expr.summary}</div>
+    </div>`;
+  }
+
   return `<div class="arc-scope">${arcTopbar('阶段结果', { showHome: true })}
     <div class="arc-screen">
       <h2 class="arc-h">${arcEscape(lastResult.stageTitle)}</h2>
       <p class="arc-sub">你选择了：${arcEscape(params.choiceLabel || lastResult.choice)}</p>
+      ${arcAfterActionHtml}
       ${reactHtml}
       <div class="arc-card-base">
         <h4 class="arc-section-title">本轮变量变化</h4>
@@ -14561,6 +14663,282 @@ function renderTeachingModeToggle(player) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+   真实话术选项库（PLAYER_LINE_LIBRARY）
+   ────────────────────────────────────────────────────────────────────────── */
+const PLAYER_LINE_LIBRARY = [
+  { id: 'standard_pressure_advanced_01', actionTag: 'standard', level: 'advanced',
+    playerLine: '可以继续谈，但我需要先看到依据。没有依据的压力，我不会接。',
+    plainMeaning: '我不接受无依据施压，但保留谈判空间。',
+    risk: '语气过硬时，情绪型对手可能觉得被否定。',
+    consequence: { agenda: 8, pressure: 4, trust: -2 } },
+  { id: 'boundary_path_steady_01', actionTag: 'boundary', level: 'steady',
+    playerLine: '这个条件我现在不能直接接受。我们先把依据说清楚，再看有没有调整空间。',
+    plainMeaning: '守住边界，同时保留继续谈的路径。',
+    risk: '如果对手极度强硬，可能继续逼你表态。',
+    consequence: { agenda: 5, trust: 2, endgame: 4 } },
+  { id: 'conditional_concession_steady_01', actionTag: 'concession', level: 'steady',
+    playerLine: '可以让一步，但这一步必须对应一个明确承诺。否则我这边不能单方面退。',
+    plainMeaning: '让步必须交换，不能白给。',
+    risk: '对手可能要求你先让。',
+    consequence: { endgame: 8, trust: 2, pressure: 2 } },
+  { id: 'emotion_mirror_steady_01', actionTag: 'emotion', level: 'steady',
+    playerLine: '我听到你现在最担心的是风险和结果，不是单纯在卡条件。我们先把这个担心拆开。',
+    plainMeaning: '先承接情绪，再回到问题。',
+    risk: '对强硬型对手可能显得节奏偏慢。',
+    consequence: { trust: 9, information: 4, pressure: -2 } },
+  { id: 'batna_close_advanced_01', actionTag: 'batna', level: 'advanced',
+    playerLine: '如果这个条件是最终版本，我这边会评估替代方案。但在这之前，我们可以再核一次可交换空间。',
+    plainMeaning: '释放底气，但不直接翻脸。',
+    risk: '过早亮出替代方案可能暴露底牌。',
+    consequence: { pressure: 7, endgame: 7, trust: -2 } }
+];
+
+function getPlayerLineOptions(context, count) {
+  count = count || 4;
+  let pool = PLAYER_LINE_LIBRARY.slice();
+  const issue = context.currentIssue || '';
+  if (/价格|压价|条件|费用/.test(issue))
+    pool = pool.filter((x) => ['standard', 'boundary', 'concession', 'batna'].includes(x.actionTag));
+  const levels = ['emotional', 'direct', 'steady', 'advanced'];
+  const selected = [];
+  levels.forEach((level) => {
+    const hit = pool.find((x) => x.level === level && !selected.find((s) => s.id === x.id));
+    if (hit) selected.push(hit);
+  });
+  while (selected.length < count && selected.length < pool.length) {
+    const item = pool[selected.length % pool.length];
+    if (!selected.find((x) => x.id === item.id)) selected.push(item);
+    else break;
+  }
+  return selected.slice(0, count);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   对话上下文与完整回合构建
+   ────────────────────────────────────────────────────────────────────────── */
+function buildDialogueContext(mode, state) {
+  const round = state.round || 0;
+  const total = state.totalRounds || state.stageCount || 5;
+  return {
+    mode,
+    sceneType: state.sceneType || mode,
+    currentIssue: state.currentIssue || state.objective || state.title || '',
+    opponentProfile: state.opponentProfile || state.duelist || state.opponent || {},
+    opponentMood: state.opponentMood || {},
+    previousTurns: state.turns || state.log || [],
+    playerLastLine: state.playerLastLine || '',
+    hiddenGoal: state.hiddenGoal || '',
+    publicGoal: state.publicGoal || state.objective || '',
+    negotiationStage: round <= 1 ? 'opening' : round >= total - 1 ? 'closing' : 'middle'
+  };
+}
+
+function buildFullDialogueTurn(context) {
+  const profileId = (context.opponentProfile.id) || 'steel_king';
+  const voiceId = typeof getDuelistVoiceProfileId === 'function'
+    ? getDuelistVoiceProfileId(context.opponentProfile) : 'steel_king';
+  const stage = context.negotiationStage === 'closing' ? 'closing' :
+                context.negotiationStage === 'opening' ? 'opening' : 'pressure';
+  const opponentLine = (typeof pickOpponentLine === 'function')
+    ? pickOpponentLine(voiceId, stage) : '我们需要一个明确的结果。';
+  const playerOptions = getPlayerLineOptions(context, 4);
+  return {
+    opponentLine,
+    playerOptions,
+    instruction: '请选择一句你会在真实谈判中说出口的话。',
+    renderHint: '先看对手原话，再选你的回应。不要只看数值。'
+  };
+}
+
+function buildQuickTrainingDialogue(context) {
+  const full = buildFullDialogueTurn(context);
+  return {
+    opponentLine: full.opponentLine,
+    playerOptions: full.playerOptions.slice(0, 3),
+    instruction: '快速训练：选一句最稳的回应。'
+  };
+}
+
+function buildCoachNote(lineItem, expression) {
+  if (expression.total >= 80) return '这句话成熟度较高：有边界，也给了继续谈的路径。';
+  if (expression.total >= 60) return '这句话可以用，但建议补一句依据或交换条件。';
+  return '这句话容易变成情绪表达，建议改成"边界 + 依据 + 路径"的结构。';
+}
+
+function onPlayerLineSelected(lineItem, context) {
+  const hearing = evaluateOpponentHearing(lineItem, context.opponentProfile || {});
+  const expression = evaluatePlayerExpression(lineItem);
+  const voiceId = typeof getDuelistVoiceProfileId === 'function'
+    ? getDuelistVoiceProfileId(context.opponentProfile) : 'steel_king';
+  const response = (typeof pickOpponentLine === 'function')
+    ? pickOpponentLine(voiceId, 'countered') : '你要依据？可以，那你也拿出你的依据。';
+  return {
+    playerLine: lineItem.playerLine,
+    opponentHearing: hearing,
+    opponentResponse: response,
+    expressionScore: expression.total,
+    expressionSummary: expression.summary,
+    coachNote: buildCoachNote(lineItem, expression)
+  };
+}
+
+function renderDialogueFeedback(feedback) {
+  if (!feedback) return '';
+  return `<div class="dialogue-feedback">
+    <div class="player-line"><b>你说：</b>"${feedback.playerLine}"</div>
+    <div class="opponent-hearing"><b>对手听感：</b>${feedback.opponentHearing}</div>
+    <div class="opponent-response"><b>对手回应：</b>"${feedback.opponentResponse}"</div>
+    <div class="coach-note"><b>教练提示：</b>${feedback.coachNote}</div>
+  </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   教学式回应选项渲染器
+   ────────────────────────────────────────────────────────────────────────── */
+const OPTION_LEVEL_LABELS = {
+  emotional: '情绪化回应',
+  direct: '直接回应',
+  steady: '稳健回应',
+  advanced: '高阶回应',
+  probe: '试探型回应'
+};
+
+const ARC_CHOICE_LEVEL_META = {
+  cooperate: { level: 'steady',   plainMeaning: '先建立共同框架，再进入条件讨论。', risk: '对强硬对手可能被认为态度偏软。' },
+  firm:      { level: 'direct',   plainMeaning: '明确底线，不进入对方锚定的范围。', risk: '对情绪敏感型对手可能激化对抗。' },
+  probe:     { level: 'probe',    plainMeaning: '先问，收集信息，不急于表态。',       risk: '节奏偏慢，对方可能会催你表态。' },
+  anchor:    { level: 'advanced', plainMeaning: '先锚定框架，让对方在你的范围内调整。', risk: '对手如果反锚定，你需要更强的底牌。' }
+};
+
+function renderTeachingResponseOption(opt, idx) {
+  const label = OPTION_LEVEL_LABELS[opt.level] || opt.level || '回应';
+  const levelColors = { emotional: '#ff7a7a', direct: '#f6c453', steady: '#4ade80', advanced: '#c084fc', probe: '#20d4ff' };
+  const color = levelColors[opt.level] || 'var(--text)';
+  return `<button class="teaching-response-card" data-option-id="${opt.id || idx}">
+    <div class="option-head" style="color:${color}">${String.fromCharCode(65 + idx)} · ${label}</div>
+    <div class="option-line">"${opt.playerLine}"</div>
+    ${opt.plainMeaning ? `<div class="option-meaning">${opt.plainMeaning}</div>` : ''}
+    ${opt.risk ? `<div class="option-risk">⚠ 风险：${opt.risk}</div>` : ''}
+  </button>`;
+}
+
+function renderTeachingResponseOptions(options) {
+  return `<div class="teaching-response-options">${options.map(renderTeachingResponseOption).join('')}</div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   对话语言一致性守门器（复杂谈判语言质量校验）
+   ────────────────────────────────────────────────────────────────────────── */
+function _keywordHint(issue) {
+  if (/价格|压价|租金|费用|条件/.test(issue)) return issue.match(/价格|压价|租金|费用|条件/)[0];
+  if (/时间|期限|节点/.test(issue)) return issue.match(/时间|期限|节点/)[0];
+  if (/风险|保障|责任/.test(issue)) return issue.match(/风险|保障|责任/)[0];
+  return issue.slice(0, 2) || '谈判';
+}
+
+function _matchesPersona(line, profile) {
+  const type = (profile.type || profile.id || '').toLowerCase();
+  if (/aggressive|steel|强硬/.test(type)) return /一句话|结果|能不能|没什么好谈|明确/.test(line);
+  if (/rational|logic|理性/.test(type)) return /依据|数据|标准|计算|判断/.test(line);
+  if (/emotional|sensitive|情绪/.test(type)) return /感受|态度|理解|否定/.test(line);
+  if (/risk|stable|风险/.test(type)) return /风险|保障|责任|确认/.test(line);
+  return true;
+}
+
+function _respondsToPlayer(line, playerLastLine) {
+  if (/依据|标准/.test(playerLastLine)) return /依据|标准|拿出|证明/.test(line);
+  if (/让步|退/.test(playerLastLine)) return /让|退|条件|承诺/.test(line);
+  if (/不能|不接受/.test(playerLastLine)) return /为什么|条件|那你|接受|继续/.test(line);
+  return true;
+}
+
+function _isEmptyPhrase(line) {
+  return /我们再看看|这个不好说|情况比较复杂|你说得也有道理/.test(line) && line.length < 30;
+}
+
+function scoreDialogueCoherence(output, context) {
+  const text = `${output.opponentLine || ''} ${output.subtext || ''} ${output.coachingNote || ''}`;
+  let score = 100;
+  const reasons = [];
+  const hint = context.currentIssue ? _keywordHint(context.currentIssue) : '';
+  if (hint && !text.includes(hint)) { score -= 15; reasons.push('台词与当前议题关联不足。'); }
+  if (!_matchesPersona(output.opponentLine || '', context.opponentProfile || {})) { score -= 15; reasons.push('台词与对手性格不够一致。'); }
+  if (context.playerLastLine && !_respondsToPlayer(output.opponentLine || '', context.playerLastLine)) { score -= 10; reasons.push('没有明显回应玩家上一句话。'); }
+  if (_isEmptyPhrase(output.opponentLine || '')) { score -= 25; reasons.push('台词过于空泛。'); }
+  if (!output.intentSignal && !output.subtext) { score -= 10; reasons.push('缺少可理解的意图信号。'); }
+  return { score: Math.max(0, score), reasons, pass: score >= 70 };
+}
+
+function guardDialogueOutput(output, context, fallbackOutput) {
+  const quality = scoreDialogueCoherence(output, context);
+  if (quality.pass) return { ...output, qualityScore: quality.score };
+  return { ...fallbackOutput, qualityScore: quality.score, guardFallback: true, guardReasons: quality.reasons };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   渐进式披露状态（学员模式默认折叠高级面板）
+   ────────────────────────────────────────────────────────────────────────── */
+function ensureDisclosureState(player) {
+  player.ui = player.ui || {};
+  player.ui.disclosure = player.ui.disclosure || {
+    metrics: false, hiddenVariables: false, cardDeltas: false, opponentMemory: false
+  };
+  return player.ui.disclosure;
+}
+
+function shouldShowAdvancedPanel(player, panelKey) {
+  const mode = ensureTeachingUiState(player).teachingMode;
+  if (mode === 'advanced') return true;
+  return Boolean(ensureDisclosureState(player)[panelKey]);
+}
+
+function toggleAdvancedPanel(player, panelKey) {
+  const disclosure = ensureDisclosureState(player);
+  disclosure[panelKey] = !disclosure[panelKey];
+  return disclosure[panelKey];
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   训练路径推荐（基于弱项标签）
+   ────────────────────────────────────────────────────────────────────────── */
+function recommendNextTraining(player) {
+  if (typeof SkillProfile === 'undefined') return null;
+  const rec = SkillProfile.recommend(player);
+  const weak = rec.weakest || [];
+  const SCENE_TAG_MAP = {
+    info: '囚徒困境 / 信任博弈',
+    trust: '信任博弈 / 联盟博弈',
+    pressure: '砍价谈判 / 危机谈判',
+    endgame: '危机谈判 / 最后通牒',
+    agenda: '联盟博弈 / 危机谈判',
+    batna: '砍价谈判 / 最后通牒'
+  };
+  const scenes = weak.slice(0, 2).map((t) => SCENE_TAG_MAP[t] || '场景实战训练').filter(Boolean);
+  const tagLabels = {
+    info: '信息获取', agenda: '议题控制', pressure: '压力管理', trust: '信任建立',
+    endgame: '终局控制', batna: 'BATNA分析', standard: '客观标准', emotion: '情绪处理'
+  };
+  const weakLabels = weak.slice(0, 3).map((t) => tagLabels[t] || t);
+  if (!weak.length) return { message: '当前能力结构较均衡，可进入传奇试炼或剧情链。', weakestTags: [], recommendedScenes: [] };
+  return {
+    message: `建议重点训练：${weakLabels.join('、')}。推荐进入：${[...new Set(scenes)].join(' 或 ')}。`,
+    weakestTags: weak.slice(0, 3),
+    weakLabels,
+    recommendedScenes: [...new Set(scenes)]
+  };
+}
+
+function renderTrainingRecommendation(player) {
+  const rec = recommendNextTraining(player);
+  if (!rec) return '';
+  return `<div class="training-recommendation">
+    <div class="training-rec-title">▸ 下一步训练推荐</div>
+    <p style="font-size:12px;color:var(--text);margin-bottom:8px">${rec.message}</p>
+    ${rec.weakLabels && rec.weakLabels.length ? `<div class="training-rec-tags">${rec.weakLabels.map((l) => `<span class="training-rec-tag">${l}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
    对手声音档案
    ────────────────────────────────────────────────────────────────────────── */
 const OPPONENT_VOICE_PROFILES = {
@@ -14882,7 +15260,14 @@ const LegendMasterAPI = {
   buildRoundLearningGoal, renderRoundLearningGoal,
   LEGENDARY_ENTRANCE_QUOTES, renderLegendaryEntrance,
   buildPauseExplainPanel, renderPauseExplainPanel,
-  buildAfterActionFeedback, renderAfterActionFeedbackPanel
+  buildAfterActionFeedback, renderAfterActionFeedbackPanel,
+  PLAYER_LINE_LIBRARY, getPlayerLineOptions,
+  buildDialogueContext, buildFullDialogueTurn, buildQuickTrainingDialogue,
+  onPlayerLineSelected, buildCoachNote, renderDialogueFeedback,
+  OPTION_LEVEL_LABELS, ARC_CHOICE_LEVEL_META, renderTeachingResponseOption, renderTeachingResponseOptions,
+  scoreDialogueCoherence, guardDialogueOutput,
+  ensureDisclosureState, shouldShowAdvancedPanel, toggleAdvancedPanel,
+  recommendNextTraining, renderTrainingRecommendation
 };
 /* ===== core/bootstrap.js ===== */
 // core/bootstrap.js — 应用启动入口（组合根）

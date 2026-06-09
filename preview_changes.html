@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>改动预览 — 谈判训练营</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a14;color:#e8dfc8;font-family:'PingFang SC','Microsoft YaHei',sans-serif;min-height:100vh}
+.page{max-width:1100px;margin:0 auto;padding:24px 16px}
+
+/* ── 章节标题 ── */
+.section{margin-bottom:48px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid rgba(212,175,55,.25)}
+.section-title{font-size:20px;font-weight:700;color:#d4af37;letter-spacing:.05em}
+.section-tag{background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.4);color:#d4af37;font-size:11px;padding:2px 8px;border-radius:10px}
+.before-after{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:700px){.before-after{grid-template-columns:1fr}}
+.panel-label{font-size:12px;color:#888;margin-bottom:10px;letter-spacing:.05em}
+.panel-label span{color:#d4af37}
+
+/* ══════════════════════════════════
+   改动A：稀有度边框系统
+══════════════════════════════════ */
+
+/* ── BEFORE: 旧卡牌样式 ── */
+.card-old{
+  background:#1a1a2e;border:2px solid #444;border-radius:12px;
+  width:120px;padding:10px 8px;display:flex;flex-direction:column;
+  align-items:center;gap:6px;cursor:pointer;position:relative;
+  transition:transform .2s;
+}
+.card-old:hover{transform:translateY(-4px)}
+.card-old .chibi{font-size:36px;height:56px;display:flex;align-items:center;justify-content:center}
+.card-old .name{font-size:11px;color:#ccc;text-align:center}
+.card-old .rarity-badge{font-size:10px;color:#888;background:#222;padding:1px 5px;border-radius:4px}
+
+/* ── AFTER: 新稀有度系统 ── */
+:root{
+  --N-border:#888;--N-glow:rgba(136,136,136,.2);--N-badge-bg:#444;--N-text:#aaa;
+  --R-border:#4a8ef5;--R-glow:rgba(74,142,245,.3);--R-badge-bg:#1a3a6a;--R-text:#7ab4ff;
+  --SR-border:#9b59b6;--SR-glow:rgba(155,89,182,.35);--SR-badge-bg:#2d1a40;--SR-text:#c77dff;
+  --SSR-border:#d4af37;--SSR-glow:rgba(212,175,55,.4);--SSR-badge-bg:#3a2800;--SSR-text:#ffd700;
+  --UR-border:url(#ur-grad);--UR-text:#fff;
+}
+
+.card-new{
+  background:linear-gradient(160deg,#14121e 0%,#0d0b18 100%);
+  border-radius:12px;width:120px;padding:10px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;position:relative;transition:transform .2s,box-shadow .2s;
+  border:2px solid transparent;
+}
+.card-new:hover{transform:translateY(-6px)}
+
+/* N */
+.card-new.rarity-N{border-color:var(--N-border);box-shadow:0 0 8px var(--N-glow)}
+.card-new.rarity-N:hover{box-shadow:0 0 18px var(--N-glow)}
+.card-new.rarity-N .rarity-badge{background:var(--N-badge-bg);color:var(--N-text)}
+/* R */
+.card-new.rarity-R{border-color:var(--R-border);box-shadow:0 0 10px var(--R-glow)}
+.card-new.rarity-R:hover{box-shadow:0 6px 24px var(--R-glow)}
+.card-new.rarity-R .rarity-badge{background:var(--R-badge-bg);color:var(--R-text)}
+/* SR */
+.card-new.rarity-SR{
+  border-color:var(--SR-border);
+  box-shadow:0 0 12px var(--SR-glow),inset 0 0 20px rgba(155,89,182,.05);
+}
+.card-new.rarity-SR:hover{box-shadow:0 6px 28px var(--SR-glow)}
+.card-new.rarity-SR .rarity-badge{background:var(--SR-badge-bg);color:var(--SR-text)}
+/* SSR */
+.card-new.rarity-SSR{
+  border-color:var(--SSR-border);
+  box-shadow:0 0 16px var(--SSR-glow),0 0 4px #d4af3766;
+}
+.card-new.rarity-SSR:hover{box-shadow:0 8px 32px var(--SSR-glow),0 0 8px #d4af3799}
+.card-new.rarity-SSR .rarity-badge{background:var(--SSR-badge-bg);color:var(--SSR-text)}
+.card-new.rarity-SSR::before{
+  content:'';position:absolute;inset:-2px;border-radius:14px;
+  background:linear-gradient(45deg,#d4af37,#8b6914,#d4af37,#ffd700,#8b6914,#d4af37);
+  background-size:300% 300%;animation:shimmer 3s linear infinite;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  padding:2px;z-index:0;
+}
+/* UR */
+.card-new.rarity-UR{
+  border-color:transparent;
+  box-shadow:0 0 20px rgba(200,100,255,.5),0 0 40px rgba(255,100,100,.2);
+}
+.card-new.rarity-UR:hover{box-shadow:0 8px 40px rgba(200,100,255,.7)}
+.card-new.rarity-UR::before{
+  content:'';position:absolute;inset:-2px;border-radius:14px;
+  background:linear-gradient(45deg,#ff6b6b,#ffd700,#7fff00,#00cfff,#bf7fff,#ff6b6b);
+  background-size:400% 400%;animation:shimmer 2s linear infinite;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  padding:2px;z-index:0;
+}
+.card-new.rarity-UR .rarity-badge{
+  background:linear-gradient(90deg,#7f1d1d,#312e81);color:#fbbf24;
+}
+@keyframes shimmer{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+
+.card-new .chibi{font-size:36px;height:56px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.card-new .name{font-size:11px;color:#ddd;text-align:center;position:relative;z-index:1}
+.card-new .rarity-badge{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;position:relative;z-index:1}
+
+.cards-row{display:flex;gap:12px;flex-wrap:wrap}
+
+
+/* ══════════════════════════════════
+   改动B：女性传奇系列
+══════════════════════════════════ */
+.female-legend-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:14px;
+}
+.female-card{
+  background:linear-gradient(165deg,#12101c,#0d0b18);
+  border-radius:14px;padding:12px 10px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;transition:transform .2s,box-shadow .2s;
+  position:relative;overflow:hidden;
+}
+.female-card::before{
+  content:'';position:absolute;inset:-2px;border-radius:16px;
+  background:linear-gradient(45deg,#ff6b6b,#ffd700,#7fff00,#00cfff,#bf7fff,#ff6b6b);
+  background-size:400% 400%;animation:shimmer 2s linear infinite;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:2px;
+}
+.female-card:hover{transform:translateY(-6px);box-shadow:0 10px 40px rgba(255,150,200,.3)}
+.female-card .portrait{
+  width:72px;height:72px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:38px;position:relative;z-index:1;
+  background:linear-gradient(135deg,#2a1040,#1a0830);
+  border:2px solid rgba(255,200,255,.3);
+}
+.female-card .char-name{font-size:12px;font-weight:700;color:#f0d0f0;position:relative;z-index:1}
+.female-card .char-title{font-size:10px;color:#c090c0;position:relative;z-index:1;text-align:center}
+.female-card .char-style{
+  font-size:10px;padding:2px 8px;border-radius:8px;
+  background:rgba(200,100,255,.2);color:#e0a0ff;
+  border:1px solid rgba(200,100,255,.3);position:relative;z-index:1
+}
+.ur-badge{
+  position:absolute;top:8px;right:8px;z-index:2;
+  font-size:10px;font-weight:900;padding:2px 6px;border-radius:4px;
+  background:linear-gradient(90deg,#7f1d1d,#312e81);color:#fbbf24;
+  letter-spacing:.05em;
+}
+
+
+/* ══════════════════════════════════
+   改动C：技能卡图鉴 UI（标签筛选）
+══════════════════════════════════ */
+.collection-container{
+  background:linear-gradient(160deg,#0f0d1a,#0a0814);
+  border:1px solid rgba(212,175,55,.2);border-radius:16px;
+  overflow:hidden;
+}
+.collection-header{
+  background:linear-gradient(90deg,#1a1430,#12101e);
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(212,175,55,.15);
+}
+.collection-title{font-size:16px;font-weight:700;color:#d4af37}
+.collection-count{font-size:12px;color:#888}
+.rarity-tabs{
+  display:flex;gap:0;padding:12px 16px 8px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  overflow-x:auto;
+}
+.rtab{
+  padding:6px 14px;font-size:12px;font-weight:600;
+  border-radius:6px 6px 0 0;cursor:pointer;
+  border:1px solid transparent;border-bottom:none;
+  transition:all .15s;white-space:nowrap;
+  position:relative;bottom:-1px;
+}
+.rtab.N{color:#aaa}.rtab.N.active,.rtab.N:hover{background:#2a2a2a;border-color:#666;color:#ddd}
+.rtab.R{color:#7ab4ff}.rtab.R.active,.rtab.R:hover{background:#1a2a4a;border-color:#4a8ef5;color:#7ab4ff}
+.rtab.SR{color:#c77dff}.rtab.SR.active,.rtab.SR:hover{background:#2a1540;border-color:#9b59b6;color:#c77dff}
+.rtab.SSR{color:#ffd700}.rtab.SSR.active,.rtab.SSR:hover{background:#2a2000;border-color:#d4af37;color:#ffd700}
+.rtab.ALL{color:#d4af37;background:rgba(212,175,55,.1);border-color:rgba(212,175,55,.3);bottom:-1px}
+.rtab.ALL.active{background:rgba(212,175,55,.2);border-color:#d4af37}
+.collection-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(82px,1fr));
+  gap:10px;padding:14px 16px;
+}
+.mini-card{
+  background:#14121e;border-radius:10px;padding:8px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;transition:transform .15s;position:relative;
+  border:1px solid transparent;
+}
+.mini-card:hover{transform:scale(1.07)}
+.mini-card.N{border-color:#555}
+.mini-card.R{border-color:#4a8ef5;box-shadow:0 0 6px rgba(74,142,245,.25)}
+.mini-card.SR{border-color:#9b59b6;box-shadow:0 0 8px rgba(155,89,182,.3)}
+.mini-card.SSR{
+  border-color:#d4af37;box-shadow:0 0 10px rgba(212,175,55,.35);
+}
+.mini-card.SSR::before{
+  content:'';position:absolute;inset:-1px;border-radius:11px;
+  background:linear-gradient(45deg,#d4af37,#8b6914,#ffd700,#d4af37);
+  background-size:300% 300%;animation:shimmer 3s linear infinite;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;
+}
+.mini-card .mini-chibi{font-size:22px;height:36px;display:flex;align-items:center;justify-content:center}
+.mini-card .mini-name{font-size:9px;color:#bbb;text-align:center;line-height:1.2}
+.mini-card .mini-rarity{font-size:8px;font-weight:700}
+.mini-card.N .mini-rarity{color:#aaa}
+.mini-card.R .mini-rarity{color:#7ab4ff}
+.mini-card.SR .mini-rarity{color:#c77dff}
+.mini-card.SSR .mini-rarity{color:#ffd700}
+.mini-card.locked .mini-chibi{opacity:.25;filter:grayscale(1)}
+.mini-card.locked{opacity:.5}
+.lock-icon{position:absolute;top:4px;right:4px;font-size:10px;opacity:.6}
+.collection-footer{
+  padding:12px 16px;border-top:1px solid rgba(255,255,255,.05);
+  display:flex;gap:16px;align-items:center;
+  background:rgba(0,0,0,.3);
+}
+.progress-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#888}
+.progress-dot{width:8px;height:8px;border-radius:50%}
+.progress-dot.N{background:#888}
+.progress-dot.R{background:#4a8ef5}
+.progress-dot.SR{background:#9b59b6}
+.progress-dot.SSR{background:#d4af37}
+
+
+/* ══════════════════════════════════
+   盲盒开包动画预览
+══════════════════════════════════ */
+.blindbox-section{
+  background:linear-gradient(160deg,#0f0d1a,#0a0814);
+  border:1px solid rgba(212,175,55,.2);border-radius:16px;
+  overflow:hidden;
+}
+.bb-header{
+  background:linear-gradient(90deg,#1a1430,#12101e);
+  padding:14px 18px;
+  border-bottom:1px solid rgba(212,175,55,.15);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.bb-title{font-size:16px;font-weight:700;color:#d4af37}
+.bb-body{padding:20px;display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.bb-pack-area{
+  display:flex;flex-direction:column;align-items:center;gap:12px;min-width:160px;
+}
+.pack{
+  width:110px;height:150px;border-radius:12px;cursor:pointer;
+  background:linear-gradient(160deg,#1a1040,#0d0820);
+  border:2px solid #9b59b6;
+  box-shadow:0 0 20px rgba(155,89,182,.5),0 0 40px rgba(155,89,182,.2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;transition:transform .2s,box-shadow .2s;
+  position:relative;overflow:hidden;
+  animation:packFloat 3s ease-in-out infinite;
+}
+.pack:hover{transform:scale(1.08);box-shadow:0 0 30px rgba(155,89,182,.8)}
+@keyframes packFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.pack::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%);
+  animation:packShine 3s linear infinite;
+}
+@keyframes packShine{0%{transform:translateX(-200%)}100%{transform:translateX(200%)}}
+.pack-emoji{font-size:40px}
+.pack-label{font-size:11px;color:#c77dff;font-weight:600}
+.pack-type{font-size:9px;color:#888;text-align:center;padding:2px 8px;
+  background:rgba(155,89,182,.2);border-radius:8px;border:1px solid rgba(155,89,182,.3)}
+.pack-btn{
+  padding:8px 20px;border-radius:8px;border:none;cursor:pointer;
+  background:linear-gradient(90deg,#6b21a8,#4c1d95);color:#e9d5ff;
+  font-size:13px;font-weight:600;transition:all .15s;
+}
+.pack-btn:hover{background:linear-gradient(90deg,#7c3aed,#5b21b6);transform:scale(1.03)}
+
+.bb-result-area{flex:1;min-width:200px}
+.bb-result-title{font-size:13px;color:#888;margin-bottom:12px}
+.bb-cards-row{display:flex;gap:10px;flex-wrap:wrap}
+.result-card{
+  width:80px;border-radius:10px;padding:8px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:linear-gradient(160deg,#14121e,#0d0b18);
+  position:relative;overflow:hidden;
+  animation:cardReveal .5s ease backwards;
+}
+@keyframes cardReveal{
+  0%{opacity:0;transform:rotateY(90deg) scale(.8)}
+  100%{opacity:1;transform:rotateY(0) scale(1)}
+}
+.result-card:nth-child(1){animation-delay:.1s}
+.result-card:nth-child(2){animation-delay:.25s}
+.result-card:nth-child(3){animation-delay:.4s}
+.result-card:nth-child(4){animation-delay:.55s}
+.result-card:nth-child(5){animation-delay:.7s}
+.result-card.N{border:1px solid #555}
+.result-card.R{border:1px solid #4a8ef5;box-shadow:0 0 8px rgba(74,142,245,.3)}
+.result-card.SR{border:1px solid #9b59b6;box-shadow:0 0 10px rgba(155,89,182,.4)}
+.result-card.SSR{border:1px solid #d4af37;box-shadow:0 0 14px rgba(212,175,55,.5)}
+.result-card.SSR::before{
+  content:'';position:absolute;inset:-1px;border-radius:11px;
+  background:linear-gradient(45deg,#d4af37,#8b6914,#ffd700,#d4af37);
+  background-size:300% 300%;animation:shimmer 2s linear infinite;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;
+}
+.result-card .r-chibi{font-size:26px;height:42px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.result-card .r-name{font-size:9px;color:#ccc;text-align:center;position:relative;z-index:1}
+.result-card .r-rarity{font-size:8px;font-weight:700;position:relative;z-index:1}
+.result-card.N .r-rarity{color:#aaa}
+.result-card.R .r-rarity{color:#7ab4ff}
+.result-card.SR .r-rarity{color:#c77dff}
+.result-card.SSR .r-rarity{color:#ffd700}
+
+/* NEW badge */
+.new-badge{
+  position:absolute;top:4px;left:4px;z-index:2;
+  font-size:8px;font-weight:700;padding:1px 4px;
+  background:#16a34a;color:#fff;border-radius:3px;
+}
+
+
+/* ══════════════════════════════════
+   LAYOUT HELPERS
+══════════════════════════════════ */
+.nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 0 24px;border-bottom:1px solid rgba(212,175,55,.2);
+  margin-bottom:32px;
+}
+.nav-title{font-size:18px;font-weight:700;color:#d4af37;letter-spacing:.05em}
+.nav-sub{font-size:11px;color:#666;margin-top:2px}
+.version-tag{
+  background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);
+  color:#d4af37;font-size:11px;padding:4px 12px;border-radius:20px;
+}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,.2),transparent);margin:24px 0}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="nav">
+    <div>
+      <div class="nav-title">改动效果预览</div>
+      <div class="nav-sub">基于 04_assets_reference_images.zip 参考图</div>
+    </div>
+    <div class="version-tag">Preview Draft</div>
+  </div>
+
+  <!-- ══ 改动A ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">改动 A — 稀有度边框系统</div>
+      <div class="section-tag">~60行 CSS</div>
+    </div>
+    <div class="before-after">
+      <div>
+        <div class="panel-label">⬅ 改动前（无层级区分）</div>
+        <div class="cards-row">
+          <div class="card-old"><div class="chibi">🗡️</div><div class="name">开放式探索</div><div class="rarity-badge">N</div></div>
+          <div class="card-old"><div class="chibi">🤝</div><div class="name">信任建立</div><div class="rarity-badge">R</div></div>
+          <div class="card-old"><div class="chibi">⚖️</div><div class="name">利益锚定</div><div class="rarity-badge">SR</div></div>
+          <div class="card-old"><div class="chibi">🎯</div><div class="name">战术沉默</div><div class="rarity-badge">SSR</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-label">➡ 改动后（<span>N灰 / R蓝 / SR紫 / SSR金流光</span>）</div>
+        <div class="cards-row">
+          <div class="card-new rarity-N"><div class="chibi">🗡️</div><div class="name">开放式探索</div><div class="rarity-badge">N</div></div>
+          <div class="card-new rarity-R"><div class="chibi">🤝</div><div class="name">信任建立</div><div class="rarity-badge">R</div></div>
+          <div class="card-new rarity-SR"><div class="chibi">⚖️</div><div class="name">利益锚定</div><div class="rarity-badge">SR</div></div>
+          <div class="card-new rarity-SSR"><div class="chibi">🎯</div><div class="name">战术沉默</div><div class="rarity-badge">SSR</div></div>
+          <div class="card-new rarity-UR"><div class="chibi">👑</div><div class="name">传奇宗师</div><div class="rarity-badge">UR</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══ 改动B ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">改动 B — 女性传奇谈判者系列（新增7张UR卡）</div>
+      <div class="section-tag">~150行数据</div>
+    </div>
+    <div class="female-legend-grid">
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">👸</div>
+        <div class="char-name">克利奥帕特拉</div>
+        <div class="char-title">战略联盟者</div>
+        <div class="char-style">多维渗透</div>
+      </div>
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">🏯</div>
+        <div class="char-name">武则天</div>
+        <div class="char-title">权力重塑者</div>
+        <div class="char-style">权力重构</div>
+      </div>
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">👑</div>
+        <div class="char-name">伊丽莎白一世</div>
+        <div class="char-title">强硬谈判者</div>
+        <div class="char-style">武式亲和</div>
+      </div>
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">🦅</div>
+        <div class="char-name">叶卡捷琳娜二世</div>
+        <div class="char-title">强硬谈判者</div>
+        <div class="char-style">力量整合</div>
+      </div>
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">🌹</div>
+        <div class="char-name">撒切尔夫人</div>
+        <div class="char-title">强硬挑战者</div>
+        <div class="char-style">铁板战术</div>
+      </div>
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">🔬</div>
+        <div class="char-name">默克尔</div>
+        <div class="char-title">权力共建者</div>
+        <div class="char-style">多方协调</div>
+      </div>
+
+      <div class="female-card">
+        <div class="ur-badge">UR</div>
+        <div class="portrait">🏮</div>
+        <div class="char-name">慈禧太后</div>
+        <div class="char-title">权力掌控者</div>
+        <div class="char-style">垂帘博弈</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══ 改动C ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">改动 C — 技能卡图鉴（稀有度标签 + 收集进度）</div>
+      <div class="section-tag">~80行</div>
+    </div>
+    <div class="collection-container">
+      <div class="collection-header">
+        <div class="collection-title">⚔ 技能卡图鉴</div>
+        <div class="collection-count">已收集 <b style="color:#d4af37">14</b> / 20</div>
+      </div>
+      <div class="rarity-tabs">
+        <div class="rtab ALL active">全部</div>
+        <div class="rtab N">N 普通</div>
+        <div class="rtab R">R 稀有</div>
+        <div class="rtab SR">SR 超稀有</div>
+        <div class="rtab SSR">SSR 顶级</div>
+      </div>
+      <div class="collection-grid">
+        <div class="mini-card N"><div class="mini-chibi">🗡️</div><div class="mini-name">开放探索</div><div class="mini-rarity">N</div></div>
+        <div class="mini-card N"><div class="mini-chibi">👂</div><div class="mini-name">主动倾听</div><div class="mini-rarity">N</div></div>
+        <div class="mini-card N locked"><span class="lock-icon">🔒</span><div class="mini-chibi">❓</div><div class="mini-name">???</div><div class="mini-rarity">N</div></div>
+        <div class="mini-card R"><div class="mini-chibi">🤝</div><div class="mini-name">信任建立</div><div class="mini-rarity">R</div></div>
+        <div class="mini-card R"><div class="mini-chibi">📊</div><div class="mini-name">利益分析</div><div class="mini-rarity">R</div></div>
+        <div class="mini-card R locked"><span class="lock-icon">🔒</span><div class="mini-chibi">❓</div><div class="mini-name">???</div><div class="mini-rarity">R</div></div>
+        <div class="mini-card SR"><div class="mini-chibi">⚖️</div><div class="mini-name">利益锚定</div><div class="mini-rarity">SR</div></div>
+        <div class="mini-card SR"><div class="mini-chibi">🎭</div><div class="mini-name">情感共鸣</div><div class="mini-rarity">SR</div></div>
+        <div class="mini-card SR"><div class="mini-chibi">🔮</div><div class="mini-name">框架重塑</div><div class="mini-rarity">SR</div></div>
+        <div class="mini-card SR locked"><span class="lock-icon">🔒</span><div class="mini-chibi">❓</div><div class="mini-name">???</div><div class="mini-rarity">SR</div></div>
+        <div class="mini-card SSR"><div class="mini-chibi">🎯</div><div class="mini-name">战术沉默</div><div class="mini-rarity">SSR</div></div>
+        <div class="mini-card SSR"><div class="mini-chibi">🧊</div><div class="mini-name">极端锚定</div><div class="mini-rarity">SSR</div></div>
+        <div class="mini-card SSR locked"><span class="lock-icon">🔒</span><div class="mini-chibi">❓</div><div class="mini-name">???</div><div class="mini-rarity">SSR</div></div>
+        <div class="mini-card SSR locked"><span class="lock-icon">🔒</span><div class="mini-chibi">❓</div><div class="mini-name">???</div><div class="mini-rarity">SSR</div></div>
+      </div>
+      <div class="collection-footer">
+        <div class="progress-item"><div class="progress-dot N"></div>N 2/3</div>
+        <div class="progress-item"><div class="progress-dot R"></div>R 2/3</div>
+        <div class="progress-item"><div class="progress-dot SR"></div>SR 3/4</div>
+        <div class="progress-item"><div class="progress-dot SSR"></div>SSR 2/4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══ 盲盒开包动画 ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">改动 D — 盲盒开包动画（UI原型参考）</div>
+      <div class="section-tag">~100行</div>
+    </div>
+    <div class="blindbox-section">
+      <div class="bb-header">
+        <div class="bb-title">🎁 盲盒开包</div>
+        <div style="font-size:11px;color:#888">高级技能包 × 3</div>
+      </div>
+      <div class="bb-body">
+        <div class="bb-pack-area">
+          <div class="pack">
+            <div class="pack-emoji">📦</div>
+            <div class="pack-label">高级技能包</div>
+            <div class="pack-type">SR 保底</div>
+          </div>
+          <button class="pack-btn" onclick="revealCards()">点击开包</button>
+        </div>
+        <div class="bb-result-area">
+          <div class="bb-result-title">开包结果（点击开包查看）</div>
+          <div class="bb-cards-row" id="revealArea"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// 标签页切换
+document.querySelectorAll('.rtab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+// 盲盒开包演示
+const packResults = [
+  {rarity:'N', chibi:'🗡️', name:'开放探索', isNew:false},
+  {rarity:'R', chibi:'🤝', name:'信任建立', isNew:true},
+  {rarity:'SR', chibi:'⚖️', name:'利益锚定', isNew:false},
+  {rarity:'N', chibi:'👂', name:'主动倾听', isNew:false},
+  {rarity:'SSR', chibi:'🎯', name:'战术沉默', isNew:true},
+];
+
+function revealCards() {
+  const area = document.getElementById('revealArea');
+  area.innerHTML = '';
+  packResults.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = `result-card ${card.rarity}`;
+    el.style.animationDelay = `${i * 0.15}s`;
+    el.innerHTML = `
+      ${card.isNew ? '<div class="new-badge">NEW</div>' : ''}
+      <div class="r-chibi">${card.chibi}</div>
+      <div class="r-name">${card.name}</div>
+      <div class="r-rarity">${card.rarity}</div>
+    `;
+    area.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>

@@ -953,6 +953,29 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .profile-theory-replay-block{margin-top:12px}
 .theory-prescription{margin-top:8px}
 @media(max-width:900px){.teaching-layout.learner{grid-template-columns:1fr}}
+/* ── 暂停讲解面板 ── */
+.pause-explain-panel{background:rgba(20,30,50,.97);border:1px solid rgba(32,215,255,.45);border-radius:12px;padding:16px;margin-bottom:12px}
+.pause-explain-panel h3{color:var(--cyan);margin:0 0 8px;font-size:14px}
+.explain-option{border-left:3px solid var(--border);padding:8px 10px;margin:8px 0;border-radius:6px;background:rgba(255,255,255,.03);font-size:12px;line-height:1.6}
+.explain-option b{color:var(--yellow)}
+.explain-option span{color:var(--dim)}
+.formula{color:var(--cyan);margin-top:12px;font-size:11.5px;border-top:1px solid var(--border);padding-top:10px}
+.example-line{color:var(--yellow);font-size:11.5px;margin-top:6px;font-style:italic}
+/* ── 传奇人物出场 ── */
+.legend-entrance{background:linear-gradient(135deg,rgba(20,10,40,.95),rgba(10,20,40,.95));border:1px solid rgba(200,130,255,.55);border-radius:14px;padding:20px;margin-bottom:14px;text-align:center}
+.legend-title{font-size:16px;font-weight:bold;color:var(--yellow);margin-bottom:10px}
+.legend-quote{font-size:22px;color:#f5f0e0;margin:14px 0;font-style:italic;line-height:1.6}
+.legend-quote-type{font-size:10px;color:var(--purple);margin-bottom:6px}
+.legend-theme-hint{font-size:12px;color:var(--cyan);background:rgba(32,215,255,.1);padding:8px 12px;border-radius:8px}
+/* ── 教练式复盘摘要 ── */
+.coach-replay-summary{background:rgba(10,18,32,.95);border:1px solid rgba(78,114,170,.55);border-radius:12px;padding:16px;margin-bottom:12px}
+.coach-headline{font-size:18px;font-weight:bold;color:var(--yellow);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.coach-replay-summary h3{color:var(--cyan);font-size:13px;margin:12px 0 6px}
+.coach-replay-summary p{font-size:12px;color:var(--text);line-height:1.7;margin:0}
+.coach-replay-summary ol{margin:4px 0 0 18px;padding:0}
+.coach-replay-summary li{font-size:12px;color:var(--text);line-height:1.7}
+.memory-card{background:rgba(78,114,170,.15);border-radius:8px;padding:10px;margin-top:10px;color:var(--cyan);font-size:13px;text-align:center}
+.sample-line{color:var(--yellow);font-style:italic;font-size:13px;background:rgba(246,196,83,.1);padding:10px;border-radius:8px;margin:8px 0}
 
 </style>
 </head>
@@ -6177,6 +6200,7 @@ function renderResult() {
     ${shardsBlock}
     ${typeof buildSkillPackEarnedPanelHtml === 'function' ? buildSkillPackEarnedPanelHtml() : ''}
     ${typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : ''}
+    ${typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(replay) : ''}
     ${C.panel('复盘分析', result.summary || '')}
     ${v2Blocks}
     ${replayPanel}
@@ -13485,25 +13509,43 @@ function renderDuelPlay(params) {
   const player = Store.get('player');
   const uiToggle = player ? renderTeachingModeToggle(player) : '';
   const isLearner = player ? isLearnerMode(player) : true;
-  const roundGoalHtml = isLearner ? `<div class="round-learning-goal">
-    <div class="goal-title">本回合练习目标</div>
-    <div class="goal-text">${phase.brief}</div>
-  </div>` : '';
+
+  // 传奇出场（第一回合，仅学员模式）
+  const entranceHtml = (state.round === 0 && !state.log.length && isLearner)
+    ? renderLegendaryEntrance(state.duelist) : '';
+
+  // 回合目标（升级版，基于当前 metrics）
+  const roundGoalHtml = isLearner ? renderRoundLearningGoal(state) : '';
+
+  // 上一回合反馈（学员模式 + 有历史）
+  const lastLog = state.log.length ? state.log[state.log.length - 1] : null;
+  const afterActionHtml = (isLearner && lastLog) ? renderAfterActionFeedbackPanel(buildAfterActionFeedback(lastLog, state)) : '';
+
+  // 对手意图行
   const oppLine = `<div class="opponent-line-panel">
     <div class="opponent-name">${state.duelist.name} 的策略意图：</div>
     <div class="opponent-line">${signal}</div>
   </div>`;
+
+  // 暂停讲解面板（默认折叠，按钮展开）
+  const pausePanelHtml = isLearner ? renderPauseExplainPanel(state) : '';
 
   return `<div class="flex-between">
     <div class="section-title">${state.duelist.name} · ${phase.title}</div>
     <button class="back-btn" data-back>← 退出</button>
   </div>
   ${uiToggle}
+  ${entranceHtml}
+  ${afterActionHtml}
   ${roundGoalHtml}
   ${isLearner ? oppLine : `<div class="hint hint-purple" style="font-size:11.5px;margin:10px 0">▸ 对手意图：${signal}</div>`}
   <div class="duel-phase-banner">第 ${state.round + 1} / 6 回合 · ${phase.title}</div>
   ${isLearner ? '' : `<div class="duel-metrics">${metricsHtml}</div>`}
   ${mentorBar}
+  ${isLearner ? `<div style="text-align:right;margin-bottom:8px">
+    <button class="btn btn-sm" id="btn-pause-explain" style="font-size:11px;padding:4px 10px;border-color:rgba(32,215,255,.4);color:var(--cyan)">⏸ 暂停讲解</button>
+  </div>
+  <div id="pause-explain-wrapper" style="display:none">${pausePanelHtml}</div>` : ''}
   <div class="sk-section-head" style="--card-color:var(--cyan)">▸ 你的选择 · 5 个策略方向</div>
   <div class="duel-choice-list">${choicesHtml}</div>
   ${!isLearner ? `<div class="duel-metrics" style="margin-top:10px">${metricsHtml}</div>` : ''}
@@ -13517,6 +13559,16 @@ function renderDuelPlay(params) {
 }
 
 renderDuelPlay.afterRender = function () {
+  // 暂停讲解按钮
+  const pauseBtn = document.getElementById('btn-pause-explain');
+  const pauseWrapper = document.getElementById('pause-explain-wrapper');
+  if (pauseBtn && pauseWrapper) {
+    pauseBtn.addEventListener('click', () => {
+      const visible = pauseWrapper.style.display !== 'none';
+      pauseWrapper.style.display = visible ? 'none' : 'block';
+      pauseBtn.textContent = visible ? '⏸ 暂停讲解' : '▲ 收起讲解';
+    });
+  }
   // 教学模式切换
   document.querySelectorAll('[data-ui-mode]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -13563,6 +13615,15 @@ function renderDuelResult() {
   const dominant = Object.entries(tagSummary).sort((a, b) => b[1] - a[1])[0];
   const reward = state.reward || { shards: 0, mentorFragments: 0 };
   const review = state.reviewQuestion;
+  // 教练式复盘摘要
+  const duelReplayData = {
+    avgScore: Math.round(Object.values(state.metrics).reduce((a, b) => a + b, 0) / Object.values(state.metrics).length),
+    duelistName: state.duelist.name,
+    log: state.log,
+    perRoundTags: state.perRoundTags,
+    turning: state.log.length ? { round: state.log.length, label: state.log[state.log.length - 1]?.phase || '终局', playerAction: state.log[state.log.length - 1]?.label || '' } : null
+  };
+  const coachSummary = renderCoachReplaySummary(duelReplayData);
   return `<div class="flex-between">
     <div class="section-title">${state.duelist.name} · 战报</div>
     <button class="back-btn" data-back>← 返回</button>
@@ -13573,6 +13634,7 @@ function renderDuelResult() {
     <div class="arc-result-subtitle">${state.duelist.name} · 六回合试炼</div>
     <p class="arc-result-narrative">${out.narrative}</p>
   </div>
+  ${coachSummary}
   <div class="panel">
     <div class="panel-title">最终态势</div>
     <div class="duel-metrics">${DUEL_METRICS.map((m) => {
@@ -14498,6 +14560,308 @@ function renderTeachingModeToggle(player) {
   </div>`;
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   对手声音档案
+   ────────────────────────────────────────────────────────────────────────── */
+const OPPONENT_VOICE_PROFILES = {
+  steel_king: { name: '强硬鹰派', type: 'aggressive',
+    phrases: { opening: ['我先把话说前面，我不会接受一个模糊的方案。'], pressure: ['你不要跟我讲那么多过程，我现在只要一个明确结果。', '能不能降？一句话。'], probe: ['如果我今天就定，你还能不能再让一步？'], countered: ['你要依据？可以，那你也拿出你的依据。'], concession: ['我可以退一点，但别指望我一直退。'], closing: ['最后一次确认，这个条件你接，还是不接？'] } },
+  logic_chen: { name: '理性分析型', type: 'rational',
+    phrases: { opening: ['我可以听你的方案，但我要先看计算依据。'], pressure: ['这个数字如果没有来源，对我来说没有判断价值。'], countered: ['你这个说法成立，但前提条件还没有证明。'], closing: ['我们可以继续，但请把标准写清楚。'] } },
+  sensitive_lin: { name: '情绪敏感型', type: 'emotional',
+    phrases: { opening: ['我希望这次不是又让我单方面理解你们。'], pressure: ['你这样说，我会觉得你不是在解决问题，而是在否定我的感受。'], countered: ['我不是不能谈，但你这个态度让我很难继续。'], closing: ['如果你能把我的顾虑当回事，我们还有得谈。'] } },
+  shadow_zhang: { name: '迂回施压型', type: 'manipulative',
+    phrases: { opening: ['我当然不是逼你，只是这个窗口确实不长。'], pressure: ['你现在不定，后面机会可能就不是这个条件了。'], countered: ['你这样谨慎我理解，但机会不会一直等。'], closing: ['我只能说，今天定和以后定，条件可能不一样。'] } },
+  stable_wu: { name: '风险规避型', type: 'risk_averse',
+    phrases: { opening: ['这个方向我不反对，但风险点还没讲清楚。'], pressure: ['我要看到保障条件，才敢往下走。'], countered: ['你说的我理解，但责任边界必须先写清楚。'], closing: ['只要保障条件明确，我可以继续推进。'] } },
+  harmony_li: { name: '寻求合作型', type: 'cooperative',
+    phrases: { opening: ['我们不用站在对立面，先把各自难处说清楚。'], pressure: ['你说你的底线，我也说我的难处，看能不能找个双方都能交代的方案。'], countered: ['我接受你有边界，但也希望你理解我的压力。'], closing: ['能不能各退一步，把事情往前推。'] } }
+};
+
+function pickOpponentLine(profileId, stage) {
+  const profile = OPPONENT_VOICE_PROFILES[profileId] || OPPONENT_VOICE_PROFILES.steel_king;
+  const list = profile.phrases[stage] || profile.phrases.pressure || profile.phrases.opening;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function getDuelistVoiceProfileId(duelist) {
+  if (!duelist) return 'steel_king';
+  const style = (duelist.style || '').toLowerCase();
+  if (/强硬|压力|控制|锚定|高压|钢铁|战时/.test(style)) return 'steel_king';
+  if (/理性|数据|分析|模型|信息|反向/.test(style)) return 'logic_chen';
+  if (/情绪|感受|共情|利他/.test(style)) return 'sensitive_lin';
+  if (/迂回|游说|延迟|垂帘|纵横/.test(style)) return 'shadow_zhang';
+  if (/风险|谨慎|底线|周旋|防守/.test(style)) return 'stable_wu';
+  if (/信任|共识|合作|联盟|长期/.test(style)) return 'harmony_li';
+  return 'steel_king';
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   玩家表达评估引擎
+   ────────────────────────────────────────────────────────────────────────── */
+function hasBoundary(line) { return /不能|不会|不接受|底线|边界/.test(line); }
+function hasEvidence(line) { return /依据|标准|数据|来源|计算|对标/.test(line); }
+function hasPath(line) { return /继续谈|先把|再看|下一步|可以/.test(line); }
+function hasEmotionalControl(line) { return !/离谱|过分|没法谈|荒唐|你别/.test(line); }
+function hasExchange(line) { return /对应|承诺|交换|条件|如果/.test(line); }
+
+function evaluatePlayerExpression(lineItem) {
+  const line = lineItem.playerLine || lineItem.sample || '';
+  const score = {
+    boundary: hasBoundary(line) ? 20 : 0,
+    evidence: hasEvidence(line) ? 20 : 0,
+    path: hasPath(line) ? 20 : 0,
+    emotionControl: hasEmotionalControl(line) ? 20 : 0,
+    exchange: hasExchange(line) ? 20 : 0
+  };
+  const total = Object.values(score).reduce((a, b) => a + b, 0);
+  const summary = total >= 80 ? '表达成熟：有边界、有依据，也给了继续谈的路径。' :
+                  total >= 60 ? '表达基本可用，但还可以补上依据或交换条件。' :
+                  total >= 40 ? '表达有态度，但缺少谈判路径，容易变成对抗。' :
+                                '表达偏情绪化，现实中容易被对方抓住节奏。';
+  return { total, score, summary };
+}
+
+function evaluateOpponentHearing(lineItem, opponentProfile) {
+  const line = lineItem.playerLine || lineItem.sample || '';
+  const type = opponentProfile.type || 'aggressive';
+  const hasBound = hasBoundary(line);
+  const hasEvi = hasEvidence(line);
+  const hasP = hasPath(line);
+  if (type === 'aggressive') {
+    if (hasBound && hasEvi) return '对手感受到你有底气，暂时收住了强压态势。';
+    if (hasBound) return '对手注意到你有边界，但会继续测试你有没有依据。';
+    return '对手把这句话理解成态度表态，会继续施压。';
+  }
+  if (type === 'rational') {
+    if (hasEvi) return '对手认为这句话有信息价值，会继续跟进。';
+    return '对手认为缺少依据，暂时不会正面回应。';
+  }
+  if (type === 'emotional') {
+    if (hasP) return '对手感到被认真对待，情绪稍微缓和。';
+    return '对手觉得你在解决问题而不是理解感受，可能变得更防御。';
+  }
+  if (type === 'manipulative') {
+    if (hasBound && hasP) return '对手发现你有路径和边界，重新评估推进节奏。';
+    return '对手认为你仍在观望，继续制造紧迫感。';
+  }
+  if (type === 'risk_averse') {
+    if (hasEvi && hasP) return '对手感到风险有了边界，愿意继续推进。';
+    return '对手仍担心风险不明确，会要求更多保障。';
+  }
+  if (type === 'cooperative') {
+    if (hasP) return '对手感到你在推进，会配合提出下一步建议。';
+    return '对手感到推进停滞，会主动寻找折中。';
+  }
+  return '对手正在评估你的回应。';
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   复盘叙事引擎
+   ────────────────────────────────────────────────────────────────────────── */
+function buildHeadline(avg, opponentName) {
+  if (avg < 50) return `本局不是输在不会谈，而是你被${opponentName}的节奏带走了。`;
+  if (avg < 70) return `本局你有反击意识，但策略切换还不够稳。`;
+  return `本局整体策略有效，下一步要练的是把优势稳定带到终局。`;
+}
+function buildReplayStory(replay) {
+  const first = replay.perRound && replay.perRound[0];
+  const key = replay.turning || {};
+  if (!first) return '这局的核心问题在于：你需要把态度、依据和路径连起来，而不是只表达立场。';
+  return `开局你尝试推进谈判，但对手没有完全接住你的信号。到第 ${key.round || '关键'} 轮，局势出现转折：你的表达没有把边界、依据和下一步路径同时说清楚，所以对手继续按照自己的节奏推进。`;
+}
+function buildKeyMistakeChain(turning, opponentName) {
+  return {
+    playerAction: (turning && turning.playerAction) || '你的表达有态度，但缺少支撑。',
+    opponentRead: `${opponentName}更容易把它理解成情绪反应，而不是有底气的谈判边界。`,
+    consequence: (turning && turning.label) || '局势进入低收益对抗。',
+    betterMove: '先要求依据，再表达边界，最后给出继续谈的路径。'
+  };
+}
+function buildNextPractice() {
+  return ['下一局先不要急着让步，第一步先问依据。', '对方强硬时，不直接硬碰硬，先锁住规则。', '让步必须换承诺，不做单方面退让。'];
+}
+function buildSampleLine() { return '可以继续谈，但我需要先看到依据。没有依据的压力，我不会接。'; }
+function buildMemoryCard() { return '不要用情绪反击压力，要用规则接住压力。'; }
+
+function buildReplayNarrative(replay) {
+  const turning = replay.turning || replay.keyTurn || {};
+  const avg = replay.avgScore || replay.score || 0;
+  const opponentName = replay.opponentName || replay.duelistName || '对手';
+  return {
+    headline: buildHeadline(avg, opponentName),
+    story: buildReplayStory(replay),
+    keyMistake: buildKeyMistakeChain(turning, opponentName),
+    nextPractice: buildNextPractice(),
+    sampleLine: buildSampleLine(),
+    memoryCard: buildMemoryCard()
+  };
+}
+
+function renderCoachReplaySummary(replay) {
+  if (!replay || typeof replay !== 'object') return '';
+  const narrative = buildReplayNarrative(replay);
+  return `<div class="coach-replay-summary">
+    <section class="coach-headline">${narrative.headline}</section>
+    <section><h3>本局发生了什么</h3><p>${narrative.story}</p></section>
+    <section><h3>关键失误链</h3>
+      <div style="font-size:12px;line-height:1.7">你的动作：${narrative.keyMistake.playerAction}</div>
+      <div style="font-size:12px;line-height:1.7">对手理解：${narrative.keyMistake.opponentRead}</div>
+      <div style="font-size:12px;line-height:1.7">造成后果：${narrative.keyMistake.consequence}</div>
+      <div style="font-size:12px;line-height:1.7;color:var(--cyan)">下次改法：${narrative.keyMistake.betterMove}</div>
+    </section>
+    <section><h3>下一局只练三件事</h3><ol>${narrative.nextPractice.map((x) => `<li>${x}</li>`).join('')}</ol></section>
+    <section class="sample-line">可直接使用："${narrative.sampleLine}"</section>
+    <section class="memory-card">${narrative.memoryCard}</section>
+  </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   回合训练目标（升级版 · 基于 metrics 动态生成）
+   ────────────────────────────────────────────────────────────────────────── */
+function buildRoundLearningGoal(state) {
+  const metrics = state.metrics || {};
+  const sorted = Object.entries(metrics).sort((a, b) => a[1] - b[1]);
+  const lowest = sorted[0] || ['agenda', 50];
+  const opponentType = (state.duelist && getDuelistVoiceProfileId(state.duelist).replace('_king','').replace('_chen','').replace('_lin','').replace('_zhang','').replace('_wu','').replace('_li','')) || 'default';
+  const stage = state.round >= 4 ? 'closing' : state.round >= 2 ? 'middle' : 'opening';
+  if (lowest[0] === 'pressure') return '本回合只练一件事：不要被强硬姿态压倒，先用依据和边界稳住节奏。';
+  if (lowest[0] === 'agenda') return '本回合只练一件事：不要被对方带着走，把话题拉回你要解决的问题。';
+  if (lowest[0] === 'trust') return '本回合只练一件事：先承接对方顾虑，再表达你的边界。';
+  if (lowest[0] === 'endgame') return '本回合只练一件事：不要只表态，要提出可执行的下一步。';
+  if (lowest[0] === 'information') return '本回合只练一件事：先主动问一个高质量问题，再决定怎么回应。';
+  if (opponentType === 'steel') return '本回合只练一件事：面对强压，不硬顶，先要求依据。';
+  if (opponentType === 'stable') return '本回合只练一件事：把风险和保障条件说清楚。';
+  if (stage === 'closing') return '本回合只练一件事：把模糊共识变成明确承诺。';
+  return '本回合只练一件事：先听懂对方真实诉求，再选择回应方式。';
+}
+
+function renderRoundLearningGoal(state) {
+  return `<div class="round-learning-goal">
+    <div class="goal-title">本回合训练目标</div>
+    <div class="goal-text">${buildRoundLearningGoal(state)}</div>
+  </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   传奇人物出场台词引擎
+   ────────────────────────────────────────────────────────────────────────── */
+const LEGENDARY_ENTRANCE_QUOTES = {
+  mentor_sunzi: { quote: '知彼知己，百战不殆。', quoteType: 'historical_quote', themeHint: '先判断虚实，再决定进退。' },
+  mentor_zhangyi: { quote: '利害一变，阵势即变。', quoteType: 'system_epitaph', themeHint: '识别利益裂缝与关键转向。' },
+  mentor_lihongzhang: { quote: '弱局之中，先保底线，再谈进退。', quoteType: 'system_epitaph', themeHint: '守住核心利益，而非追求漂亮胜利。' },
+  mentor_inamori: { quote: '敬天爱人。', quoteType: 'book_concept', themeHint: '把一次性交易转为长期信任。' },
+  mentor_munger: { quote: 'Invert, always invert.', quoteType: 'attributed_quote', themeHint: '先看最坏结果，再决定是否推进。' },
+  mentor_trump: { quote: 'The Art of the Deal.', quoteType: 'book_concept', themeHint: '识别强锚定与胜负叙事。' },
+  mentor_thatcher: { quote: "The lady's not for turning.", quoteType: 'historical_quote', themeHint: '底线、原则与反压制。' },
+  mentor_merkel: { quote: 'Wir schaffen das.', quoteType: 'historical_quote', themeHint: '耐心共识与阶段推进。' },
+  mentor_cixi: { quote: '真正的控制，不急于给答案。', quoteType: 'system_epitaph', themeHint: '识别表面安抚、延迟承诺与最终解释权。' },
+  mentor_churchill: { quote: 'We shall never surrender.', quoteType: 'historical_quote', themeHint: '危机时刻，坚定意志是最强的谈判信号。' },
+  mentor_roosevelt: { quote: 'The only thing we have to fear is fear itself.', quoteType: 'historical_quote', themeHint: '大局协调——先让各方有安全感，再推进共同框架。' },
+  mentor_stalin: { quote: '数量本身就是质量。', quoteType: 'attributed_quote', themeHint: '安全边界优先——先锁住不可让步的底线，再谈其他。' },
+  mentor_cleopatra: { quote: '资源从不只是钱，而是你能提供别人没有的选项。', quoteType: 'system_epitaph', themeHint: '识别对方真正需要什么，再决定拿什么换。' },
+  mentor_wuzetian: { quote: '不是最强的人成为领导者，而是最能读懂权力结构的人。', quoteType: 'system_epitaph', themeHint: '先看谁真正在决策，再决定和谁谈。' },
+  mentor_elizabeth_i: { quote: '我知道我有一个柔弱女子的身体，但我有国王的心和胆。', quoteType: 'historical_quote', themeHint: '战略模糊——不急于承诺，把时间变成筹码。' },
+  mentor_catherine: { quote: '没有永远的敌人，只有永远的利益格局。', quoteType: 'system_epitaph', themeHint: '联盟构建——先争取中立方，再形成局势。' }
+};
+
+function renderLegendaryEntrance(mentor) {
+  const item = LEGENDARY_ENTRANCE_QUOTES[mentor.id] || {
+    quote: mentor.quote || '进入试炼，先读懂对方，再决定怎么回应。',
+    quoteType: 'system_epitaph',
+    themeHint: mentor.style || '理解人物风格。'
+  };
+  const typeLabel = { historical_quote: '经典语录', attributed_quote: '常见归因语录', book_concept: '理论概念', system_epitaph: '人格宣言' }[item.quoteType] || '人物语录';
+  return `<div class="legend-entrance">
+    <div class="legend-title">${mentor.chibi || ''} ${mentor.name} · ${mentor.title || mentor.style || ''}</div>
+    <div class="legend-quote">"${item.quote}"</div>
+    <div class="legend-quote-type">${typeLabel}</div>
+    <div class="legend-theme-hint">${item.themeHint}</div>
+  </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   暂停讲解面板
+   ────────────────────────────────────────────────────────────────────────── */
+function explainDuelOption(choice) {
+  const levelMap = {
+    info: { level: 'probe', explanation: '问出对方真实诉求，可以重新控制信息节奏。但在强硬对手面前需要先稳住态势。' },
+    reframe: { level: 'advanced', explanation: '重新定义问题框架，是成熟谈判中最有力的手段之一。需要时机和铺垫。' },
+    pressure: { level: 'direct', explanation: '建立底线和替代方案。有效，但容易激化对抗——需要确实有 BATNA。' },
+    build: { level: 'steady', explanation: '先承接对方顾虑再推进——在大多数现实场景下是最稳健的选择。' },
+    lock: { level: 'advanced', explanation: '把共识落地为可执行条款。终局时最关键，但过早使用会被认为强迫表态。' }
+  };
+  const meta = levelMap[choice.key] || { level: 'steady', explanation: '需要结合当前局势判断。' };
+  return { id: choice.key, line: choice.sample, level: meta.level, explanation: meta.explanation };
+}
+
+function buildPauseExplainPanel(state) {
+  const goal = buildRoundLearningGoal(state);
+  const explanations = DUEL_CHOICES.map(explainDuelOption);
+  return {
+    title: '暂停讲解',
+    trainingPoint: goal,
+    optionExplanations: explanations,
+    realWorldFormula: '稳妥表达公式：承接对方 + 表达边界 + 给出下一步路径。',
+    exampleLine: '我理解你的压力，但这个条件我不能直接接。我们先把依据和可交换条件说清楚。'
+  };
+}
+
+function renderPauseExplainPanel(state) {
+  const panel = buildPauseExplainPanel(state);
+  return `<div class="pause-explain-panel" id="pause-explain-panel">
+    <h3>${panel.title}</h3>
+    <p style="font-size:12px;color:var(--cyan);margin-bottom:10px">${panel.trainingPoint}</p>
+    ${panel.optionExplanations.map((x) => `<div class="explain-option">
+      <b>${{ probe:'探询信息', advanced:'高阶技法', direct:'直接表态', steady:'稳健应对' }[x.level] || x.level}</b>：
+      "${x.line}"<br><span>${x.explanation}</span>
+    </div>`).join('')}
+    <div class="formula">${panel.realWorldFormula}</div>
+    <div class="example-line">可参考："${panel.exampleLine}"</div>
+  </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   出牌后反馈面板
+   ────────────────────────────────────────────────────────────────────────── */
+function buildAfterActionFeedback(lastLog, state) {
+  if (!lastLog) return null;
+  const choice = DUEL_CHOICES.find((c) => c.key === lastLog.choice);
+  if (!choice) return null;
+  const lineItem = { playerLine: choice.sample };
+  const duelist = state.duelist || {};
+  const voiceProfileId = getDuelistVoiceProfileId(duelist);
+  const voiceProfile = OPPONENT_VOICE_PROFILES[voiceProfileId] || OPPONENT_VOICE_PROFILES.steel_king;
+  const opponentProfile = { type: voiceProfile.type };
+  const hearing = evaluateOpponentHearing(lineItem, opponentProfile);
+  const expression = evaluatePlayerExpression(lineItem);
+  const stage = lastLog.delta > 0 ? 'countered' : 'pressure';
+  const response = pickOpponentLine(voiceProfileId, stage);
+  return {
+    playerLine: choice.sample,
+    label: choice.label,
+    opponentHearing: hearing,
+    opponentResponse: response,
+    coachNote: expression.summary,
+    betterNextMove: expression.total >= 80
+      ? '下一轮可以推进条件交换或阶段承诺。'
+      : '下一轮建议补上依据、边界和继续谈的路径。',
+    deltaSign: lastLog.delta >= 0 ? `+${lastLog.delta}` : `${lastLog.delta}`
+  };
+}
+
+function renderAfterActionFeedbackPanel(feedback) {
+  if (!feedback) return '';
+  return `<div class="after-action-feedback">
+    <div class="feedback-title" style="color:var(--cyan);font-weight:bold;margin-bottom:8px">上一回合反馈 · ${feedback.label}</div>
+    <div class="feedback-block"><b>你说：</b>"${feedback.playerLine}" <span style="color:var(--dim);font-size:11px">（态势变化 ${feedback.deltaSign}）</span></div>
+    <div class="feedback-block"><b>对手听感：</b>${feedback.opponentHearing}</div>
+    <div class="feedback-block"><b>对手回应：</b>"${feedback.opponentResponse}"</div>
+    <div class="feedback-block coach"><b>教练提示：</b>${feedback.coachNote}</div>
+    <div class="feedback-block"><b>下一轮建议：</b>${feedback.betterNextMove}</div>
+  </div>`;
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    公开 API
    ════════════════════════════════════════════════════════════════════════════ */
@@ -14511,7 +14875,14 @@ const LegendMasterAPI = {
   ensureNegotiationBehaviorProfile, updateNegotiationBehaviorProfile, integrateProfileAndTheoryAfterReplay,
   OPPONENT_BEHAVIOR_PROFILE_TEMPLATES, buildOpponentBehaviorProfile,
   prescribeTheory, renderTheoryPrescription, renderProfileTheoryReplayBlock,
-  TEACHING_UI_MODES, ensureTeachingUiState, setTeachingUiMode, isLearnerMode, renderTeachingModeToggle
+  TEACHING_UI_MODES, ensureTeachingUiState, setTeachingUiMode, isLearnerMode, renderTeachingModeToggle,
+  OPPONENT_VOICE_PROFILES, pickOpponentLine, getDuelistVoiceProfileId,
+  evaluatePlayerExpression, evaluateOpponentHearing,
+  buildReplayNarrative, renderCoachReplaySummary,
+  buildRoundLearningGoal, renderRoundLearningGoal,
+  LEGENDARY_ENTRANCE_QUOTES, renderLegendaryEntrance,
+  buildPauseExplainPanel, renderPauseExplainPanel,
+  buildAfterActionFeedback, renderAfterActionFeedbackPanel
 };
 /* ===== core/bootstrap.js ===== */
 // core/bootstrap.js — 应用启动入口（组合根）

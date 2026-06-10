@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系谈判博弈模拟系统 v5.3</title>
+<title>全谱系谈判博弈模拟系统 v5.4</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -3729,7 +3729,7 @@ function applyVariantMoodBias(oppId, variant) {
 
 const SITUATION_CARDS = {
   silencePressure: {
-    id: 'silencePressure', title: '沉默施压',
+    id: 'silencePressure', title: '沉默施压', family: 'verbal',
     text: '对手突然停止说话，直视你，试图让你先打破沉默。',
     choices: [
       { id: 'mirrorSilence', text: '同样保持沉默', desc: '用沉默回应沉默，测试谁先承压。',
@@ -3742,7 +3742,7 @@ const SITUATION_CARDS = {
   },
 
   newEvidence: {
-    id: 'newEvidence', title: '新证据出现',
+    id: 'newEvidence', title: '新证据出现', family: 'verbal',
     text: '你突然获得一个新信息：对方底线可能比表面更弱。',
     choices: [
       { id: 'hardPush', text: '立即强势施压', desc: '可能快速拿到让步，也可能激怒对手。',
@@ -3755,7 +3755,7 @@ const SITUATION_CARDS = {
   },
 
   coffeeBreak: {
-    id: 'coffeeBreak', title: '休息提议',
+    id: 'coffeeBreak', title: '休息提议', family: 'verbal',
     text: '对手提议休息几分钟，喝杯咖啡再继续。',
     choices: [
       { id: 'acceptBreak', text: '接受休息，顺势建立关系', desc: '有利于修复信任，但节奏会变慢。',
@@ -3768,7 +3768,7 @@ const SITUATION_CARDS = {
   },
 
   publicPressure: {
-    id: 'publicPressure', title: '外部压力上升',
+    id: 'publicPressure', title: '外部压力上升', family: 'verbal',
     text: '外部人员开始关注这场谈判，双方的公开姿态变得更重要。',
     choices: [
       { id: 'publicCalm', text: '公开释放冷静表态', desc: '降低外部压力，但短期进攻性下降。',
@@ -3781,7 +3781,7 @@ const SITUATION_CARDS = {
   },
 
   deadlineThreat: {
-    id: 'deadlineThreat', title: '最后期限',
+    id: 'deadlineThreat', title: '最后期限', family: 'verbal',
     text: '对手突然提出最后期限：现在不接受，就没有机会了。',
     choices: [
       { id: 'callBluff', text: '要求对方说明期限依据', desc: '测试最后期限真假。',
@@ -3794,7 +3794,7 @@ const SITUATION_CARDS = {
   },
 
   marketRumor: {
-    id: 'marketRumor', title: '市场传言',
+    id: 'marketRumor', title: '市场传言', family: 'verbal',
     text: '业内传出对方资金链紧张的消息，但来源未经核实。',
     choices: [
       { id: 'leverageRumor', text: '借势压价', desc: '利用信息差扩大筹码，但风险是传言为假。',
@@ -3805,21 +3805,75 @@ const SITUATION_CARDS = {
         mood: { trust: 0.03 }, memory: { coop: true }, tags: ['客观标准'] },
     ],
   },
+
+  /* ─── 决策型博弈专用局势卡（囚徒/信任/公共品）─── */
+  patternRead: {
+    id: 'patternRead', title: '模式被识破', family: 'decision',
+    text: '对方刚才的反应像是看出了你前几轮的出招规律——下一轮他很可能据此设局。',
+    choices: [
+      { id: 'changePattern', text: '主动打破规律', desc: '下一轮反其道而行，让对方重新建模。',
+        mood: { confidence: -0.06, trust: -0.02 }, memory: { firm: true, exposes: false }, tags: ['模式扰动', '反建模'] },
+      { id: 'keepPattern', text: '维持规律诱敌', desc: '赌对方过度自信，反过来设下陷阱。',
+        mood: { confidence: 0.04 }, memory: { firm: true }, tags: ['诱敌深入', '高风险'] },
+      { id: 'mirrorOpp', text: '改为镜像对手', desc: '让自己的反应完全反映对方上一轮。',
+        mood: { trust: 0.03 }, memory: { coop: true }, tags: ['以牙还牙', '条件合作'] },
+    ],
+  },
+
+  signalNoise: {
+    id: 'signalNoise', title: '信号被噪音干扰', family: 'decision',
+    text: '本轮对方的回应略显反常——可能是失手，也可能是有意的扰乱。',
+    choices: [
+      { id: 'ignoreNoise', text: '当作噪音继续原策略', desc: '一两轮异常不改大方向，避免过度反应。',
+        mood: { patience: 0.04 }, memory: { firm: true }, tags: ['稳定策略', '抗扰动'] },
+      { id: 'probeIntent', text: '回一手小幅试探', desc: '用低成本动作判断是失手还是故意。',
+        mood: { patience: -0.03 }, memory: { exposes: true }, tags: ['校准探测', '信息收集'] },
+      { id: 'overReact', text: '当作信号强烈回应', desc: '把对方拉回主轨道，但可能引发对抗循环。',
+        mood: { anger: 0.08, patience: -0.06 }, memory: { aggression: 0.6 }, tags: ['强硬响应', '高风险'] },
+    ],
+  },
+
+  endgameAnxiety: {
+    id: 'endgameAnxiety', title: '终局焦虑', family: 'decision',
+    text: '已经接近终局——是时候决定，是稳住合作姿态收尾，还是抢一波短期收益。',
+    choices: [
+      { id: 'cooperateEnd', text: '保持合作姿态收尾', desc: '保护本场已建立的信任，下一局更易开局合作。',
+        mood: { trust: 0.08, anger: -0.04 }, memory: { coop: true }, tags: ['末轮和善', '长期声誉'] },
+      { id: 'preemptDefect', text: '抢一波短期收益', desc: '当下加分但代价是名声资产清零。',
+        mood: { trust: -0.12, anger: 0.1 }, memory: { aggression: 0.8, firm: true }, tags: ['末轮背叛', '短期收益'] },
+      { id: 'mirrorEnd', text: '镜像对方上一手', desc: '把终局基调交给对方，自己只做反射。',
+        mood: { patience: -0.03 }, memory: { firm: true }, tags: ['条件合作', '反射策略'] },
+    ],
+  },
 };
 
+const SITUATION_DECISION_POOL = ['patternRead', 'signalNoise', 'endgameAnxiety'];
+const SITUATION_VERBAL_POOL = ['silencePressure', 'coffeeBreak', 'newEvidence', 'deadlineThreat', 'publicPressure'];
+const SCENARIO_FAMILY = {
+  prisoners: 'decision', trust: 'decision', publicgoods: 'decision',
+  ultimatum: 'verbal', bargaining: 'verbal', crisis: 'verbal', coalition: 'verbal',
+};
+function getScenarioFamily(scenarioKey) { return SCENARIO_FAMILY[scenarioKey] || 'verbal'; }
+
 // 根据场景 + 变体 + 难度生成本局事件序列
+// 决策型博弈（囚徒/信任/公共品）只投放决策家族卡，避免话术卡片（咖啡休息、市场传言等）文不对题
 function generateSituationEvents(scenarioKey, variant, difficulty) {
   const countMap = { easy: 0, medium: 1, hard: 1, extreme: 2, hell: 2 };
   const count = countMap[difficulty] || 0;
   if (!count) return [];
 
+  const family = getScenarioFamily(scenarioKey);
   const ids = new Set();
   if (variant && Array.isArray(variant.eventPool)) {
-    variant.eventPool.forEach((id) => ids.add(id));
+    variant.eventPool.forEach((id) => {
+      const card = SITUATION_CARDS[id];
+      if (card && (!card.family || card.family === family)) ids.add(id);
+    });
   }
-  ['silencePressure', 'coffeeBreak', 'newEvidence', 'deadlineThreat', 'publicPressure'].forEach((id) => ids.add(id));
+  const defaultPool = family === 'decision' ? SITUATION_DECISION_POOL : SITUATION_VERBAL_POOL;
+  defaultPool.forEach((id) => ids.add(id));
 
-  const pool = [...ids].map((id) => SITUATION_CARDS[id]).filter(Boolean);
+  const pool = [...ids].map((id) => SITUATION_CARDS[id]).filter((c) => c && (!c.family || c.family === family));
   const shuffled = pool.sort(() => Math.random() - 0.5);
 
   return shuffled.slice(0, count).map((card, idx) => ({
@@ -3856,7 +3910,7 @@ function applySituationChoice(scenario, choice) {
 
 const COUNTER_QUESTIONS = {
   evidence: {
-    id: 'evidence', text: '你这个判断的依据是什么？',
+    id: 'evidence', text: '你这个判断的依据是什么？', family: 'verbal',
     triggerTags: ['强硬', '高风险', '锚定效应'],
     choices: [
       { id: 'giveData', text: '给出数据和客观标准', desc: '用事实支撑立场。',
@@ -3869,7 +3923,7 @@ const COUNTER_QUESTIONS = {
   },
 
   batnaTest: {
-    id: 'batnaTest', text: '如果我不同意，你真正的替代方案是什么？',
+    id: 'batnaTest', text: '如果我不同意，你真正的替代方案是什么？', family: 'verbal',
     triggerTags: ['BATNA', '底线控制', '反压'],
     choices: [
       { id: 'clearBATNA', text: '清晰说明替代方案，但不泄露全部底牌', desc: '建立可信底线。',
@@ -3882,7 +3936,7 @@ const COUNTER_QUESTIONS = {
   },
 
   trustChallenge: {
-    id: 'trustChallenge', text: '你现在说合作，我凭什么相信你？',
+    id: 'trustChallenge', text: '你现在说合作，我凭什么相信你？', family: 'both',
     triggerTags: ['合作', '关系维护'],
     choices: [
       { id: 'specificCommitment', text: '提出具体可验证承诺', desc: '用行动替代口头善意。',
@@ -3891,6 +3945,33 @@ const COUNTER_QUESTIONS = {
         mood: { trust: 0.08, anger: -0.08 }, memory: { coop: true }, tags: ['战术性同理心', '情绪调节'] },
       { id: 'pressureBack', text: '反问对方是否也愿意承担承诺', desc: '把信任问题变成双向义务。',
         mood: { confidence: -0.05, patience: -0.03 }, memory: { firm: true }, tags: ['条件让步', '互惠'] },
+    ],
+  },
+
+  /* ─── 决策型博弈专用反问（不假设有"依据/数据/BATNA"可说）─── */
+  patternProbe: {
+    id: 'patternProbe', text: '你这几轮像是有套路——是巧合，还是你已经在按某个模式打？', family: 'decision',
+    triggerTags: ['强硬', '合作', '反压', '高风险'],
+    choices: [
+      { id: 'denyPattern', text: '不承认有模式，让对方自己猜', desc: '保留信息不对称，但对方可能误读。',
+        mood: { confidence: 0.04, patience: -0.04 }, memory: { firm: true }, tags: ['信息不对称', '心理战'] },
+      { id: 'confirmCoopRule', text: '坦言"对方合作我合作"', desc: '主动表明条件合作策略，邀请对方协调。',
+        mood: { trust: 0.1, anger: -0.05 }, memory: { coop: true }, tags: ['条件合作', '策略透明'] },
+      { id: 'fakePattern', text: '故意说出一个假规律', desc: '诱使对方按错误预测下注，下轮再打破。',
+        mood: { trust: -0.05, confidence: -0.06 }, memory: { aggression: 0.5, exposes: true }, tags: ['诱敌', '高风险'] },
+    ],
+  },
+
+  intentTest: {
+    id: 'intentTest', text: '你这一手到底是失手、试探，还是在钓我？', family: 'decision',
+    triggerTags: ['高风险', '反压', '锚定效应'],
+    choices: [
+      { id: 'admitProbe', text: '承认是在试探，邀请对方一起回到合作', desc: '主动降温，但放弃了威慑空间。',
+        mood: { trust: 0.08, anger: -0.06 }, memory: { coop: true }, tags: ['策略透明', '信任修复'] },
+      { id: 'silentMove', text: '不解释意图，让结果自己说话', desc: '保持神秘，让下一轮的动作回答这个问题。',
+        mood: { patience: -0.03 }, memory: { firm: true }, tags: ['行动证据', '心理压制'] },
+      { id: 'claimMistake', text: '把它说成失手', desc: '掩盖真实意图，但下一轮再异常对方会立刻识破。',
+        mood: { confidence: 0.06 }, memory: { exposes: true }, tags: ['假装失手', '一次性麻痹'] },
     ],
   },
 };
@@ -3907,8 +3988,11 @@ function shouldTriggerCounterQuestion(scenario, lastTags = []) {
 
   if (Math.random() > p) return null;
 
-  const candidates = Object.values(COUNTER_QUESTIONS).filter((q) =>
-    q.triggerTags.some((t) => lastTags.includes(t)));
+  const family = getScenarioFamily(scenario.scenarioKey);
+  const candidates = Object.values(COUNTER_QUESTIONS).filter((q) => {
+    if (q.family && q.family !== 'both' && q.family !== family) return false;
+    return q.triggerTags.some((t) => lastTags.includes(t));
+  });
   if (!candidates.length) return null;
 
   const q = candidates[Math.floor(Math.random() * candidates.length)];
@@ -5235,9 +5319,9 @@ class BaseScenario {
   variantHint() { return this.variant ? this.variant.hint : ''; }
 
   // 顶部开场白 + 场景情境块
-  // 注意：当该场景×对手存在叙事情境包（SCENARIO_NARRATIVES）时，
-  // 旧的变体文案（如"涉嫌合伙盗窃被分别审讯"）与情境包故事互相矛盾，
-  // 此时只保留情境包叙事，完全屏蔽变体文案，避免同屏出现两个场景。
+  // v5.3：变体文案与各场景的真实叙事（叙事情境包 / 阶段 context / 谈判文本）经常矛盾，
+  // 已统一抑制 variant 散文，仅保留：①对手开场白 ②（叙事包存在且非首轮时）单行情境提示
+  // ③隐藏目标提示。variant 仍用于评分/隐藏目标/情绪偏置，但不再渲染。
   experienceBanner() {
     let html = '';
     if (this._openingLine) {
@@ -5249,8 +5333,6 @@ class BaseScenario {
       if (roundNow > 0) {
         html += C.hint(`<b>🎭 ${narr.playerRole}</b>｜${narr.situation}`, 'cyan');
       }
-    } else if (this.variant) {
-      html += C.hint(`<b>${this.variant.name}：</b>${this.variantContext()}　<span style="color:var(--dim);font-size:11px">${this.variantHint()}</span>`, 'cyan');
     }
     if (this.hiddenObjective) {
       html += renderHiddenObjectiveHint(this.hiddenObjective);
@@ -7072,7 +7154,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系谈判博弈模拟系统  v5.3        ║<br>
+║  全谱系谈判博弈模拟系统  v5.4        ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -7676,17 +7758,16 @@ function renderResult() {
   }
 
   // v2 体验增强结果块
-  // 存在叙事情境包时优先展示情境包身份，避免与旧变体文案双重叙事
+  // 存在叙事情境包时展示情境包身份；无情境包时只展示评估维度（变体名常与实际剧情不符，故不再展示）
   let v2Blocks = '';
   const resultNarr = (opp && result.kind && typeof getNarrative === 'function') ? getNarrative(result.kind, opp.id) : null;
   if (resultNarr) {
     v2Blocks += C.panel('本局情境',
       C.infoRow('你的身份', resultNarr.playerRole) +
       C.infoRow('情境', resultNarr.situation));
-  } else if (result.variant) {
-    v2Blocks += C.panel('本局情境',
-      C.infoRow('情境名称', result.variant.name) +
-      C.infoRow('胜利指标', (result.variant.successMetric || []).join(' / ')));
+  } else if (result.variant && result.variant.successMetric && result.variant.successMetric.length) {
+    v2Blocks += C.panel('本局评估维度',
+      C.infoRow('考察重点', result.variant.successMetric.join(' / ')));
   }
   if (result.hiddenObjective) {
     const h = result.hiddenObjective;
@@ -8508,7 +8589,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.3',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.4',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },

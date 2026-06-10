@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>女性传奇谈判者系列 · 预览</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080810;color:#e8dfc8;font-family:'PingFang SC','Microsoft YaHei',sans-serif}
+.page{max-width:1200px;margin:0 auto;padding:28px 16px 48px}
+
+/* ── NAV ── */
+.nav{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:20px;
+  border-bottom:1px solid rgba(255,180,255,.15);margin-bottom:32px}
+.nav-title{font-size:22px;font-weight:700;
+  background:linear-gradient(90deg,#ff9fff,#ffd700,#ff9fff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:.08em}
+.nav-sub{font-size:11px;color:#886688;margin-top:4px}
+.vtag{background:rgba(200,100,255,.1);border:1px solid rgba(200,100,255,.3);
+  color:#d090ff;font-size:11px;padding:4px 14px;border-radius:20px}
+
+/* ── SERIES HEADER ── */
+.series-header{
+  text-align:center;margin-bottom:28px;
+  padding:16px;
+  background:linear-gradient(160deg,rgba(40,10,60,.6),rgba(20,5,30,.8));
+  border:1px solid rgba(200,100,255,.2);border-radius:12px;
+}
+.series-title-cn{font-size:18px;font-weight:700;color:#f0d0ff;letter-spacing:.1em;margin-bottom:4px}
+.series-desc{font-size:11px;color:#a080c0;letter-spacing:.04em}
+
+/* ── CARD GRID ── */
+.card-grid{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-bottom:32px}
+
+/* ── UR MENTOR CARD ── */
+.mentor-card{
+  width:158px;border-radius:14px;overflow:hidden;cursor:pointer;
+  transition:transform .25s,box-shadow .25s;
+  display:flex;flex-direction:column;position:relative;
+  background:linear-gradient(160deg,#14121e,#0d0b18);
+}
+.mentor-card:hover{transform:translateY(-10px)}
+.mentor-card::before{
+  content:'';position:absolute;inset:-2px;border-radius:16px;
+  background:linear-gradient(45deg,#ff6b6b,#ffd700,#7fff00,#00cfff,#bf7fff,#ff9fff,#ff6b6b);
+  background-size:400% 400%;animation:shimmer 2.5s linear infinite;z-index:0;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:2px;
+}
+.mentor-card:hover{box-shadow:0 12px 40px rgba(200,100,255,.4),0 0 20px rgba(255,150,255,.2)}
+@keyframes shimmer{0%{background-position:0% 50%}100%{background-position:400% 50%}}
+
+.card-inner{position:relative;z-index:1;display:flex;flex-direction:column;border-radius:13px;overflow:hidden}
+.mentor-portrait{width:100%;height:210px;object-fit:cover;object-position:center 12%;display:block;background:#0a0814}
+.card-body{padding:10px 10px 9px;background:linear-gradient(0deg,rgba(0,0,0,.9) 0%,rgba(10,5,20,.92) 100%)}
+.card-rarity{font-size:9px;font-weight:900;letter-spacing:.08em;margin-bottom:3px;
+  background:linear-gradient(90deg,#ff9fff,#ffd700,#00cfff,#bf7fff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.card-name{font-size:13px;font-weight:700;color:#f5e0ff;margin-bottom:1px}
+.card-eng{font-size:9px;color:#886688;margin-bottom:4px}
+.card-era{font-size:9px;color:#b090d0;margin-bottom:5px}
+.card-style{
+  font-size:9px;padding:2px 7px;border-radius:5px;display:inline-block;
+  background:rgba(200,100,255,.15);border:1px solid rgba(200,100,255,.3);color:#d0a0ff
+}
+
+/* ── SKILL SECTION ── */
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:32px}
+.skill-card{
+  background:linear-gradient(160deg,#0f0c1a,#080514);
+  border:1px solid rgba(200,100,255,.18);border-radius:12px;
+  padding:14px 16px;display:flex;gap:14px;align-items:flex-start;
+}
+.skill-portrait-mini{
+  width:56px;height:74px;border-radius:8px;overflow:hidden;flex-shrink:0;
+  border:1px solid rgba(200,100,255,.3)
+}
+.skill-portrait-mini img{width:100%;height:100%;object-fit:cover;object-position:center 10%}
+.skill-info{flex:1}
+.skill-name{font-size:13px;font-weight:700;color:#f0d8ff;margin-bottom:2px}
+.skill-eng{font-size:10px;color:#886688;margin-bottom:6px}
+.skill-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.stag{font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid}
+.stag.era{color:#d4af37;border-color:rgba(212,175,55,.35);background:rgba(212,175,55,.08)}
+.stag.style{color:#d0a0ff;border-color:rgba(200,100,255,.35);background:rgba(200,100,255,.08)}
+.stag.ur{color:#fbbf24;border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.1);font-weight:700}
+.skill-ability{font-size:10px;color:#c0a8d8;line-height:1.5}
+.ability-name{color:#e0c8f8;font-weight:600}
+
+/* ── LIGHTBOX ── */
+.lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+  z-index:999;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:12px}
+.lb.open{display:flex}
+.lb img{max-width:260px;max-height:70vh;border-radius:14px;
+  box-shadow:0 0 60px rgba(200,100,255,.5),0 0 100px rgba(255,100,255,.2)}
+.lb-close{position:absolute;top:20px;right:28px;font-size:28px;color:#d090ff;cursor:pointer;z-index:2}
+.lb-name{font-size:15px;font-weight:700;color:#f0d0ff;letter-spacing:.1em}
+.lb-sub{font-size:11px;color:#886688}
+
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(200,100,255,.2),transparent);margin:28px 0}
+
+/* ── SECTION TITLE ── */
+.sec{font-size:14px;font-weight:700;color:#d090ff;letter-spacing:.06em;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px}
+.sec::before{content:'◆';font-size:10px;color:#a060d0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="nav">
+  <div>
+    <div class="nav-title">女性传奇谈判者系列</div>
+    <div class="nav-sub">她们以智慧、谋略与影响力，改变历史局势，塑造谈判的格局与规则</div>
+  </div>
+  <div class="vtag">UR 传奇级</div>
+</div>
+
+<div class="series-header">
+  <div class="series-title-cn">Women Legendary Negotiators · 七位传奇</div>
+  <div class="series-desc">跨越三千年历史 · 七大文明 · 七种谈判智慧</div>
+</div>
+
+<!-- ═══ 卡牌展示 ═══ -->
+<div class="sec">卡牌展示 <span style="font-size:10px;font-weight:400;color:#886688">点击查看放大肖像</span></div>
+<div class="card-grid" id="cardGrid"></div>
+
+<div class="divider"></div>
+
+<!-- ═══ 技能详情 ═══ -->
+<div class="sec">人物技能详情</div>
+<div class="skills-grid" id="skillsGrid"></div>
+
+</div>
+
+<!-- lightbox -->
+<div class="lb" id="lb" onclick="closeLb()">
+  <div class="lb-close" onclick="closeLb()">✕</div>
+  <img id="lbImg" src="" alt="">
+  <div class="lb-name" id="lbName"></div>
+  <div class="lb-sub" id="lbSub"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+//  SVG PORTRAIT GENERATOR
+// ─────────────────────────────────────────────────────────
+function buildPortrait(cfg) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 320'>
+<defs>
+  <linearGradient id='bg${cfg.id}' x1='0' y1='0' x2='0' y2='1'>
+    <stop offset='0%' stop-color='${cfg.bgTop}'/>
+    <stop offset='100%' stop-color='${cfg.bgBot}'/>
+  </linearGradient>
+  <radialGradient id='glow${cfg.id}' cx='0.5' cy='0.38' r='0.65'>
+    <stop offset='0%' stop-color='${cfg.glow}' stop-opacity='0.5'/>
+    <stop offset='100%' stop-color='${cfg.glow}' stop-opacity='0'/>
+  </radialGradient>
+  <linearGradient id='skin${cfg.id}' x1='0' y1='0' x2='0' y2='1'>
+    <stop offset='0%' stop-color='${cfg.skinTop||"#f5e0c0"}'/>
+    <stop offset='100%' stop-color='${cfg.skinBot||"#d8b890"}'/>
+  </linearGradient>
+</defs>
+<!-- bg -->
+<rect width='240' height='320' fill='url(#bg${cfg.id})'/>
+<rect width='240' height='320' fill='url(#glow${cfg.id})'/>
+<!-- particles -->
+<g opacity='0.22'>
+  ${cfg.particles||`<circle cx='30' cy='50' r='1.5' fill='${cfg.accent}'/><circle cx='210' cy='40' r='1.5' fill='${cfg.accent}'/><circle cx='215' cy='180' r='1.5' fill='${cfg.accent}'/><circle cx='25' cy='200' r='1.5' fill='${cfg.accent}'/><circle cx='120' cy='20' r='1' fill='${cfg.accent}'/>`}
+</g>
+<!-- body / dress / collar -->
+${cfg.body || `<path d='M 25 320 Q 25 230 75 212 L 165 212 Q 215 230 215 320 Z' fill='${cfg.coat}'/>`}
+<!-- head -->
+<ellipse cx='120' cy='132' rx='46' ry='52' fill='url(#skin${cfg.id})'/>
+<!-- neck -->
+<rect x='107' y='175' width='26' height='28' fill='${cfg.skinBot||"#d8b890"}'/>
+<!-- accessories / hair / ornaments -->
+${cfg.accessory||''}
+<!-- name plate -->
+<rect x='16' y='256' width='208' height='48' rx='5' fill='#000' opacity='0.6'/>
+<rect x='16' y='256' width='208' height='48' rx='5' fill='none' stroke='${cfg.accent}' stroke-width='1.2' opacity='0.8'/>
+<text x='120' y='278' text-anchor='middle' fill='${cfg.nameColor}' font-size='17' font-weight='bold' font-family='SimHei,serif' letter-spacing='3'>${cfg.name}</text>
+<text x='120' y='296' text-anchor='middle' fill='#d4cfb8' font-size='9' font-family='SimHei,sans-serif' letter-spacing='2'>${cfg.subtitle}</text>
+</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+// ─────────────────────────────────────────────────────────
+//  CHARACTER DATA
+// ─────────────────────────────────────────────────────────
+const FEMALES = [
+  {
+    id:'cleopatra', name:'克利奥帕特拉', engName:'Cleopatra VII',
+    era:'古埃及 · 公元前69年', style:'战略联盟者',
+    subtitle:'多维渗透 · 魅力外交大师',
+    ability:'战略联盟', abilityDesc:'识别三方利益格局，以文化与感情渗透瓦解对手防线，同时缔结多层保障联盟',
+    book:'《罗马-埃及和约史料》',
+    bgTop:'#2a1a00', bgBot:'#0e0800', glow:'#e8a030', accent:'#f6c84a',
+    nameColor:'#ffe070',
+    skinTop:'#d4a870', skinBot:'#b88850',
+    coat:'#1a1200',
+    body:`<path d='M 25 320 Q 25 230 72 210 L 168 210 Q 215 230 215 320 Z' fill='#1a1000'/>
+      <!-- white linen dress lines -->
+      <line x1='105' y1='210' x2='95' y2='320' stroke='#f0e0a0' stroke-width='1' opacity='0.3'/>
+      <line x1='120' y1='210' x2='120' y2='320' stroke='#f0e0a0' stroke-width='1' opacity='0.3'/>
+      <line x1='135' y1='210' x2='145' y2='320' stroke='#f0e0a0' stroke-width='1' opacity='0.3'/>
+      <!-- gold collar necklace -->
+      <path d='M 78 195 Q 120 210 162 195' fill='none' stroke='#e8a030' stroke-width='4'/>
+      <path d='M 80 195 Q 120 214 160 195' fill='none' stroke='#f6c84a' stroke-width='1.5'/>`,
+    accessory:`<!-- Egyptian headdress (nemes) -->
+      <path d='M 74 120 L 74 175 L 60 220' fill='none' stroke='#e8a030' stroke-width='6'/>
+      <path d='M 166 120 L 166 175 L 180 220' fill='none' stroke='#e8a030' stroke-width='6'/>
+      <!-- striped pattern on headdress -->
+      <path d='M 74 130 L 74 140' stroke='#1a1200' stroke-width='3'/>
+      <path d='M 74 148 L 74 158' stroke='#1a1200' stroke-width='3'/>
+      <path d='M 74 166 L 74 176' stroke='#1a1200' stroke-width='3'/>
+      <path d='M 166 130 L 166 140' stroke='#1a1200' stroke-width='3'/>
+      <path d='M 166 148 L 166 158' stroke='#1a1200' stroke-width='3'/>
+      <path d='M 166 166 L 166 176' stroke='#1a1200' stroke-width='3'/>
+      <!-- cobra crown (uraeus) -->
+      <path d='M 100 80 Q 108 65 120 62 Q 132 65 140 80' fill='none' stroke='#e8a030' stroke-width='3'/>
+      <ellipse cx='120' cy='62' rx='8' ry='6' fill='#e8a030'/>
+      <circle cx='120' cy='58' r='4' fill='#c83030'/>
+      <!-- black kohl eyes -->
+      <path d='M 92 132 L 108 128 L 92 136 Z' fill='#1a0808'/>
+      <path d='M 148 132 L 132 128 L 148 136 Z' fill='#1a0808'/>
+      <ellipse cx='100' cy='132' rx='7' ry='5' fill='#2a1a00'/>
+      <ellipse cx='140' cy='132' rx='7' ry='5' fill='#2a1a00'/>
+      <circle cx='100' cy='132' r='3' fill='#1a0808'/>
+      <circle cx='140' cy='132' r='3' fill='#1a0808'/>
+      <!-- lips -->
+      <path d='M 108 162 Q 120 167 132 162' fill='#8a2010' stroke='none'/>`
+  },
+  {
+    id:'wuzetian', name:'武则天', engName:'Wu Zetian',
+    era:'唐朝 · 624—705年', style:'权力重塑者',
+    subtitle:'制度重构 · 中国唯一女皇帝',
+    ability:'权力重构', abilityDesc:'利用制度漏洞打破既有权力格局，将对手纳入自己的框架，重新定义谈判规则',
+    book:'《资治通鉴》节选',
+    bgTop:'#3a0808', bgBot:'#160205', glow:'#d83030', accent:'#f07050',
+    nameColor:'#ffc870',
+    skinTop:'#f0d8b8', skinBot:'#d8b898',
+    coat:'#2a0808',
+    body:`<path d='M 22 320 Q 22 225 70 208 L 170 208 Q 218 225 218 320 Z' fill='#2a0808'/>
+      <!-- imperial dragon robe pattern -->
+      <path d='M 90 250 Q 120 230 150 250 Q 120 240 90 250 Z' fill='#e83020' opacity='0.4'/>
+      <circle cx='120' cy='240' r='3' fill='#f6c84a' opacity='0.5'/>
+      <!-- gold trim -->
+      <path d='M 70 208 Q 120 220 170 208' fill='none' stroke='#f6c84a' stroke-width='2.5'/>`,
+    accessory:`<!-- elaborate Tang hair -->
+      <path d='M 74 120 Q 68 90 80 72 Q 120 58 160 72 Q 172 90 166 120' fill='#1a0808'/>
+      <!-- hair ornaments -->
+      <line x1='95' y1='75' x2='88' y2='55' stroke='#f6c84a' stroke-width='2'/>
+      <circle cx='88' cy='52' r='4' fill='#e83020'/>
+      <line x1='120' y1='68' x2='120' y2='46' stroke='#f6c84a' stroke-width='2'/>
+      <circle cx='120' cy='43' r='5' fill='#e8a030'/>
+      <line x1='145' y1='75' x2='152' y2='55' stroke='#f6c84a' stroke-width='2'/>
+      <circle cx='152' cy='52' r='4' fill='#e83020'/>
+      <!-- phoenix hairpin -->
+      <path d='M 158 65 Q 170 55 175 60 Q 168 70 160 72' fill='#f6c84a' opacity='0.8'/>
+      <!-- imperial expression - strong brows -->
+      <path d='M 92 122 Q 104 116 114 120' stroke='#1a0808' stroke-width='3' fill='none' stroke-linecap='round'/>
+      <path d='M 126 120 Q 136 116 148 122' stroke='#1a0808' stroke-width='3' fill='none' stroke-linecap='round'/>
+      <!-- eyes -->
+      <ellipse cx='103' cy='130' rx='8' ry='5' fill='#1a0808'/>
+      <ellipse cx='137' cy='130' rx='8' ry='5' fill='#1a0808'/>
+      <!-- lips - refined red -->
+      <path d='M 106 162 Q 120 168 134 162 Q 120 172 106 162 Z' fill='#c82020'/>`
+  },
+  {
+    id:'elizabeth1', name:'伊丽莎白一世', engName:'Elizabeth I',
+    era:'英格兰 · 1533—1603年', style:'强硬谈判者',
+    subtitle:'武式亲和 · 都铎外交女王',
+    ability:'战略模糊', abilityDesc:'长期保持战略不确定性，利用婚姻谈判制造多方博弈，从不轻易让渡主权筹码',
+    book:'《伊丽莎白外交史》',
+    bgTop:'#1a0a2a', bgBot:'#080510', glow:'#8040c0', accent:'#c080ff',
+    nameColor:'#e8c8ff',
+    skinTop:'#f8e8d0', skinBot:'#e0c8b0',
+    coat:'#18083a',
+    body:`<path d='M 15 320 Q 20 220 68 205 L 172 205 Q 220 220 225 320 Z' fill='#18083a'/>
+      <!-- Elizabethan ruff collar (large white ruff) -->
+      <ellipse cx='120' cy='202' rx='62' ry='22' fill='#f8f0e8'/>
+      <ellipse cx='120' cy='202' rx='62' ry='22' fill='none' stroke='#e0d0b0' stroke-width='1'/>
+      <!-- ruff pleats -->
+      <path d='M 58 200 Q 65 188 72 200 Q 79 188 86 200 Q 93 188 100 200 Q 107 188 114 200 Q 121 188 128 200 Q 135 188 142 200 Q 149 188 156 200 Q 163 188 170 200 Q 177 188 182 200' fill='none' stroke='#d0c0a0' stroke-width='1'/>
+      <!-- dress gem pattern -->
+      <circle cx='100' cy='240' r='2' fill='#c080ff' opacity='0.6'/>
+      <circle cx='120' cy='235' r='2' fill='#c080ff' opacity='0.6'/>
+      <circle cx='140' cy='240' r='2' fill='#c080ff' opacity='0.6'/>`,
+    accessory:`<!-- red Tudor hair -->
+      <path d='M 76 125 Q 72 82 120 76 Q 168 82 164 125 L 162 108 Q 158 88 120 86 Q 82 88 78 108 Z' fill='#8a3010'/>
+      <!-- hair sides down -->
+      <path d='M 76 125 L 72 160' stroke='#8a3010' stroke-width='8' stroke-linecap='round'/>
+      <path d='M 164 125 L 168 160' stroke='#8a3010' stroke-width='8' stroke-linecap='round'/>
+      <!-- small crown / tiara -->
+      <path d='M 88 86 L 88 72 L 96 80 L 104 68 L 112 78 L 120 65 L 128 78 L 136 68 L 144 80 L 152 72 L 152 86 Z' fill='#d4af37'/>
+      <circle cx='104' cy='70' r='3' fill='#e83020'/>
+      <circle cx='120' cy='66' r='3.5' fill='#c080ff'/>
+      <circle cx='136' cy='70' r='3' fill='#e83020'/>
+      <!-- pale skin, defined eyes -->
+      <ellipse cx='102' cy='130' rx='8' ry='5' fill='#2a1a10'/>
+      <ellipse cx='138' cy='130' rx='8' ry='5' fill='#2a1a10'/>
+      <!-- Tudor rose emblem -->
+      <circle cx='195' cy='235' r='10' fill='none' stroke='#c080ff' stroke-width='1.5' opacity='0.7'/>
+      <circle cx='195' cy='235' r='5' fill='#e83020' opacity='0.5'/>
+      <circle cx='195' cy='235' r='2' fill='#f8f0e8' opacity='0.8'/>`
+  },
+  {
+    id:'catherine2', name:'叶卡捷琳娜二世', engName:'Catherine the Great',
+    era:'俄罗斯 · 1729—1796年', style:'强硬谈判者',
+    subtitle:'力量整合 · 俄罗斯女沙皇',
+    ability:'精英联盟', abilityDesc:'构建跨阶层精英网络，以文化赞助换取政治忠诚，将对手变为协作者',
+    book:'《叶卡捷琳娜大帝回忆录》',
+    bgTop:'#0a1a3a', bgBot:'#040810', glow:'#3060c8', accent:'#6090e8',
+    nameColor:'#c8d8ff',
+    skinTop:'#f5e0c8', skinBot:'#d8c0a8',
+    coat:'#0a1830',
+    body:`<path d='M 20 320 Q 22 225 70 208 L 170 208 Q 218 225 220 320 Z' fill='#0a1830'/>
+      <!-- imperial Russian uniform -->
+      <path d='M 70 208 L 68 320' stroke='#d4af37' stroke-width='2' opacity='0.6'/>
+      <path d='M 170 208 L 172 320' stroke='#d4af37' stroke-width='2' opacity='0.6'/>
+      <!-- medals / orders -->
+      <circle cx='98' cy='235' r='6' fill='#d4af37' opacity='0.7'/>
+      <circle cx='98' cy='235' r='3' fill='#3060c8' opacity='0.8'/>
+      <path d='M 94 229 L 98 233 L 102 229' fill='#d4af37' opacity='0.7'/>
+      <!-- blue sash (Order of St. Andrew) -->
+      <path d='M 75 210 L 145 270' stroke='#4070c0' stroke-width='6' opacity='0.5'/>`,
+    accessory:`<!-- powdered wig / hair -->
+      <path d='M 74 125 Q 68 82 120 76 Q 172 82 166 125 L 165 105 Q 160 86 120 84 Q 80 86 75 105 Z' fill='#e0dcd8'/>
+      <!-- wig curls at sides -->
+      <path d='M 74 125 L 68 165 Q 66 180 72 185' stroke='#d0ccc8' stroke-width='8' stroke-linecap='round' fill='none'/>
+      <path d='M 166 125 L 172 165 Q 174 180 168 185' stroke='#d0ccc8' stroke-width='8' stroke-linecap='round' fill='none'/>
+      <!-- imperial crown -->
+      <path d='M 86 84 L 86 70 L 98 78 L 108 62 L 120 72 L 132 62 L 142 78 L 154 70 L 154 84 Z' fill='#d4af37'/>
+      <ellipse cx='120' cy='70' rx='20' ry='8' fill='#d4af37'/>
+      <circle cx='108' cy='64' r='3' fill='#e83020'/>
+      <circle cx='120' cy='60' r='4' fill='#c080ff'/>
+      <circle cx='132' cy='64' r='3' fill='#3060c8'/>
+      <!-- cross on crown -->
+      <line x1='120' y1='55' x2='120' y2='47' stroke='#d4af37' stroke-width='2'/>
+      <line x1='116' y1='51' x2='124' y2='51' stroke='#d4af37' stroke-width='2'/>
+      <!-- eyes - European features -->
+      <ellipse cx='102' cy='130' rx='8' ry='5.5' fill='#2a3a5a'/>
+      <ellipse cx='138' cy='130' rx='8' ry='5.5' fill='#2a3a5a'/>`
+  },
+  {
+    id:'thatcher', name:'撒切尔夫人', engName:'Margaret Thatcher',
+    era:'英国 · 1925—2013年', style:'强硬挑战者',
+    subtitle:'铁板战术 · 意识形态型谈判',
+    ability:'铁板战术', abilityDesc:'坚守核心原则绝不退让，以强硬立场迫使对手进行实质让步，从不以妥协换取和谐',
+    book:'《撒切尔夫人回忆录》',
+    bgTop:'#0a1228', bgBot:'#040810', glow:'#2050a0', accent:'#5080d0',
+    nameColor:'#c0d0f0',
+    skinTop:'#f5e0c8', skinBot:'#d8c0a8',
+    coat:'#0a1830',
+    body:`<path d='M 28 320 Q 28 228 74 210 L 166 210 Q 212 228 212 320 Z' fill='#1a2850'/>
+      <!-- blue power suit -->
+      <path d='M 74 210 L 70 320' stroke='#2050a0' stroke-width='3' opacity='0.5'/>
+      <path d='M 166 210 L 170 320' stroke='#2050a0' stroke-width='3' opacity='0.5'/>
+      <!-- lapels -->
+      <path d='M 105 210 L 95 240 L 85 238' fill='#0a1830' stroke='#2050a0' stroke-width='1'/>
+      <path d='M 135 210 L 145 240 L 155 238' fill='#0a1830' stroke='#2050a0' stroke-width='1'/>`,
+    accessory:`<!-- blonde set hair -->
+      <path d='M 78 125 Q 76 84 120 80 Q 164 84 162 125 L 162 106 Q 158 88 120 86 Q 82 88 78 106 Z' fill='#c8a830'/>
+      <!-- hair set style - slight waves -->
+      <path d='M 78 125 L 76 150' stroke='#c8a830' stroke-width='7' stroke-linecap='round'/>
+      <path d='M 162 125 L 164 150' stroke='#c8a830' stroke-width='7' stroke-linecap='round'/>
+      <!-- pearl necklace (signature) -->
+      <path d='M 85 192 Q 120 202 155 192' fill='none' stroke='#e8e0d8' stroke-width='0' stroke-dasharray='0'/>
+      <circle cx='92' cy='194' r='3' fill='#e8e0d8'/>
+      <circle cx='102' cy='197' r='3' fill='#e8e0d8'/>
+      <circle cx='112' cy='199' r='3' fill='#e8e0d8'/>
+      <circle cx='120' cy='200' r='3' fill='#e8e0d8'/>
+      <circle cx='128' cy='199' r='3' fill='#e8e0d8'/>
+      <circle cx='138' cy='197' r='3' fill='#e8e0d8'/>
+      <circle cx='148' cy='194' r='3' fill='#e8e0d8'/>
+      <!-- strong determined eyes -->
+      <ellipse cx='102' cy='130' rx='8' ry='5' fill='#2a3a5a'/>
+      <ellipse cx='138' cy='130' rx='8' ry='5' fill='#2a3a5a'/>
+      <!-- set lips - firm expression -->
+      <path d='M 106 162 L 134 162' stroke='#b06050' stroke-width='2.5' stroke-linecap='round'/>
+      <!-- "Iron Lady" text emblem -->
+      <text x='195' y='240' text-anchor='middle' fill='#5080d0' font-size='7' font-weight='bold' font-family='serif' opacity='0.7'>IRON</text>
+      <text x='195' y='250' text-anchor='middle' fill='#5080d0' font-size='7' font-weight='bold' font-family='serif' opacity='0.7'>LADY</text>`
+  },
+  {
+    id:'merkel', name:'默克尔', engName:'Angela Merkel',
+    era:'德国 · 1954年—', style:'权力共建者',
+    subtitle:'多方协调 · 科学思维型谈判',
+    ability:'共识构建', abilityDesc:'以科学家式的严谨分析替代情绪博弈，逐步积累各方共识，在最不可能处达成协议',
+    book:'《默克尔传》',
+    bgTop:'#1a1a1a', bgBot:'#080808', glow:'#808080', accent:'#c0c0c0',
+    nameColor:'#e8e8e8',
+    skinTop:'#f5e8d8', skinBot:'#d8c8b8',
+    coat:'#1a1a1a',
+    body:`<path d='M 28 320 Q 28 228 74 210 L 166 210 Q 212 228 212 320 Z' fill='#222224'/>
+      <!-- simple practical jacket -->
+      <path d='M 74 210 L 72 320' stroke='#444' stroke-width='2' opacity='0.5'/>
+      <path d='M 166 210 L 168 320' stroke='#444' stroke-width='2' opacity='0.5'/>`,
+    accessory:`<!-- short practical haircut -->
+      <path d='M 78 128 Q 78 86 120 82 Q 162 86 162 128 L 162 108 Q 156 90 120 88 Q 84 90 78 108 Z' fill='#4a3a28'/>
+      <!-- practical bob cut -->
+      <path d='M 78 128 L 76 155' stroke='#4a3a28' stroke-width='9' stroke-linecap='round'/>
+      <path d='M 162 128 L 164 155' stroke='#4a3a28' stroke-width='9' stroke-linecap='round'/>
+      <!-- characteristic glasses -->
+      <rect x='88' y='127' width='26' height='16' rx='3' fill='none' stroke='#888' stroke-width='2'/>
+      <rect x='126' y='127' width='26' height='16' rx='3' fill='none' stroke='#888' stroke-width='2'/>
+      <line x1='114' y1='135' x2='126' y2='135' stroke='#888' stroke-width='1.5'/>
+      <line x1='88' y1='135' x2='80' y2='132' stroke='#888' stroke-width='1.5'/>
+      <line x1='152' y1='135' x2='160' y2='132' stroke='#888' stroke-width='1.5'/>
+      <!-- Merkel rhombus hand gesture (signature) -->
+      <path d='M 88 240 L 108 225 L 128 240 L 108 255 Z' fill='none' stroke='#c0c0c0' stroke-width='1.5' opacity='0.7'/>
+      <!-- practical expression -->
+      <path d='M 108 162 L 132 162' stroke='#906050' stroke-width='2' stroke-linecap='round'/>
+      <!-- EU stars emblem -->
+      <circle cx='190' cy='238' r='8' fill='none' stroke='#c0c0c0' stroke-width='1' opacity='0.5'/>
+      <text x='190' y='242' text-anchor='middle' fill='#ffd700' font-size='9' opacity='0.7'>★</text>`
+  },
+  {
+    id:'cixi', name:'慈禧太后', engName:'Empress Dowager Cixi',
+    era:'清朝 · 1835—1908年', style:'权力掌控者',
+    subtitle:'垂帘博弈 · 晚清权力重心',
+    ability:'垂帘博弈', abilityDesc:'以代理人控制实质权力，将自身置于框架之外而非谈判桌上，让对手永远无法直接对抗',
+    book:'《慈禧传信录》',
+    bgTop:'#1a0a2a', bgBot:'#080410', glow:'#9040c0', accent:'#c070f0',
+    nameColor:'#e8c0ff',
+    skinTop:'#f0d8c0', skinBot:'#d8b8a0',
+    coat:'#1a0828',
+    body:`<path d='M 20 320 Q 22 222 70 205 L 170 205 Q 218 222 220 320 Z' fill='#1a0828'/>
+      <!-- Qing imperial dragon robe -->
+      <path d='M 85 230 Q 120 215 155 230 Q 140 222 120 220 Q 100 222 85 230 Z' fill='#9040c0' opacity='0.4'/>
+      <!-- embroidered pattern -->
+      <circle cx='105' cy='245' r='3' fill='#f6c84a' opacity='0.5'/>
+      <circle cx='120' cy='238' r='3' fill='#f6c84a' opacity='0.5'/>
+      <circle cx='135' cy='245' r='3' fill='#f6c84a' opacity='0.5'/>
+      <!-- gold trim at collar -->
+      <path d='M 70 205 Q 120 218 170 205' fill='none' stroke='#f6c84a' stroke-width='2.5'/>`,
+    accessory:`<!-- elaborate Qing headdress (dianzi) -->
+      <!-- base platform -->
+      <rect x='72' y='78' width='96' height='14' rx='3' fill='#1a0828'/>
+      <rect x='72' y='78' width='96' height='14' rx='3' fill='none' stroke='#c070f0' stroke-width='1'/>
+      <!-- phoenix ornaments -->
+      <path d='M 90 78 Q 86 62 96 56 Q 106 52 108 62 Q 110 52 120 48 Q 130 52 132 62 Q 134 52 144 56 Q 154 62 150 78' fill='none' stroke='#f6c84a' stroke-width='2'/>
+      <!-- flowers on headdress -->
+      <circle cx='96' cy='62' r='5' fill='#e83060' opacity='0.8'/>
+      <circle cx='120' cy='54' r='6' fill='#c070f0' opacity='0.8'/>
+      <circle cx='144' cy='62' r='5' fill='#e83060' opacity='0.8'/>
+      <!-- dangling ornaments -->
+      <line x1='86' y1='92' x2='82' y2='115' stroke='#f6c84a' stroke-width='1.5'/>
+      <circle cx='82' cy='118' r='3' fill='#e83060'/>
+      <line x1='154' y1='92' x2='158' y2='115' stroke='#f6c84a' stroke-width='1.5'/>
+      <circle cx='158' cy='118' r='3' fill='#e83060'/>
+      <!-- defined brows - period style -->
+      <path d='M 90 122 Q 102 116 112 120' stroke='#1a0808' stroke-width='2.5' fill='none' stroke-linecap='round'/>
+      <path d='M 128 120 Q 138 116 150 122' stroke='#1a0808' stroke-width='2.5' fill='none' stroke-linecap='round'/>
+      <!-- eyes with kohl -->
+      <ellipse cx='102' cy='130' rx='8' ry='5' fill='#1a0808'/>
+      <ellipse cx='138' cy='130' rx='8' ry='5' fill='#1a0808'/>
+      <!-- lips - period makeup -->
+      <path d='M 110 162 Q 120 168 130 162 Q 120 172 110 162 Z' fill='#c02040'/>`
+  }
+];
+
+// ─────────────────────────────────────────────────────────
+//  BUILD PORTRAITS
+// ─────────────────────────────────────────────────────────
+FEMALES.forEach(d => { d.portrait = buildPortrait(d); });
+
+// ─────────────────────────────────────────────────────────
+//  RENDER CARDS
+// ─────────────────────────────────────────────────────────
+const cardGrid = document.getElementById('cardGrid');
+const skillsGrid = document.getElementById('skillsGrid');
+
+FEMALES.forEach(d => {
+  // card
+  const card = document.createElement('div');
+  card.className = 'mentor-card';
+  card.innerHTML = `<div class="card-inner">
+    <img class="mentor-portrait" src="${d.portrait}" alt="${d.name}">
+    <div class="card-body">
+      <div class="card-rarity">UR · 女性传奇谈判者</div>
+      <div class="card-name">${d.name}</div>
+      <div class="card-eng">${d.engName}</div>
+      <div class="card-era">${d.era}</div>
+      <div class="card-style">${d.style}</div>
+    </div>
+  </div>`;
+  card.onclick = () => openLb(d.portrait, d.name, d.subtitle);
+  cardGrid.appendChild(card);
+
+  // skill row
+  const sk = document.createElement('div');
+  sk.className = 'skill-card';
+  sk.innerHTML = `
+    <div class="skill-portrait-mini"><img src="${d.portrait}" alt="${d.name}"></div>
+    <div class="skill-info">
+      <div class="skill-name">${d.name}</div>
+      <div class="skill-eng">${d.engName} · ${d.era}</div>
+      <div class="skill-tags">
+        <span class="stag ur">UR</span>
+        <span class="stag style">${d.style}</span>
+        <span class="stag era">${d.ability}</span>
+      </div>
+      <div class="skill-ability"><span class="ability-name">专属技能 · ${d.ability}：</span>${d.abilityDesc}</div>
+    </div>`;
+  skillsGrid.appendChild(sk);
+});
+
+// ─────────────────────────────────────────────────────────
+//  LIGHTBOX
+// ─────────────────────────────────────────────────────────
+function openLb(src, name, sub) {
+  document.getElementById('lbImg').src = src;
+  document.getElementById('lbName').textContent = name;
+  document.getElementById('lbSub').textContent = sub;
+  document.getElementById('lb').classList.add('open');
+}
+function closeLb() { document.getElementById('lb').classList.remove('open'); }
+</script>
+</body>
+</html>

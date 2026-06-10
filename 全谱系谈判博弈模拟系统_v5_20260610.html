@@ -1058,6 +1058,17 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .master-rec-jump{font-size:11px;padding:5px 12px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;letter-spacing:.04em}
 .master-rec-jump:hover{filter:brightness(1.15)}
 
+/* 经典场景叙事简报（第一轮显示） */
+.narrative-briefing{margin:10px 0 14px;padding:12px 16px;background:linear-gradient(135deg,rgba(125,188,255,.06),rgba(160,144,192,.04));border:1px solid rgba(125,188,255,.22);border-radius:8px;font-size:12.5px;line-height:1.75}
+.narrative-role{color:#7dbcff;margin-bottom:6px}
+.narrative-role b{color:#fff;font-size:13.5px}
+.narrative-situation{color:#d8e0e8;margin-bottom:6px}
+.narrative-stakes{color:#e8b850;font-size:12px}
+.narrative-stakes b{color:#f6c453}
+
+/* 玩家选项里的话术：在按钮内显示成完整对话 */
+.action-spoken{display:block;color:#e0d8b8;font-size:12px;font-weight:400;margin-top:4px;font-style:italic;line-height:1.5;letter-spacing:.02em}
+
 /* 阶段目标横幅（对局中） */
 .stage-objective-banner{margin:10px 0 12px;padding:10px 14px;background:linear-gradient(90deg,rgba(160,144,192,.14),rgba(160,144,192,.04));border-left:3px solid #c084fc;border-radius:0 6px 6px 0;font-size:12.5px;color:#e8e0f0;line-height:1.6}
 .stage-objective-banner b{color:#c084fc;margin-right:6px}
@@ -4411,6 +4422,657 @@ const Router = {
 
 const CRAM_MAP = { easy: 0, medium: 0, hard: 1, extreme: 2, hell: 3 };
 
+/* ════════════════════════════════════════════════════════════════════════════
+   data/scenario-narratives.js — 经典场景叙事外壳 + 玩家话术包
+   解决"对话机械化"：5 个经典场景 × 6 对手类型 = 30 个情境包。
+   每包含：playerRole（玩家身份）+ situation（情境）+ stakes（利害）+ 每个动作的玩家话术。
+   博弈论数学不变，但选项不再是 [C]合作 而是 "我没什么可补充的"。
+   ════════════════════════════════════════════════════════════════════════════ */
+const SCENARIO_NARRATIVES = {
+  prisoners: {
+    rational: {
+      playerRole: '量化基金合规官',
+      situation: '证监会突击核查可疑大宗交易。监管员把你和策略部负责人陈逻辑分别带到不同会议室，分别问询。',
+      stakes: '双方沉默 → 仅基于公开记录调查（小处分）；你揭露+他沉默 → 你获豁免，他独自承担；反之亦然；双方互相揭露 → 都受处分。',
+      actions: {
+        coop: [
+          '"我没什么可补充的。基金所有决策都有完整流程记录。"',
+          '"我只能按规章回答——这种事应该让数据说话。"',
+        ],
+        defect: [
+          '"如果你们要查那几笔，建议先问策略部为什么在 5 月底集中下单。"',
+          '"我可以提供我观察到的若干异常，前提是先确认我的豁免权。"',
+        ],
+      },
+    },
+    emotional: {
+      playerRole: '创业团队联合创始人',
+      situation: 'VC 给了最后通牒：创始团队必须减员一人，否则撤资。投资人把你和林敏感分别约谈，要每人提交"对方不胜任"的书面陈述。',
+      stakes: '双方都拒绝写 → 公司被撤资归零；你写+他不写 → 他被开除，你留任；反之；双方都写 → 你们两个都被换掉。',
+      actions: {
+        coop: [
+          '"我不会写这种东西。她是我们能走到今天的一半原因。"',
+          '"如果一定要减员，请让我自己走——我不愿意背刺合伙人。"',
+        ],
+        defect: [
+          '"过去半年她的状态确实在下滑——这件事我已经压了很久。"',
+          '"我们做了几个错误决定，是她坚持的。我可以列举。"',
+        ],
+      },
+    },
+    aggressive: {
+      playerRole: '供应商销售总监',
+      situation: '反垄断局突击约谈。你和同区竞争对手钢铁王（涉嫌串标）被分别带到调查室，被要求承认或否认价格协调。',
+      stakes: '双方都否认 → 调查可能搁置；你承认+他否认 → 你获豁免，他被重罚；反之；双方都承认 → 都重罚但减半。',
+      actions: {
+        coop: [
+          '"不存在价格协调。我们公司的报价完全是独立测算。"',
+          '"我对此事没有任何要说的。请给我律师电话。"',
+        ],
+        defect: [
+          '"我可以提供我们之间会议沟通的若干细节，前提是给我宽大处理。"',
+          '"我承认有过非正式接触——但发起方不是我。"',
+        ],
+      },
+    },
+    cooperative: {
+      playerRole: '联合项目主管',
+      situation: '你和和谐李共同负责的项目失败，亏损过亿。董事会成立追责调查组，要求每人提交对方的"决策失误清单"。',
+      stakes: '双方都保护对方 → 各受一次警告；你揭露+他保护 → 他承担主责，你保住职位；反之；双方互揭 → 两人都被降职。',
+      actions: {
+        coop: [
+          '"我不会把锅推给伙伴。我承担与我相关的所有责任。"',
+          '"那些决定是我们共同做的，要罚一起罚。"',
+        ],
+        defect: [
+          '"客观来讲，几个关键节点的判断是他主导的。"',
+          '"我有 3 个时间点的会议纪要可以证明决策路径——他签字了。"',
+        ],
+      },
+    },
+    manipulative: {
+      playerRole: '部门资深员工',
+      situation: '客户机密资料被泄露给竞争对手。HR 和法务把你和共事的影子张分别约谈——你怀疑泄露源是他，但他可能反咬你。',
+      stakes: '双方都沉默 → 调查不了了之；你揭露他+他沉默 → 他被开除，你升职；反之；互相揭露 → 都被开除。',
+      actions: {
+        coop: [
+          '"我不知道泄露源是谁。我能做的就是配合调查。"',
+          '"我建议你们做技术溯源——这个不是凭主观举报能查清的事。"',
+        ],
+        defect: [
+          '"事实上，他在 3 月份拿过这份完整资料的访问权限。"',
+          '"我有他和竞争对手会面的时间戳记录——我现在愿意提供。"',
+        ],
+      },
+    },
+    riskAverse: {
+      playerRole: '投资委员会成员',
+      situation: '投资委员会通过的一笔重大投资亏损过半。董事会要求每位委员单独陈述"哪几位委员力推此项目"。',
+      stakes: '双方都不指认 → 整委员会共同担责（轻）；你指认+他不指认 → 他主责；反之；互相指认 → 都被请出委员会。',
+      actions: {
+        coop: [
+          '"是委员会集体决议，我不会单独指认任何同事。"',
+          '"那个判断当时是基于公开信息，事后归因不公平。"',
+        ],
+        defect: [
+          '"实事求是地说，他在那次会议上的判断比其他人激进很多。"',
+          '"我当时投了反对票，会议记录可以查。"',
+        ],
+      },
+    },
+  },
+
+  trust: {
+    rational: {
+      playerRole: '天使投资人',
+      situation: '陈逻辑是你前同事，现做 AI 数据分析创业。他需要一笔种子资金，承诺按数据模型预测年内 3 倍回报。但你只能拿回他愿意分给你的部分。',
+      stakes: '你投的钱乘以 3 进入他的盘子，他决定返还多少。返还高 = 信任建立；返还低 = 你被截留。',
+      actions: {
+        '10': [
+          '"我全押 10 单位。数据模型如果靠谱，这是最快验证的方式。"',
+          '"我相信你的判断。10 单位全部进。"',
+        ],
+        '7': [
+          '"我投 7。先看这一轮回报，再决定后续。"',
+          '"模型还没经过实盘验证，7 单位是我能承受的最大风险。"',
+        ],
+        '4': [
+          '"先投 4。需要看到一些早期信号才能加码。"',
+          '"我个人对 AI 数据这块持谨慎乐观——投 4 试水。"',
+        ],
+        '0': [
+          '"我暂时不投。我需要看到更多模型外的可信信号。"',
+          '"这一轮我观望——投 0。"',
+        ],
+      },
+    },
+    emotional: {
+      playerRole: '朋友 / 家人',
+      situation: '林敏感是你认识 10 年的好朋友，最近创业失败、家里临时有变。她请你拿出一笔应急资金，承诺好转后加倍归还——但你心里清楚，这种事没有合同保障。',
+      stakes: '你给的钱乘以 3 进入她可支配的额度，她按良心决定归还多少。',
+      actions: {
+        '10': [
+          '"全给你。这种时候不是算账的时候。"',
+          '"我相信你的人。10 单位都拿去吧。"',
+        ],
+        '7': [
+          '"我现在能拿 7 单位出来。其他的我也帮不了。"',
+          '"我留一点应急，给你 7 单位。"',
+        ],
+        '4': [
+          '"我手头不宽裕，先 4 单位救急吧。"',
+          '"我也有家庭——4 单位是我现在能做到的。"',
+        ],
+        '0': [
+          '"对不起，我现在真的没办法。"',
+          '"我想了很久……这次不行。"',
+        ],
+      },
+    },
+    aggressive: {
+      playerRole: '中小供应商负责人',
+      situation: '钢铁王是大客户采购总监，要求你方先垫付一批关键备料款，承诺签约后多倍补偿。但他强硬作风出名，垫了款的可能拿不回来。',
+      stakes: '你垫的钱乘以 3 进入他的盘子，他决定按合同支付多少。',
+      actions: {
+        '10': [
+          '"我全垫。希望这能换来长期合作。"',
+          '"我赌一把——10 单位全部到位。"',
+        ],
+        '7': [
+          '"垫 7。其他金额需要您先打一部分定金。"',
+          '"我能力范围是 7 单位——再多我得请示总部。"',
+        ],
+        '4': [
+          '"先垫 4 单位作为诚意。"',
+          '"4 单位是我的底线。再多请走合同流程。"',
+        ],
+        '0': [
+          '"我们公司流程不支持先垫款。请走合同。"',
+          '"恕难从命——0 垫款是公司纪律。"',
+        ],
+      },
+    },
+    cooperative: {
+      playerRole: '联合项目合伙人',
+      situation: '和谐李提议启动一个联合新业务，需要你先投入启动资金，他负责执行端，按贡献比例分润。这是你们第三次合作。',
+      stakes: '你投的资金乘以 3 是项目盘子，他决定按贡献给你回款多少。',
+      actions: {
+        '10': [
+          '"全投 10。我相信我们的合作惯例。"',
+          '"老搭档了，10 单位投入没问题。"',
+        ],
+        '7': [
+          '"投 7。其他金额我先观察一下项目早期表现。"',
+          '"7 单位起步，后续视情况再加。"',
+        ],
+        '4': [
+          '"先投 4 试水。这个领域我没太多经验。"',
+          '"我谨慎一点——4 单位。"',
+        ],
+        '0': [
+          '"这次我暂时观望，下次合作再说。"',
+          '"投 0。我需要看到更具体的商业计划。"',
+        ],
+      },
+    },
+    manipulative: {
+      playerRole: '新入职管理者',
+      situation: '影子张是公司资深员工。他提议你预付一笔项目运营款，承诺成单后从奖金里返还。他在公司根基深，得罪不起。',
+      stakes: '你预付的钱乘以 3 进入他可支配池，他决定返还多少。',
+      actions: {
+        '10': [
+          '"那行，10 单位我打过去。希望成单顺利。"',
+          '"我相信你的资源——10 单位全到位。"',
+        ],
+        '7': [
+          '"我打 7 单位。剩下的我们走正式财务流程。"',
+          '"7 单位是我的预算上限。"',
+        ],
+        '4': [
+          '"先 4 单位。我需要看到实质进展才能再加。"',
+          '"4 单位作为启动，进展靠你的反馈来证明。"',
+        ],
+        '0': [
+          '"项目支出必须走正式流程，我无法私下预付。"',
+          '"不太合适，0 单位。请走财务审批。"',
+        ],
+      },
+    },
+    riskAverse: {
+      playerRole: '金融顾问',
+      situation: '稳健吴是你的老客户，保守型。他这次罕见地想加仓一只新产品，要求你先用自己账户帮他试投——他事后按收益反馈给你佣金。',
+      stakes: '你投的金额乘以 3 是真实收益盘子，他决定按合约付你佣金多少。',
+      actions: {
+        '10': [
+          '"我帮您全押 10。结果我承担。"',
+          '"10 单位全力以赴。"',
+        ],
+        '7': [
+          '"我投 7 单位。剩余按您的指令我执行。"',
+          '"7 单位是我个人风险舒适区上限。"',
+        ],
+        '4': [
+          '"先 4 单位试水。"',
+          '"4 单位作为样本，我们看看反馈再说。"',
+        ],
+        '0': [
+          '"恕我无法用个人账户操作。请走正式产品申购。"',
+          '"投 0。这种操作合规风险太高。"',
+        ],
+      },
+    },
+  },
+
+  publicgoods: {
+    rational: {
+      playerRole: '开源项目共同维护者',
+      situation: '你和陈逻辑共同维护一个开源数据库项目。每月需要双方投入工时（用"枚"代表小时）维护，共投入的总和乘以 2.2 后平分回馈（社区赞助 + 招聘溢价）。',
+      stakes: '你投入越多 → 社区收益越大但你自己消耗也大；搭便车 → 短期省力但社区可能因项目质量下降而停发赞助。',
+      actions: {
+        '10': [
+          '"我这周投 10 小时，把那个性能瓶颈彻底解决。"',
+          '"全力投入 10——这一波是关键 release。"',
+        ],
+        '7': [
+          '"7 小时，把核心 issue 推进。"',
+          '"我投 7，主线我盯。"',
+        ],
+        '4': [
+          '"我手头有事——4 小时做个 review。"',
+          '"4 小时，做做 PR 评审。"',
+        ],
+        '0': [
+          '"这周我真的腾不出来。0 小时。"',
+          '"我抽不开身——这次先 skip。"',
+        ],
+      },
+    },
+    emotional: {
+      playerRole: '合伙开店店主',
+      situation: '你和林敏感合伙开一家店，每月需要双方投入资金维护（设备、装修、宣传）。共投乘以 2.2 后平分作为下月可用经营预算。',
+      stakes: '投入多 → 店面提升大、客流可能涨；投入少 → 利润少但店面也可能恶化。',
+      actions: {
+        '10': [
+          '"这次我全力投。10 单位，重新装修一下入口。"',
+          '"店开 3 年了，10 单位投进去做一次升级。"',
+        ],
+        '7': [
+          '"我出 7，把灯光和招牌换掉。"',
+          '"投 7——预算紧但该花的还是要花。"',
+        ],
+        '4': [
+          '"我手头紧，先 4 单位做基础维护。"',
+          '"4 单位，维持就好。"',
+        ],
+        '0': [
+          '"这次我真的没办法投。"',
+          '"我账上没钱了。0 单位。"',
+        ],
+      },
+    },
+    aggressive: {
+      playerRole: '同区商家联盟成员',
+      situation: '你和钢铁王（隔壁店）所在街区要重修公共设施（绿化、停车位）。所有商家共同出资乘以 2.2 后用于街区改造，改造提升整条街客流。',
+      stakes: '投入多 → 整街生意都被拉动；投入少 → 别人投的话你也分到红利（搭便车）。',
+      actions: {
+        '10': [
+          '"我出 10。这条街起来了大家都受益。"',
+          '"我带头投 10，希望其他人跟上。"',
+        ],
+        '7': [
+          '"我出 7。其他商家也得动起来。"',
+          '"投 7，看看其他人怎么动。"',
+        ],
+        '4': [
+          '"4 单位作为基本意思。"',
+          '"我出 4——剩下的看其他人。"',
+        ],
+        '0': [
+          '"我不出。让出最多的那家承担。"',
+          '"我观望——0 单位。"',
+        ],
+      },
+    },
+    cooperative: {
+      playerRole: '社区委员会成员',
+      situation: '你和和谐李同在小区业委会，要为公共维修基金筹款。委员们的共投乘以 2.2 后用于电梯/外墙维护，每户均摊收益。',
+      stakes: '基金足 → 设施保养好、房价稳；基金不足 → 长期维护堆积。',
+      actions: {
+        '10': [
+          '"我筹 10。电梯不能再拖了。"',
+          '"我先垫 10，下个月业委会一起谈。"',
+        ],
+        '7': [
+          '"我能拿 7 单位出来。"',
+          '"7 单位——其他业主也得让大家来开会。"',
+        ],
+        '4': [
+          '"4 单位作为基础。"',
+          '"我现在能做的就 4 单位。"',
+        ],
+        '0': [
+          '"我建议先开业主大会，再决定筹多少。"',
+          '"暂时不出——先讨论清楚。"',
+        ],
+      },
+    },
+    manipulative: {
+      playerRole: '部门同事',
+      situation: '你和影子张所在部门要为员工培训共投预算。共投乘以 2.2 后用于外请讲师、买课程，全员受益（也包括影子张作为讲师候选）。',
+      stakes: '投入大 → 培训质量高，团队提升；投入小 → 培训质量差，可能让影子张承包讲师位置。',
+      actions: {
+        '10': [
+          '"我拿出 10 单位。预算可以走外请名师。"',
+          '"我们这次找最好的讲师——投 10。"',
+        ],
+        '7': [
+          '"我能出 7。够找一位中等讲师。"',
+          '"投 7——其余部分让其他同事补。"',
+        ],
+        '4': [
+          '"4 单位作为底线。"',
+          '"4 单位，剩下让人事来想办法。"',
+        ],
+        '0': [
+          '"我不出预算。让公司预算来管。"',
+          '"我不参与——0 单位。"',
+        ],
+      },
+    },
+    riskAverse: {
+      playerRole: '合伙工作室成员',
+      situation: '你和稳健吴合伙的工作室需要定期维护设备和办公空间。共投乘以 2.2 后用于硬件更新、租金溢价，提升整体生产力。',
+      stakes: '投入大 → 工作室能力上升；投入小 → 老化加速，但短期省钱。',
+      actions: {
+        '10': [
+          '"我出 10。设备该换的都换。"',
+          '"投 10——这次一次性升级到位。"',
+        ],
+        '7': [
+          '"投 7，先把最关键的几台机器换了。"',
+          '"7 单位——优先升级核心设备。"',
+        ],
+        '4': [
+          '"先 4 单位做基础维护。"',
+          '"4 单位，保持现状不出问题就行。"',
+        ],
+        '0': [
+          '"我建议这一轮先省着。"',
+          '"我们这一期不投——观察一下市场。"',
+        ],
+      },
+    },
+  },
+
+  bargaining: {
+    rational: {
+      playerRole: '科研采购总监',
+      situation: '你要采购一台精密仪器，对方是设备厂商陈逻辑。仪器真实价值约 60 单位，对方初始要价偏高，你需要逐步议价靠近真实价值。',
+      stakes: '成交价越低你越省钱；但议价过久或破裂，对方可能拒绝供货。',
+      actions: {
+        small: [
+          '"我可以再让一点点——但这是基于数据模型的最大空间。"',
+          '"小幅调整可以，但实质性让步需要看到产品测试数据。"',
+        ],
+        medium: [
+          '"我可以做一次实质性让步——但你也得相应配合。"',
+          '"中等幅度调整，希望换来你方的同等响应。"',
+        ],
+        large: [
+          '"我大幅松口——只希望今天能谈定，不要再来回。"',
+          '"这是大让步——我希望进入闭单流程。"',
+        ],
+        accept: [
+          '"我接受这个价格。我们走签约。"',
+          '"成交。剩下的细节让团队对接。"',
+        ],
+      },
+    },
+    emotional: {
+      playerRole: '家庭购房者',
+      situation: '你要购买一处有家族意义的老房，房主是林敏感（房主祖母遗产）。房屋真实价值约 60 单位，房主开价偏高且有情感执着。',
+      stakes: '价格越低你越省，但议价方式生硬可能让房主撤回卖意。',
+      actions: {
+        small: [
+          '"我理解这房子的意义。这一点点调整希望您能接受。"',
+          '"我们就让这一小步——您看可以吗？"',
+        ],
+        medium: [
+          '"我做一次明显的让步。希望您也能同步。"',
+          '"我退一大步——这是诚意。"',
+        ],
+        large: [
+          '"我大幅靠近你的价格。今天能不能就敲定？"',
+          '"我让到这个程度——希望我们今天就能落定。"',
+        ],
+        accept: [
+          '"好。我接受这个价格。"',
+          '"成交。我们准备过户文件。"',
+        ],
+      },
+    },
+    aggressive: {
+      playerRole: '中型供应商销售总监',
+      situation: '你向钢铁王所在的大客户报价。产品真实价值约 60 单位，对方采购压价激进。',
+      stakes: '价格抗得住 → 利润保住；让步过快 → 既丢利润又被对方记住"可压"。',
+      actions: {
+        small: [
+          '"我可以做小幅调整，但这已经接近成本线。"',
+          '"3 单位让步——这是我能给的极限边际。"',
+        ],
+        medium: [
+          '"我可以让步一档——但下次询价请走 RFQ 流程。"',
+          '"我们让 8 单位——希望换来年度协议。"',
+        ],
+        large: [
+          '"大幅让步——但这意味着我们要重新审视交付节奏。"',
+          '"我让这么多——交期请你方调整。"',
+        ],
+        accept: [
+          '"我接受。请尽快出 PO。"',
+          '"成交，按你这个价。"',
+        ],
+      },
+    },
+    cooperative: {
+      playerRole: '客户经理',
+      situation: '你和老客户和谐李续签框架合同。整体价格点真实价值约 60 单位，对方希望略微下调，你想保持。',
+      stakes: '关系驱动 — 短期价格 vs 长期续约。',
+      actions: {
+        small: [
+          '"我可以让 3 单位——保持合作的诚意。"',
+          '"小幅调整可以，希望我们继续多年的搭档关系。"',
+        ],
+        medium: [
+          '"我让 8 单位——希望我们能锁三年合同。"',
+          '"中等让步，但希望我们扩展服务范围。"',
+        ],
+        large: [
+          '"我大幅让——希望未来在大单上你优先考虑我们。"',
+          '"我做这么大让步，是看好我们的长期合作。"',
+        ],
+        accept: [
+          '"我接受。我们续签。"',
+          '"成交。明天 SOW 发你。"',
+        ],
+      },
+    },
+    manipulative: {
+      playerRole: '二手车买家',
+      situation: '你要买一辆二手车，对方是经销商影子张。市场真实价格约 60 单位，对方初始报价偏高且话术油滑。',
+      stakes: '议价不稳 → 多付钱；强势锚定 → 可能逼对方撤单（但其实他成本压力比表演的低）。',
+      actions: {
+        small: [
+          '"我再加一点点——但这是基于市场比价的合理范围。"',
+          '"3 单位上调——其他细节我们再谈。"',
+        ],
+        medium: [
+          '"我中等让步——但请把那个增值套餐去掉。"',
+          '"我加 8 单位——前提是不要再推销保险。"',
+        ],
+        large: [
+          '"我大幅靠近——今天能不能就提车？"',
+          '"我让到这个数，希望今天就能办手续。"',
+        ],
+        accept: [
+          '"成交，按这个价。"',
+          '"我接受——上 4S 店做检测。"',
+        ],
+      },
+    },
+    riskAverse: {
+      playerRole: '风控顾问报价方',
+      situation: '你向稳健吴所在的金融机构提供风控顾问服务。真实价值约 60 单位，对方需求稳定但预算审批严格。',
+      stakes: '价格定得高 → 拿不到合同；让步过快 → 后续每次都被压。',
+      actions: {
+        small: [
+          '"我做小幅让步——这是基于行业 benchmark 的合理调整。"',
+          '"3 单位的边际调整。"',
+        ],
+        medium: [
+          '"我让 8 单位——希望换来三年合同期。"',
+          '"中等让步，附带服务期延长。"',
+        ],
+        large: [
+          '"大幅让步——但希望签长期框架。"',
+          '"我让到这个程度——希望写进框架协议。"',
+        ],
+        accept: [
+          '"我接受。请你方安排合同。"',
+          '"按这个价签。"',
+        ],
+      },
+    },
+  },
+
+  ultimatum: {
+    rational: {
+      playerRole: '研究院联合发明人',
+      situation: '你和陈逻辑共同发明的一项专利获得 100 单位许可费。许可方要求你们其中一人提出分配方案，另一人接受或拒绝。如果拒绝，许可作废，双方归零。',
+      stakes: '提案太贪 → 对方拒绝双方归零；过让 → 自己白做事。',
+      actions: {
+        propose: {
+          '70': ['"我提议自留 70。这一项的核心模型是我建的。"', '"70 给我——我做了主要架构。"'],
+          '60': ['"自留 60，给你 40。"', '"60/40 — 我贡献略多。"'],
+          '50': ['"五五分。最干净的方案。"', '"50/50。我倾向于不在分钱上多花心思。"'],
+          '40': ['"自留 40，给你 60——你后期推广出力多。"', '"40 给我够了。"'],
+        },
+        respond: {
+          accept: ['"我接受这个方案。"', '"OK，按你说的分。"'],
+          reject: ['"我不接受。这个分配不公平。"', '"拒绝——我们重谈。"'],
+        },
+      },
+    },
+    emotional: {
+      playerRole: '继承人之一',
+      situation: '你和姐妹林敏感共同继承父母留下的 100 单位遗产。律师要求你们其中一人提出方案，另一人接受或拒绝；拒绝则进入诉讼，双方归零。',
+      stakes: '太贪 → 关系崩 + 诉讼归零；过让 → 自己受委屈。',
+      actions: {
+        propose: {
+          '70': ['"我要 70。这些年是我在照顾老人。"', '"我自留 70——理由你心里清楚。"'],
+          '60': ['"60/40。我承担过更多。"', '"自留 60——希望你能理解。"'],
+          '50': ['"50/50。最不伤感情的分法。"', '"对半分。我们不要因为钱伤了情。"'],
+          '40': ['"自留 40——你拿大头。"', '"我让 60 给你——希望我们关系好。"'],
+        },
+        respond: {
+          accept: ['"我接受。我不想为了钱跟你闹。"', '"好。我同意。"'],
+          reject: ['"我不能接受这个分配。"', '"拒绝。我们一起去律师那里。"'],
+        },
+      },
+    },
+    aggressive: {
+      playerRole: '联合中标方',
+      situation: '你和钢铁王所在公司联合中标项目，奖金 100 单位。规则：一方提案，另一方接受或拒绝；拒绝则奖金作废双方归零。',
+      stakes: '激进 → 容易被拒；让步 → 显得软。',
+      actions: {
+        propose: {
+          '70': ['"我要 70。资源和关系都是我那边出的。"', '"70 — 你方贡献是辅助性的。"'],
+          '60': ['"60/40。主导方拿大头。"', '"自留 60，你 40。"'],
+          '50': ['"五五分。这次合作之后我们再算大账。"', '"50/50。下次别这么搞了。"'],
+          '40': ['"自留 40，你 60 — 这是给面子。"', '"40 给我够。"'],
+        },
+        respond: {
+          accept: ['"行。按你说的。"', '"接受。但下次合作得重谈规则。"'],
+          reject: ['"不接受。重新谈，否则一起归零。"', '"拒绝。"'],
+        },
+      },
+    },
+    cooperative: {
+      playerRole: '合伙创业退出方',
+      situation: '你和和谐李创业 8 年，公司被收购获得 100 单位现金对价。需要分账：一方提出方案，另一方接受或拒绝；拒绝则交易告吹（极小概率但有），双方归零。',
+      stakes: '太贪 → 友情破裂；过让 → 自己亏。',
+      actions: {
+        propose: {
+          '70': ['"自留 70。我承担了大部分商业风险。"', '"70 给我——这事我推得多。"'],
+          '60': ['"60/40。我贡献略多一点。"', '"自留 60。"'],
+          '50': ['"五五分。我们一起做的，一起分。"', '"50/50。这是最体面的方案。"'],
+          '40': ['"自留 40。你拿大头。"', '"40 给我——你后期成长比我快。"'],
+        },
+        respond: {
+          accept: ['"我接受。多年伙伴，不必为这点争。"', '"按你方案来。"'],
+          reject: ['"我无法接受这个分配。"', '"拒绝。希望我们能找到平衡点。"'],
+        },
+      },
+    },
+    manipulative: {
+      playerRole: '部门同事',
+      situation: '你和影子张共同操作一笔客户回扣 100 单位。需要一人提分配方案，另一人接受或拒绝；拒绝则金额上缴公司、双方归零。',
+      stakes: '太贪 → 对方报复性拒绝；过让 → 被永远定位为"软"。',
+      actions: {
+        propose: {
+          '70': ['"我自留 70。这件事的执行风险是我担的。"', '"70 给我——你只是搭手。"'],
+          '60': ['"60/40。我主操作。"', '"自留 60。"'],
+          '50': ['"五五分。最稳妥。"', '"50/50 — 谁也别多想。"'],
+          '40': ['"自留 40，你拿 60。"', '"40 给我够了。"'],
+        },
+        respond: {
+          accept: ['"接受。下次的事再谈。"', '"按这个分。"'],
+          reject: ['"不接受。重新分。"', '"拒绝。"'],
+        },
+      },
+    },
+    riskAverse: {
+      playerRole: '联合投资退出方',
+      situation: '你和稳健吴联合投资的一笔 100 单位收益到账。需分账：一人提案，一人接受或拒绝；拒绝则双方归零。',
+      stakes: '贪 → 对方拒；让 → 自亏。',
+      actions: {
+        propose: {
+          '70': ['"自留 70——我承担了大部分尽调工作。"', '"70 — 我出力多。"'],
+          '60': ['"60/40——主导方略多。"', '"自留 60。"'],
+          '50': ['"五五。最稳。"', '"50/50。"'],
+          '40': ['"40 给我。你拿大头。"', '"自留 40——你尽调也辛苦。"'],
+        },
+        respond: {
+          accept: ['"接受。"', '"OK。"'],
+          reject: ['"不接受。"', '"拒绝——风险收益不匹配。"'],
+        },
+      },
+    },
+  },
+};
+
+function getNarrative(scenarioKey, oppId) {
+  const pack = SCENARIO_NARRATIVES[scenarioKey];
+  if (!pack) return null;
+  return pack[oppId] || null;
+}
+
+// 按回合 deterministically 选一个 sample（避免每次重渲染都换台词）
+function pickActionLine(samples, round) {
+  if (!samples || !samples.length) return '';
+  return samples[round % samples.length];
+}
+
+// 渲染情境简报面板（场景类的 _render 在 round 0 时调用）
+function renderNarrativeBriefing(narr, opp) {
+  if (!narr) return '';
+  return `<div class="narrative-briefing">
+    <div class="narrative-role">🎭 你的身份：<b>${narr.playerRole}</b></div>
+    <div class="narrative-situation">📍 ${narr.situation}</div>
+    <div class="narrative-stakes">⚖ <b>利害关系：</b>${narr.stakes}</div>
+  </div>`;
+}
+
 class BaseScenario {
   constructor(opp) {
     this.opp = opp;
@@ -4699,13 +5361,20 @@ class PrisonersDilemma extends BaseScenario {
         return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) +
                C.dialogBubble(l.answerText, 'player', '你的回应');
       }
-      const pText = l.player === 'coop' ? '选择合作' : '选择背叛';
-      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}${l.opp === 'coop' ? '合作' : '背叛'} (+${l.pScore} vs +${l.oScore})<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
-      return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
+      const narr_ = getNarrative('prisoners', opp.id);
+      const pSpoken = l.spokenLine || (l.player === 'coop' ? '选择合作' : '选择背叛');
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}${l.opp === 'coop' ? '保持沉默 (合作)' : '揭露你 (背叛)'} (+${l.pScore} vs +${l.oScore})<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
+      return C.dialogBubble(pSpoken, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
+
+    const narr = getNarrative('prisoners', opp.id);
+    const briefing = (this.round === 0 && narr) ? renderNarrativeBriefing(narr, opp) : '';
+    const coopLine = narr ? pickActionLine(narr.actions.coop, this.round) : '保持沉默，减少双方损失';
+    const defectLine = narr ? pickActionLine(narr.actions.defect, this.round) : '出卖对方，追求个人最大利益';
 
     this.emitRender(`
       ${C.gameHeader(`囚徒困境 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${briefing}
       ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的分数')}
@@ -4715,9 +5384,9 @@ class PrisonersDilemma extends BaseScenario {
       ${C.relationshipPanel(opp)}
       ${situationHtml}
       ${questionHtml}
-      ${blockNormal ? '' : C.panel('选择你的策略',
-        C.actionBtn('choice', 'coop', '<b>[C] 合作</b> — 保持沉默，减少双方损失（理性结果 +3）') +
-        C.actionBtn('choice', 'defect', '<b>[D] 背叛</b> — 出卖对方，追求个人最大利益（最大 +5）') +
+      ${blockNormal ? '' : C.panel('该你说话了',
+        C.actionBtn('choice', 'coop', `<b>[沉默 / 合作]</b><br><span class="action-spoken">${coopLine}</span>`) +
+        C.actionBtn('choice', 'defect', `<b>[揭露 / 背叛]</b><br><span class="action-spoken">${defectLine}</span>`) +
         this.peekControls())}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
@@ -4741,7 +5410,9 @@ class PrisonersDilemma extends BaseScenario {
       reputation: loadReputation(this.opp.id), round: this.round,
       exposed: Memory.get(this.opp.id).exposureScore >= 2,
     });
-    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood, line });
+    const narr_ = getNarrative('prisoners', this.opp.id);
+    const spokenLine = narr_ ? pickActionLine(narr_.actions[value], this.round) : null;
+    this.log.push({ round: this.round + 1, player: value, opp: oppChoice, pScore: ps, oScore: os, reason, mood, line, spokenLine });
     // 观察玩家本轮行为，更新记忆与情绪
     OpponentAI.observe(this.opp.id, { coop: value === 'coop' });
     this.round += 1;
@@ -4804,10 +5475,16 @@ class UltimatumGame extends BaseScenario {
       if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
       if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
       const res = l.accepted ? `<span style="color:var(--green)">✓ 接受</span>` : `<span style="color:var(--red)">✗ 拒绝</span>`;
-      return C.dialogBubble(`提案 我方 ${l.myOffer} / 对方 ${l.theirOffer} → ${res}`, 'system', `第${l.round}轮`);
+      const mySide = l.spokenLine ? l.spokenLine : `提案 我方 ${l.myOffer} / 对方 ${l.theirOffer}`;
+      return C.dialogBubble(`${mySide} → ${res}`, 'system', `第${l.round}轮`);
     }).join('');
 
+    const narrU = getNarrative('ultimatum', opp.id);
+    const briefingU = (this.round === 0 && narrU) ? renderNarrativeBriefing(narrU, opp) : '';
+    const uLine = (group, k) => narrU ? pickActionLine(narrU.actions[group][k], this.round) : '';
+
     const head = `${C.gameHeader(`最后通牒博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${briefingU}
       ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
@@ -4824,11 +5501,11 @@ class UltimatumGame extends BaseScenario {
     }
     if (this._isProposer()) {
       this.emitRender(`${head}
-        ${C.panel('提出你的分配方案（给自己保留多少？）',
-          C.actionBtn('propose', '70', '<b>[激进]</b> 保留 70元，给对方 30元') +
-          C.actionBtn('propose', '60', '<b>[偏强]</b> 保留 60元，给对方 40元') +
-          C.actionBtn('propose', '50', '<b>[公平]</b> 保留 50元，给对方 50元') +
-          C.actionBtn('propose', '40', '<b>[让步]</b> 保留 40元，给对方 60元'))}
+        ${C.panel('该你提出分配方案了',
+          C.actionBtn('propose', '70', `<b>[激进 · 自留 70 给对方 30]</b><br><span class="action-spoken">${uLine('propose', '70')}</span>`) +
+          C.actionBtn('propose', '60', `<b>[偏强 · 60/40]</b><br><span class="action-spoken">${uLine('propose', '60')}</span>`) +
+          C.actionBtn('propose', '50', `<b>[公平 · 50/50]</b><br><span class="action-spoken">${uLine('propose', '50')}</span>`) +
+          C.actionBtn('propose', '40', `<b>[让步 · 自留 40 给对方 60]</b><br><span class="action-spoken">${uLine('propose', '40')}</span>`))}
         ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     } else if (this.pendingOffer == null) {
       this.emitRender(`${head}
@@ -4844,9 +5521,9 @@ class UltimatumGame extends BaseScenario {
       const give = TOTAL - keep;
       this.emitRender(`${head}
         ${C.hint(`${opp.name} 提议：<b style="color:var(--cyan)">给您 ${give} 元，自己保留 ${keep} 元</b>。`)}
-        ${C.panel('您的决定',
-          C.actionBtn('respond', 'accept', '<b>[接受]</b> 接受方案，各得所得') +
-          C.actionBtn('respond', 'reject', '<b>[拒绝]</b> 拒绝方案，双方得 0'))}
+        ${C.panel('该你回应了',
+          C.actionBtn('respond', 'accept', `<b>[接受 · 双方各得所得]</b><br><span class="action-spoken">${uLine('respond', 'accept')}</span>`) +
+          C.actionBtn('respond', 'reject', `<b>[拒绝 · 双方归零]</b><br><span class="action-spoken">${uLine('respond', 'reject')}</span>`))}
         ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}`);
     }
   }
@@ -4878,11 +5555,18 @@ class UltimatumGame extends BaseScenario {
     }
     this.playerScore += myGain;
     this.oppScore += oppGain;
+    const narrU_ = getNarrative('ultimatum', this.opp.id);
+    let uSpoken = null;
+    if (narrU_) {
+      if (isMyProposal) uSpoken = pickActionLine(narrU_.actions.propose[String(myKeep)], this.round);
+      else uSpoken = pickActionLine(narrU_.actions.respond[accepted ? 'accept' : 'reject'], this.round);
+    }
     this.log.push({
       round: this.round + 1,
       myOffer: isMyProposal ? myKeep : theirShare,
       theirOffer: isMyProposal ? theirShare : myKeep,
       accepted,
+      spokenLine: uSpoken,
     });
     this.round += 1;
     // 可能触发反问
@@ -4937,13 +5621,18 @@ class TrustGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
       if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
-      const pText = `投入 ${l.invested} 枚`;
+      const pText = l.spokenLine || `投入 ${l.invested} 枚`;
       const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}返还 ${l.returned} 枚（净收益 ${l.myNet >= 0 ? '+' : ''}${l.myNet}）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
+    const narrT = getNarrative('trust', opp.id);
+    const briefingT = (this.round === 0 && narrT) ? renderNarrativeBriefing(narrT, opp) : '';
+    const tLine = (k) => narrT ? pickActionLine(narrT.actions[k], this.round) : '';
+
     this.emitRender(`
       ${C.gameHeader(`信任博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${briefingT}
       ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的总分')}
@@ -4953,11 +5642,11 @@ class TrustGame extends BaseScenario {
       ${C.relationshipPanel(opp)}
       ${situationHtml}
       ${questionHtml}
-      ${blockNormal ? '' : C.panel('选择投入金额（总共 10 枚）',
-        C.actionBtn('invest', '10', '<b>[全力信任]</b> 投入 10枚 → 对方收到 30枚') +
-        C.actionBtn('invest', '7', '<b>[高度信任]</b> 投入 7枚 → 对方收到 21枚') +
-        C.actionBtn('invest', '4', '<b>[适度信任]</b> 投入 4枚 → 对方收到 12枚') +
-        C.actionBtn('invest', '0', '<b>[零信任]</b> 投入 0枚 → 保留所有筹码') +
+      ${blockNormal ? '' : C.panel('该你说话了（投入额 = 你的信任程度）',
+        C.actionBtn('invest', '10', `<b>[全力信任 · 投 10]</b><br><span class="action-spoken">${tLine('10')}</span>`) +
+        C.actionBtn('invest', '7', `<b>[高度信任 · 投 7]</b><br><span class="action-spoken">${tLine('7')}</span>`) +
+        C.actionBtn('invest', '4', `<b>[适度信任 · 投 4]</b><br><span class="action-spoken">${tLine('4')}</span>`) +
+        C.actionBtn('invest', '0', `<b>[零信任 · 投 0]</b><br><span class="action-spoken">${tLine('0')}</span>`) +
         this.peekControls())}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
@@ -4981,7 +5670,9 @@ class TrustGame extends BaseScenario {
       mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
       exposed: Memory.get(this.opp.id).exposureScore >= 2,
     });
-    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood, line });
+    const narrT_ = getNarrative('trust', this.opp.id);
+    const tSpoken = narrT_ ? pickActionLine(narrT_.actions[String(amount)], this.round) : null;
+    this.log.push({ round: this.round + 1, invested: amount, returned, myNet, reason, mood, line, spokenLine: tSpoken });
     this.round += 1;
     if (this.round < this.rounds && this.round >= 1) {
       if (this.maybeAskCounterQuestion('invest', value)) return;
@@ -5049,30 +5740,34 @@ class BargainingGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
       if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
-      const pText = `出价 ${l.my} 元`;
+      const pText = l.spokenLine ? `${l.spokenLine}<br><span style="color:var(--dim);font-size:10px">出价 ${l.my} 元</span>` : `出价 ${l.my} 元`;
       const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}要价 ${l.opp} 元（差距 ${l.gap} 元）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
+    const narrB = getNarrative('bargaining', opp.id);
+    const briefingB = (this.round === 0 && narrB) ? renderNarrativeBriefing(narrB, opp) : '';
+    const bLine = (k) => narrB ? pickActionLine(narrB.actions[k], this.round) : '';
+
     this.emitRender(`
       ${C.gameHeader(`商业谈判 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${briefingB}
       ${C.roundTimeline(this.log, this.rounds, this.round)}
       ${this.experienceBanner()}
       ${C.relationshipPanel(opp)}
-      ${C.panel('谈判状态',
-        C.infoRow('商品真实价值', '<span style="color:var(--dim)">约 60 元（双方均未知）</span>') +
-        C.infoRow('您的当前出价', `<span style="color:var(--green)">${cur} 元</span>`) +
+      ${C.panel('当前报价',
+        C.infoRow('您的出价', `<span style="color:var(--green)">${cur} 元</span>`) +
         C.infoRow(`${opp.name} 要价`, `<span style="color:var(--red)">${this.oppOffer} 元</span>`) +
         C.infoRow('差距', `<span style="color:var(--yellow)">${this.oppOffer - cur} 元</span>`))}
       ${this.lastReason ? C.hint(`${opp.name} 心态：${this.lastReason}`, 'purple') : ''}
       ${cramHtml}
       ${situationHtml}
       ${questionHtml}
-      ${blockNormal ? '' : C.panel(`您的出价策略（第 ${this.round + 1} 轮）`,
-        C.actionBtn('offer', String(cur + 3), `<b>[小幅让步]</b> 提价至 ${cur + 3} 元（+3）`) +
-        C.actionBtn('offer', String(cur + 8), `<b>[适度让步]</b> 提价至 ${cur + 8} 元（+8）`) +
-        C.actionBtn('offer', String(cur + 15), `<b>[大幅让步]</b> 提价至 ${cur + 15} 元（+15）`) +
-        C.actionBtn('accept', String(this.oppOffer), `<b>[接受对方价格]</b> 以 ${this.oppOffer} 元成交`, 'btn-green') +
+      ${blockNormal ? '' : C.panel(`该你说话了（第 ${this.round + 1} 轮）`,
+        C.actionBtn('offer', String(cur + 3), `<b>[小幅让步 · +3 → ${cur + 3} 元]</b><br><span class="action-spoken">${bLine('small')}</span>`) +
+        C.actionBtn('offer', String(cur + 8), `<b>[适度让步 · +8 → ${cur + 8} 元]</b><br><span class="action-spoken">${bLine('medium')}</span>`) +
+        C.actionBtn('offer', String(cur + 15), `<b>[大幅让步 · +15 → ${cur + 15} 元]</b><br><span class="action-spoken">${bLine('large')}</span>`) +
+        C.actionBtn('accept', String(this.oppOffer), `<b>[接受成交 · ${this.oppOffer} 元]</b><br><span class="action-spoken">${bLine('accept')}</span>`, 'btn-green') +
         this.peekControls())}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
@@ -5117,12 +5812,18 @@ class BargainingGame extends BaseScenario {
       mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
     });
 
+    const prevMy = this.log.length ? this.log[this.log.length - 1].my : this.myAnchor;
+    const delta = offer - prevMy;
+    const bKey = delta >= 12 ? 'large' : delta >= 6 ? 'medium' : 'small';
+    const narrB_ = getNarrative('bargaining', this.opp.id);
+    const bSpoken = narrB_ ? pickActionLine(narrB_.actions[bKey], this.round) : null;
+
     if (newOpp <= offer || newOpp <= this.trueVal) {
-      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood, line });
+      this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood, line, spokenLine: bSpoken });
       this._deal(Math.round((offer + this.oppOffer) / 2));
       return;
     }
-    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood, line });
+    this.log.push({ round: this.round + 1, my: offer, opp: this.oppOffer, gap: this.oppOffer - offer, reason, mood, line, spokenLine: bSpoken });
     this.oppOffer = newOpp;
     this.round += 1;
 
@@ -5370,13 +6071,18 @@ class PublicGoodsGame extends BaseScenario {
     const logHtml = this.log.map((l) => {
       if (l.systemEvent) return C.dialogBubble(`【局势卡】${l.eventTitle} → ${l.choiceText}`, 'system', `第${l.round}轮`);
       if (l.counterQuestion) return C.dialogBubble(l.questionText, 'ai', `${opp.name} 追问`) + C.dialogBubble(l.answerText, 'player', '你的回应');
-      const pText = `贡献 ${l.my} 枚`;
+      const pText = l.spokenLine || `贡献 ${l.my} 枚`;
       const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}贡献 ${l.opp} 枚（公共池 ${l.pool}，各得 ${l.share}）<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pText, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
+    const narrP = getNarrative('publicgoods', opp.id);
+    const briefingP = (this.round === 0 && narrP) ? renderNarrativeBriefing(narrP, opp) : '';
+    const pLine = (k) => narrP ? pickActionLine(narrP.actions[k], this.round) : '';
+
     this.emitRender(`
       ${C.gameHeader(`公共品博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
+      ${briefingP}
       ${C.roundTimeline(this.log, this.rounds, this.round)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '您的余额')}
@@ -5386,11 +6092,11 @@ class PublicGoodsGame extends BaseScenario {
       ${C.relationshipPanel(opp)}
       ${situationHtml}
       ${questionHtml}
-      ${blockNormal ? '' : C.panel('选择贡献数量',
-        C.actionBtn('contribute', '10', '<b>[全力贡献]</b> 贡献 10枚 — 最大化公共利益') +
-        C.actionBtn('contribute', '7', '<b>[高度合作]</b> 贡献 7枚 — 偏向集体') +
-        C.actionBtn('contribute', '4', '<b>[适度参与]</b> 贡献 4枚 — 平衡策略') +
-        C.actionBtn('contribute', '0', '<b>[搭便车]</b> 贡献 0枚 — 最大化个人利益') +
+      ${blockNormal ? '' : C.panel('该你说话了（贡献额 = 你的合作意愿）',
+        C.actionBtn('contribute', '10', `<b>[全力贡献 · 10]</b><br><span class="action-spoken">${pLine('10')}</span>`) +
+        C.actionBtn('contribute', '7', `<b>[高度合作 · 7]</b><br><span class="action-spoken">${pLine('7')}</span>`) +
+        C.actionBtn('contribute', '4', `<b>[适度参与 · 4]</b><br><span class="action-spoken">${pLine('4')}</span>`) +
+        C.actionBtn('contribute', '0', `<b>[搭便车 · 0]</b><br><span class="action-spoken">${pLine('0')}</span>`) +
         this.peekControls())}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
@@ -5412,7 +6118,9 @@ class PublicGoodsGame extends BaseScenario {
       action: amount >= 5 ? 'coop' : amount <= 1 ? 'firm' : '',
       mood, memory: Memory.get(this.opp.id), reputation: loadReputation(this.opp.id), round: this.round,
     });
-    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood, line });
+    const narrP_ = getNarrative('publicgoods', this.opp.id);
+    const pSpoken = narrP_ ? pickActionLine(narrP_.actions[String(amount)], this.round) : null;
+    this.log.push({ round: this.round + 1, my: amount, opp: oppContrib, pool: Math.round(pool), share, reason, mood, line, spokenLine: pSpoken });
     this.round += 1;
     if (this.round < this.rounds && this.round >= 1) {
       if (this.maybeAskCounterQuestion('contribute', value)) return;

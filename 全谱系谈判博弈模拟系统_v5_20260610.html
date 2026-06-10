@@ -721,6 +721,11 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .sk-status-shard{color:var(--purple)}
 .sk-status-pack{color:var(--sr,#ffd166)}
 .sk-status-pity{color:var(--dim);font-size:10px;margin-left:auto}
+.sk-rarity-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sk-rf-btn{padding:4px 11px;font-size:11px;font-weight:bold;border-radius:12px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:var(--dim);transition:all .18s;font-family:inherit;letter-spacing:.04em}
+.sk-rf-btn.active,.sk-rf-btn:hover{background:rgba(var(--rf-color,200,200,200),.15);border-color:var(--rf-color,#aaa);color:#fff}
+.sk-rf-btn[data-sk-filter="ALL"].active{background:rgba(180,180,255,.15);border-color:#aabcff;color:#aabcff}
+.sk-section{transition:opacity .15s}
 
 /* ── 卡片本体（Q 版头像 + 镭射边框 + 三段式） ──────────────────────── */
 @keyframes sk-foil-rotate{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
@@ -1519,7 +1524,9 @@ function getRank(total, wins) {
 // Trump Boss 解锁条件：宗师级 + 终局挑战 / 地狱级难度
 function isGrandMaster(player) {
   if (!player) return false;
-  return getRank(player.total, player.wins) === '宗师级';
+  const wr = player.total > 0 ? player.wins / player.total : 0;
+  // 平滑解锁曲线：15局60%胜率以上即可进入高难度与Boss
+  return player.total >= 15 && wr >= 0.6;
 }
 
 function canUnlockBoss(player, difficulty) {
@@ -5871,7 +5878,7 @@ function renderMainMenu() {
   if (canUnlockBoss(p, difficulty)) {
     bossHint = `<div class="hint hint-yellow" style="font-size:11px;text-align:center">🔓 <b>终局挑战已开启</b>：在场景训练中选择「终局挑战」难度挑战隐藏 Boss。</div>`;
   } else if (isGrandMaster(p)) {
-    bossHint = `<div class="hint hint-cyan" style="font-size:11px;text-align:center">🏆 <b>宗师级</b>达成！进入场景训练并选择「终局挑战」难度解锁隐藏 Boss。</div>`;
+    bossHint = `<div class="hint hint-cyan" style="font-size:11px;text-align:center">🏆 <b>高级谈判者</b>达成！进入对战训练并选择「终局挑战」难度解锁隐藏 Boss。</div>`;
   }
 
   // 新手训练路径推荐（前 3 局显示）
@@ -6047,9 +6054,9 @@ function renderOpponentSelect() {
   } else if (unlocked) {
     hintHtml = C.hint('🔓 <b>终局挑战已开启</b>：隐藏 Boss 可选，展示你的宗师实力。', 'yellow');
   } else if (grandMaster) {
-    hintHtml = C.hint('你已达到 <b>宗师级</b>，选择「终局挑战」或「地狱级」解锁隐藏 Boss。', 'cyan');
+    hintHtml = C.hint('你已达到<b>高级谈判者</b>，选择「终局挑战」或「地狱级」解锁隐藏 Boss。', 'cyan');
   } else {
-    hintHtml = C.hint('隐藏 Boss 解锁条件：军衔 <b>宗师级</b> + <b>终局挑战</b>（或地狱级）难度。', 'purple');
+    hintHtml = C.hint('隐藏 Boss 解锁条件：<b>15局 · 60%+ 胜率</b> + <b>终局挑战</b>（或地狱级）难度。', 'purple');
   }
 
   return `
@@ -8369,7 +8376,7 @@ const NEGOTIATION_ARCS = [
   subtitle: '最高难度 Boss 链',
   icon: '👹',
   desc: '对手是一位经验、资本、媒体、时间都不在你这边的极限交易者。你将连续面对极端锚定、媒体施压、反复推翻共识、深夜最后通牒。',
-  unlock: { minRank: '宗师级', minSessions: 0, difficulty: ['extreme', 'hell'], bossMode: true },
+  unlock: { minRank: '博弈大师', minSessions: 0, difficulty: ['extreme', 'hell'], bossMode: true },
   initialState: {
     leverage: 30,
     publicPressure: 70,
@@ -11461,6 +11468,17 @@ renderSkillCards.afterRender = function (params) {
 };
 
 function bindSkillCardsTabEvents(params) {
+  // 稀有度筛选
+  document.querySelectorAll('[data-sk-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const rarity = btn.getAttribute('data-sk-filter');
+      document.querySelectorAll('[data-sk-filter]').forEach((b) =>
+        b.classList.toggle('active', b.getAttribute('data-sk-filter') === rarity));
+      document.querySelectorAll('[data-sk-section]').forEach((s) => {
+        s.style.display = rarity === 'ALL' || s.getAttribute('data-sk-section') === rarity ? '' : 'none';
+      });
+    });
+  });
   // 开包
   document.querySelectorAll('[data-sk-open-pack]').forEach((el) => {
     el.addEventListener('click', () => {
@@ -11507,6 +11525,14 @@ function bindSkillCardsTabEvents(params) {
 function renderSkillAlbumTab(player) {
   const owned = new Set(player.skillCardCollection || []);
   const dups = player.skillCardDuplicates || {};
+  const filterBar = `
+    <div class="sk-rarity-filter" id="sk-rarity-filter">
+      <button class="sk-rf-btn active" data-sk-filter="ALL">全部</button>
+      ${SKILL_RARITY_DISPLAY.map((r) => {
+        const cfg = BLINDBOX_CONFIG.rarities[r];
+        return `<button class="sk-rf-btn" data-sk-filter="${r}" style="--rf-color:${cfg.color}">${r}</button>`;
+      }).join('')}
+    </div>`;
   const sections = SKILL_RARITY_DISPLAY.map((rarity) => {
     const group = SKILL_CARDS.filter((c) => c.rarity === rarity);
     if (!group.length) return '';
@@ -11514,13 +11540,15 @@ function renderSkillAlbumTab(player) {
     const ownedCount = group.filter((c) => owned.has(c.id)).length;
     const cards = group.map((c) => renderSkillCardTile(c, owned.has(c.id), dups[c.id] || 0)).join('');
     return `
-      <div class="sk-section-head" style="--card-color:${cfg.color}">
-        ◆ ${rarity} · ${cfg.label}
-        <span class="sk-section-prog">${ownedCount} / ${group.length}</span>
-      </div>
-      <div class="sk-grid">${cards}</div>`;
+      <div class="sk-section" data-sk-section="${rarity}">
+        <div class="sk-section-head" style="--card-color:${cfg.color}">
+          ◆ ${rarity} · ${cfg.label}
+          <span class="sk-section-prog">${ownedCount} / ${group.length}</span>
+        </div>
+        <div class="sk-grid">${cards}</div>
+      </div>`;
   }).join('');
-  return sections;
+  return filterBar + sections;
 }
 
 function renderSkillCardTile(card, isOwned, dupCount) {

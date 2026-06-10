@@ -1117,6 +1117,74 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .pressure-toggle input:checked~.pressure-toggle-label{color:#ff8888}
 .pressure-toggle-hint{font-size:11px;color:var(--dim);flex:1 1 100%;margin-left:50px}
 
+/* ═══ P0-P3 体验优化 ═══ */
+/* P0 结算页 Tier 折叠面板 */
+.rs-fold{margin:0 0 10px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(0,0,0,.15);overflow:hidden}
+.rs-fold>summary{cursor:pointer;padding:10px 14px;font-size:12.5px;font-weight:bold;color:#c8d4e8;letter-spacing:.03em;list-style:none;user-select:none;transition:background .15s}
+.rs-fold>summary::-webkit-details-marker{display:none}
+.rs-fold>summary::before{content:'▸';display:inline-block;margin-right:8px;color:var(--dim);transition:transform .2s}
+.rs-fold[open]>summary::before{transform:rotate(90deg);color:#7dbcff}
+.rs-fold>summary:hover{background:rgba(255,255,255,.04)}
+.rs-fold-body{padding:4px 12px 10px}
+
+/* P0 技巧升档全屏模态 */
+.levelup-modal-overlay{position:fixed;inset:0;background:rgba(4,6,14,.88);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;animation:lv-fade-in .3s ease}
+@keyframes lv-fade-in{from{opacity:0}to{opacity:1}}
+.levelup-modal{position:relative;text-align:center;padding:44px 50px;background:linear-gradient(165deg,#1a1530,#0a0816);border:1px solid #f6c453;border-radius:16px;box-shadow:0 0 60px rgba(246,196,83,.35);max-width:420px;animation:lv-pop .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes lv-pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.levelup-rays{position:absolute;inset:-40px;background:conic-gradient(from 0deg,transparent 0deg,rgba(246,196,83,.08) 20deg,transparent 40deg,rgba(246,196,83,.08) 60deg,transparent 80deg,rgba(246,196,83,.08) 100deg,transparent 120deg,rgba(246,196,83,.08) 140deg,transparent 160deg,rgba(246,196,83,.08) 180deg,transparent 200deg,rgba(246,196,83,.08) 220deg,transparent 240deg,rgba(246,196,83,.08) 260deg,transparent 280deg,rgba(246,196,83,.08) 300deg,transparent 320deg,rgba(246,196,83,.08) 340deg,transparent 360deg);animation:lv-spin 14s linear infinite;pointer-events:none;border-radius:50%}
+@keyframes lv-spin{to{transform:rotate(360deg)}}
+.levelup-icon-big{font-size:58px;margin-bottom:8px;position:relative;animation:lv-bounce 1.4s ease-in-out infinite}
+@keyframes lv-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.levelup-title-big{font-size:13px;color:#f6c453;letter-spacing:.4em;font-weight:bold;margin-bottom:8px;position:relative}
+.levelup-tech-name{font-size:24px;font-weight:bold;color:#fff;margin-bottom:14px;position:relative}
+.levelup-tier-shift{display:flex;align-items:center;justify-content:center;gap:14px;font-size:16px;margin-bottom:14px;position:relative}
+.levelup-from{color:var(--dim)}
+.levelup-arrow{color:#f6c453;font-size:20px}
+.levelup-to{font-weight:bold;font-size:20px;text-shadow:0 0 16px currentColor}
+.levelup-unlock{font-size:12.5px;color:#ffd9a0;background:rgba(246,196,83,.1);border:1px solid rgba(246,196,83,.3);border-radius:6px;padding:8px 14px;margin-bottom:18px;line-height:1.6;position:relative}
+.levelup-close{position:relative;min-width:120px}
+
+/* P1 连胜横幅 */
+.streak-banner{margin:0 0 12px;padding:10px 16px;border-radius:8px;font-size:13.5px;text-align:center;letter-spacing:.03em}
+.streak-banner.streak-up{background:linear-gradient(90deg,rgba(255,120,40,.16),rgba(246,196,83,.08));border:1px solid rgba(255,140,50,.45);color:#ffc890}
+.streak-banner.streak-up b{font-size:17px;color:#ff9a40}
+.streak-banner.streak-broken{background:rgba(120,120,140,.1);border:1px solid rgba(150,150,170,.3);color:#a8a8c0}
+.streak-pb{font-size:10px;background:#ff9a40;color:#1a0e04;border-radius:8px;padding:1px 8px;font-weight:bold;margin-left:6px;vertical-align:2px}
+
+/* P3 今日挑战横幅（结算页） */
+.daily-challenge-banner{margin:0 0 12px;padding:12px 16px;border-radius:8px;background:linear-gradient(135deg,rgba(126,181,90,.14),rgba(0,0,0,.2));border:1px solid #7eb55a;color:#c8e8b0;font-size:13px;text-align:center;line-height:1.7;animation:levelup-glow 2.4s ease-in-out infinite}
+.dc-reward{font-size:11.5px;color:#9fd080}
+
+/* P1 主菜单日常活力 widget */
+.daily-widget{margin:0 0 12px;padding:10px 14px;background:linear-gradient(135deg,rgba(125,188,255,.05),rgba(0,0,0,.18));border:1px solid rgba(125,188,255,.18);border-radius:8px}
+.dw-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.dw-chips:empty{display:none;margin:0}
+.dw-chip{font-size:11px;font-weight:bold;padding:3px 11px;border-radius:12px;letter-spacing:.03em}
+.dw-streak{background:rgba(255,140,50,.15);color:#ff9a40;border:1px solid rgba(255,140,50,.4)}
+.dw-days{background:rgba(125,188,255,.12);color:#7dbcff;border:1px solid rgba(125,188,255,.35)}
+.dw-first{background:rgba(192,132,252,.12);color:#c084fc;border:1px solid rgba(192,132,252,.4);animation:dw-shimmer 2.2s ease-in-out infinite}
+@keyframes dw-shimmer{0%,100%{opacity:1}50%{opacity:.65}}
+.dw-challenge{font-size:12px;color:#d0d8e8;line-height:1.6}
+.dw-challenge b{color:#7eb55a}
+.dw-challenge.done{opacity:.65}
+.dw-done-tag{color:#7eb55a;font-weight:bold;margin-left:8px;font-size:11px}
+.dw-reward-tag{display:inline-block;color:#e8b850;font-size:10.5px;margin-left:8px;background:rgba(232,184,80,.1);border-radius:8px;padding:1px 8px}
+
+/* P2 选择即时反馈浮动徽章 */
+.choice-pop{text-align:center;font-size:16px;font-weight:bold;padding:10px;margin:8px 0;border-radius:10px;animation:choice-pop-rise .55s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes choice-pop-rise{from{transform:translateY(14px) scale(.8);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.choice-pop-best{color:#8fe06a;background:rgba(126,181,90,.12);border:1px solid rgba(126,181,90,.5);text-shadow:0 0 14px rgba(126,181,90,.6)}
+.choice-pop-gap{color:#e8b850;background:rgba(232,184,80,.08);border:1px solid rgba(232,184,80,.35);font-size:13.5px}
+
+/* P2 情境简报折叠态 */
+.narrative-collapse>summary{cursor:pointer;font-size:12px;color:#7dbcff;list-style:none;user-select:none;line-height:1.6}
+.narrative-collapse>summary::-webkit-details-marker{display:none}
+.narrative-collapse>summary::before{content:'▸ ';color:var(--dim)}
+.narrative-collapse[open]>summary::before{content:'▾ '}
+.narrative-collapse[open]>summary{margin-bottom:8px}
+.narrative-minimal{padding:7px 12px;opacity:.8}
+
 /* 技巧升级横幅（结算页） */
 .tech-levelup-banner{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:14px 16px;background:linear-gradient(135deg,rgba(246,196,83,.16),rgba(192,132,252,.08));border:1px solid #f6c453;border-radius:8px;animation:levelup-glow 2s ease-in-out infinite}
 @keyframes levelup-glow{0%,100%{box-shadow:0 0 0 0 rgba(246,196,83,.4)}50%{box-shadow:0 0 0 8px rgba(246,196,83,0)}}
@@ -2422,6 +2490,12 @@ function loadPlayer(name) {
       p.ui = p.ui || { teachingMode: 'learner', dataDisclosure: 'collapsed' };
       // 8 大技巧熟练度档案（P3 螺旋成长系统）
       if (typeof ensureTechniqueMastery === 'function') ensureTechniqueMastery(p);
+      // P1-P3 体验系统字段（streak / 训练天数 / 情境观看 / 今日挑战）
+      if (typeof p.winStreak !== 'number') p.winStreak = 0;
+      if (typeof p.bestWinStreak !== 'number') p.bestWinStreak = 0;
+      if (typeof p.trainDays !== 'number') p.trainDays = 0;
+      p.narrativeSeen = p.narrativeSeen || {};
+      p.dailyChallenge = p.dailyChallenge || {};
       return p;
     }
   } catch (e) {
@@ -5064,13 +5138,47 @@ function pickActionLine(samples, round) {
 }
 
 // 渲染情境简报面板（场景类的 _render 在 round 0 时调用）
-function renderNarrativeBriefing(narr, opp) {
+// P2 防麻木：第1次完整 / 第2-3次单行 / 第4次起折叠
+function renderNarrativeBriefing(narr, opp, seenCount) {
   if (!narr) return '';
-  return `<div class="narrative-briefing">
+  const n = seenCount || 1;
+  const full = `
     <div class="narrative-role">🎭 你的身份：<b>${narr.playerRole}</b></div>
     <div class="narrative-situation">📍 ${narr.situation}</div>
-    <div class="narrative-stakes">⚖ <b>利害关系：</b>${narr.stakes}</div>
-  </div>`;
+    <div class="narrative-stakes">⚖ <b>利害关系：</b>${narr.stakes}</div>`;
+  if (n <= 1) {
+    return `<div class="narrative-briefing">${full}</div>`;
+  }
+  if (n <= 3) {
+    return `<details class="narrative-briefing narrative-collapse">
+      <summary>🎭 ${narr.playerRole} · ${narr.situation.slice(0, 26)}…（点击展开情境）</summary>
+      ${full}
+    </details>`;
+  }
+  return `<details class="narrative-briefing narrative-collapse narrative-minimal">
+    <summary>🎭 ${narr.playerRole}（情境已熟悉 · 点击重读）</summary>
+    ${full}
+  </details>`;
+}
+
+/* ── P3 今日挑战：从日期确定性生成，全玩家同题 ───────────────────── */
+function getDailyChallenge() {
+  const dateStr = new Date().toLocaleDateString('zh-CN');
+  let seed = 0;
+  for (const ch of dateStr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const pool = OPPONENTS;
+  const opp = pool[seed % pool.length];
+  const minScore = 55 + ((seed >> 3) % 3) * 5; // 55 / 60 / 65
+  return {
+    dateStr, oppId: opp.id, oppName: opp.name, oppType: opp.type, minScore,
+    desc: `击败「${opp.name}」（${opp.type}）且本局得分 ≥ ${minScore}`,
+    reward: '+100 碎片 + 1 个高阶技能卡包',
+  };
+}
+
+function isDailyChallengeDone(player) {
+  const ch = getDailyChallenge();
+  return !!(player && player.dailyChallenge && player.dailyChallenge.doneDate === ch.dateStr);
 }
 
 class BaseScenario {
@@ -5106,6 +5214,17 @@ class BaseScenario {
     this.hiddenObjective = pickHiddenObjective(scenarioKey, this.variant);
     this._situationEvents = generateSituationEvents(scenarioKey, this.variant, Store.get('difficulty'));
     this._openingLine = getOpponentOpeningLine(this.opp);
+    // P2 情境麻木防御：记录"该场景×该对手"的情境包观看次数
+    const _p = Store.get('player');
+    if (_p) {
+      _p.narrativeSeen = _p.narrativeSeen || {};
+      const nk = scenarioKey + ':' + this.opp.id;
+      _p.narrativeSeen[nk] = (_p.narrativeSeen[nk] || 0) + 1;
+      this._narrSeenCount = _p.narrativeSeen[nk];
+      Store.set('player', _p);
+    } else {
+      this._narrSeenCount = 1;
+    }
   }
 
   // 渲染变体上下文（替换占位符）
@@ -5368,7 +5487,7 @@ class PrisonersDilemma extends BaseScenario {
     }).join('');
 
     const narr = getNarrative('prisoners', opp.id);
-    const briefing = (this.round === 0 && narr) ? renderNarrativeBriefing(narr, opp) : '';
+    const briefing = (this.round === 0 && narr) ? renderNarrativeBriefing(narr, opp, this._narrSeenCount) : '';
     const coopLine = narr ? pickActionLine(narr.actions.coop, this.round) : '保持沉默，减少双方损失';
     const defectLine = narr ? pickActionLine(narr.actions.defect, this.round) : '出卖对方，追求个人最大利益';
 
@@ -5480,7 +5599,7 @@ class UltimatumGame extends BaseScenario {
     }).join('');
 
     const narrU = getNarrative('ultimatum', opp.id);
-    const briefingU = (this.round === 0 && narrU) ? renderNarrativeBriefing(narrU, opp) : '';
+    const briefingU = (this.round === 0 && narrU) ? renderNarrativeBriefing(narrU, opp, this._narrSeenCount) : '';
     const uLine = (group, k) => narrU ? pickActionLine(narrU.actions[group][k], this.round) : '';
 
     const head = `${C.gameHeader(`最后通牒博弈 — 第 ${this.round + 1}/${this.rounds} 轮`)}
@@ -5627,7 +5746,7 @@ class TrustGame extends BaseScenario {
     }).join('');
 
     const narrT = getNarrative('trust', opp.id);
-    const briefingT = (this.round === 0 && narrT) ? renderNarrativeBriefing(narrT, opp) : '';
+    const briefingT = (this.round === 0 && narrT) ? renderNarrativeBriefing(narrT, opp, this._narrSeenCount) : '';
     const tLine = (k) => narrT ? pickActionLine(narrT.actions[k], this.round) : '';
 
     this.emitRender(`
@@ -5746,7 +5865,7 @@ class BargainingGame extends BaseScenario {
     }).join('');
 
     const narrB = getNarrative('bargaining', opp.id);
-    const briefingB = (this.round === 0 && narrB) ? renderNarrativeBriefing(narrB, opp) : '';
+    const briefingB = (this.round === 0 && narrB) ? renderNarrativeBriefing(narrB, opp, this._narrSeenCount) : '';
     const bLine = (k) => narrB ? pickActionLine(narrB.actions[k], this.round) : '';
 
     this.emitRender(`
@@ -6018,7 +6137,11 @@ class CrisisNegotiation extends BaseScenario {
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
+      const choicePop = isOptimal
+        ? '<div class="choice-pop choice-pop-best">✓ 最佳选择 +' + opt.ps + '</div>'
+        : `<div class="choice-pop choice-pop-gap">差最佳 ${maxPs - opt.ps} 分</div>`;
       this.emitRender(`${C.gameHeader('危机谈判 — 处理中...')}
+        ${choicePop}
         ${C.hint(`<b>反馈：</b>${opt.feedback}`, psAdjusted > 0 ? 'green' : 'red')}
         ${C.hint('正在进入下一阶段...', 'cyan')}`);
       setTimeout(() => this._render(), 1500);
@@ -6077,7 +6200,7 @@ class PublicGoodsGame extends BaseScenario {
     }).join('');
 
     const narrP = getNarrative('publicgoods', opp.id);
-    const briefingP = (this.round === 0 && narrP) ? renderNarrativeBriefing(narrP, opp) : '';
+    const briefingP = (this.round === 0 && narrP) ? renderNarrativeBriefing(narrP, opp, this._narrSeenCount) : '';
     const pLine = (k) => narrP ? pickActionLine(narrP.actions[k], this.round) : '';
 
     this.emitRender(`
@@ -6308,7 +6431,11 @@ class CoalitionGame extends BaseScenario {
 
     if (this.stage < this.stages.length) {
       const kind = opt.ps > 10 ? 'green' : opt.ps > 0 ? 'cyan' : 'red';
+      const choicePop = isOptimal
+        ? '<div class="choice-pop choice-pop-best">✓ 最佳选择 +' + opt.ps + '</div>'
+        : `<div class="choice-pop choice-pop-gap">差最佳 ${maxPs - opt.ps} 分</div>`;
       this.emitRender(`${C.gameHeader('联盟谈判 — 推进中...')}
+        ${choicePop}
         ${C.hint(`<b>阶段反馈：</b>${opt.feedback}`, kind)}
         ${C.hint('正在进入下一阶段...', 'cyan')}`);
       setTimeout(() => this._render(), 1500);
@@ -6868,6 +6995,33 @@ function initRecorder() {
       player._lastShardDay = today;
       Store.set('lastShardGain', { amount: shardsGain, daily: isDailyFirst });
 
+      // P1 连胜 streak + 训练天数
+      const wonGame = result.outcome === 'win' || result.outcome === 'cooperative';
+      const prevStreak = player.winStreak || 0;
+      if (wonGame) {
+        player.winStreak = prevStreak + 1;
+        player.bestWinStreak = Math.max(player.bestWinStreak || 0, player.winStreak);
+      } else {
+        player.winStreak = 0;
+      }
+      Store.set('lastStreakInfo', { streak: player.winStreak, prevStreak, won: wonGame, best: player.bestWinStreak || 0 });
+      if (player.lastTrainDay !== today) {
+        player.trainDays = (player.trainDays || 0) + 1;
+        player.lastTrainDay = today;
+      }
+
+      // P3 今日挑战判定（独立于每日首局碎片）
+      const dch = getDailyChallenge();
+      player.dailyChallenge = player.dailyChallenge || {};
+      if (player.dailyChallenge.doneDate !== dch.dateStr &&
+          opp && opp.id === dch.oppId && wonGame && result.playerScore >= dch.minScore) {
+        player.dailyChallenge.doneDate = dch.dateStr;
+        addShards(player, 100, 'daily-challenge');
+        player.skillCardPacks = player.skillCardPacks || [];
+        player.skillCardPacks.push({ type: 'advanced', reason: '🎯 今日挑战达成' });
+        Store.set('lastDailyChallengeDone', { desc: dch.desc });
+      }
+
       // 检查新卡解锁（在 accumulate 之后）
       const newCards = checkNewCards(player);
       if (newCards.length) unlockCards(player, newCards);
@@ -7062,11 +7216,32 @@ function renderMainMenu() {
       <div class="tp-hint">从 <b>初级难度</b> 开始，逐步熟悉各场景与对手策略。完成 2 场后查看<b>谈判行为画像</b>了解自己的谈判类型。</div>
     </div>` : '';
 
+  // P1 日常活力 widget：连胜 / 训练天数 / 每日首局 / 今日挑战
+  const todayStr = new Date().toLocaleDateString('zh-CN');
+  const dailyFirstAvail = p._lastShardDay !== todayStr;
+  const dch = getDailyChallenge();
+  const dchDone = isDailyChallengeDone(p);
+  const streakChip = (p.winStreak || 0) >= 2
+    ? `<span class="dw-chip dw-streak">🔥 连胜 ${p.winStreak}</span>` : '';
+  const daysChip = (p.trainDays || 0) >= 2
+    ? `<span class="dw-chip dw-days">📅 已训 ${p.trainDays} 天</span>` : '';
+  const firstChip = dailyFirstAvail && p.total > 0
+    ? `<span class="dw-chip dw-first">✨ 今日首局 +50 碎片</span>` : '';
+  const dailyWidget = p.total > 0 ? `
+    <div class="daily-widget">
+      <div class="dw-chips">${streakChip}${daysChip}${firstChip}</div>
+      <div class="dw-challenge ${dchDone ? 'done' : ''}">
+        🎯 <b>今日挑战</b>：${dch.desc}
+        ${dchDone ? '<span class="dw-done-tag">✓ 已完成</span>' : `<span class="dw-reward-tag">${dch.reward}</span>`}
+      </div>
+    </div>` : '';
+
   return `
     <div class="header">
       <h1>◆ 全谱系博弈演练系统 ◆</h1>
       <div class="sub">训练员: ${p.name}  |  军衔: ${rank}  |  总场次: ${p.total}  |  胜率: ${wr}%</div>
     </div>
+    ${dailyWidget}
     ${bossHint}
     ${newUserPath}
     ${p.total >= 1 ? `
@@ -7630,6 +7805,64 @@ function renderResult() {
     hellStamp = `<div class="hell-stamp-wrap"><span class="hell-stamp ${passed ? 'pass' : ''}">${passed ? '★ 地狱已通过 ★' : '✗ 地狱级 失败 ✗'}</span></div>`;
   }
 
+  // P0 Tier 分层：核心反馈永远展开，次级内容默认展开可折叠，参考资料默认折叠
+  const fold = (title, inner, open) => inner && inner.trim()
+    ? `<details class="rs-fold" ${open ? 'open' : ''}><summary>${title}</summary><div class="rs-fold-body">${inner}</div></details>`
+    : '';
+
+  // 训练质量条幅（Tier 1）
+  const qualityBanner = (() => {
+    if (!replay || !replay.perRound) return '';
+    const staged = replay.perRound.filter((pr) => pr.chosenText);
+    if (!staged.length) return '';
+    const bestCount = staged.filter((pr) => pr.isBest).length;
+    const total = staged.length;
+    const won = result.outcome === 'win' || result.outcome === 'cooperative';
+    const quality = bestCount / total;
+    let title, color, msg;
+    if (won && quality >= 0.75) {
+      title = '🏆 高质量胜利'; color = 'green';
+      msg = `${bestCount}/${total} 节做出最佳选择——目标达成，技巧也用对了。这是真正的训练成果。`;
+    } else if (won && quality >= 0.5) {
+      title = '✓ 胜利，但有提升空间'; color = 'cyan';
+      msg = `你赢了，但 ${total - bestCount}/${total} 节存在更优解。看下方"选择复盘"，差距在哪里、为什么、应该用什么技巧。`;
+    } else if (won) {
+      title = '⚠ 险胜：靠运气，不是靠技巧'; color = 'yellow';
+      msg = `你赢了——但 ${total - bestCount}/${total} 节选择并非最优。在更高难度下这种打法会失败。务必查看"选择复盘"补齐基础。`;
+    } else if (quality >= 0.5) {
+      title = '虽败犹胜：方向对了'; color = 'cyan';
+      msg = `结果未达成，但 ${bestCount}/${total} 节选择正确。失败可能源于场景外因素，技巧本身是对的。`;
+    } else {
+      title = '需要系统补课'; color = 'red';
+      msg = `${total - bestCount}/${total} 节存在更优解。先看"选择复盘"理解每个差距，再去策略库针对性学习。`;
+    }
+    return C.hint(`<b>${title}</b>　${msg}`, color);
+  })();
+
+  // P1 连胜横幅（Tier 1）
+  const streakBanner = (() => {
+    const si = Store.get('lastStreakInfo');
+    if (!si) return '';
+    Store.set('lastStreakInfo', null);
+    if (si.won && si.streak >= 2) {
+      const milestone = si.streak === 5 ? ' · 🥉 五连胜达成！' : si.streak === 10 ? ' · 🥈 十连胜达成！' : si.streak === 20 ? ' · 🥇 二十连胜达成！' : '';
+      return `<div class="streak-banner streak-up">🔥 连胜 <b>${si.streak}</b> 场${milestone}${si.streak === si.best && si.streak >= 3 ? ' <span class="streak-pb">新纪录</span>' : ''}</div>`;
+    }
+    if (!si.won && si.prevStreak >= 3) {
+      return `<div class="streak-banner streak-broken">💔 ${si.prevStreak} 连胜中断——复盘这一局，下个纪录从现在开始。</div>`;
+    }
+    return '';
+  })();
+
+  // P3 今日挑战达成横幅（Tier 1）
+  const dailyChallengeBanner = (() => {
+    const dc = Store.get('lastDailyChallengeDone');
+    if (!dc) return '';
+    Store.set('lastDailyChallengeDone', null);
+    return `<div class="daily-challenge-banner">🎯 <b>今日挑战达成！</b>${dc.desc}<br><span class="dc-reward">奖励已发放：+100 碎片 + 1 个高阶技能卡包 📦</span></div>`;
+  })();
+
+  // 选择复盘 + 改进建议从 replayPanel 中独立出来（见上方 replayPanel 组装处）
   return `
     <div class="header"><h1>${scenarioName} — 训练结束</h1></div>
     ${hellStamp}
@@ -7639,59 +7872,17 @@ function renderResult() {
       ${C.scoreBox(result.oppScore, `${opp ? opp.name : '对手'} 得分`)}
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
-    ${(() => {
-      const lvl = Store.get('lastTechniqueLevelUp');
-      if (!lvl) return '';
-      Store.set('lastTechniqueLevelUp', null);
-      const tech = TECHNIQUE_LIBRARY[lvl.tech];
-      if (!tech) return '';
-      return `<div class="tech-levelup-banner">
-        <div class="tech-levelup-icon">${tech.icon}</div>
-        <div class="tech-levelup-body">
-          <div class="tech-levelup-title">🎓 技巧升级！</div>
-          <div class="tech-levelup-text"><b>${tech.name}</b>　${lvl.from} → <b style="color:#f6c453">${lvl.to}</b></div>
-          <div class="tech-levelup-hint">前往「策略理论库 → 技巧熟练度」查看完整档案</div>
-        </div>
-      </div>`;
-    })()}
-    ${(() => {
-      if (!replay || !replay.perRound) return '';
-      const staged = replay.perRound.filter((pr) => pr.chosenText);
-      if (!staged.length) return '';
-      const bestCount = staged.filter((pr) => pr.isBest).length;
-      const total = staged.length;
-      const won = result.outcome === 'win' || result.outcome === 'cooperative';
-      const quality = bestCount / total;
-      let title, color, msg;
-      if (won && quality >= 0.75) {
-        title = '🏆 高质量胜利'; color = 'green';
-        msg = `${bestCount}/${total} 节做出最佳选择——目标达成，技巧也用对了。这是真正的训练成果。`;
-      } else if (won && quality >= 0.5) {
-        title = '✓ 胜利，但有提升空间'; color = 'cyan';
-        msg = `你赢了，但 ${total - bestCount}/${total} 节存在更优解。看下方"选择复盘"，差距在哪里、为什么、应该用什么技巧。`;
-      } else if (won) {
-        title = '⚠ 险胜：靠运气，不是靠技巧'; color = 'yellow';
-        msg = `你赢了——但 ${total - bestCount}/${total} 节选择并非最优。在更高难度下这种打法会失败。务必查看"选择复盘"补齐基础。`;
-      } else if (quality >= 0.5) {
-        title = '虽败犹胜：方向对了'; color = 'cyan';
-        msg = `结果未达成，但 ${bestCount}/${total} 节选择正确。失败可能源于场景外因素，技巧本身是对的。`;
-      } else {
-        title = '需要系统补课'; color = 'red';
-        msg = `${total - bestCount}/${total} 节存在更优解。先看"选择复盘"理解每个差距，再去策略库针对性学习。`;
-      }
-      return C.hint(`<b>${title}</b>　${msg}`, color);
-    })()}
+    ${streakBanner}
+    ${dailyChallengeBanner}
+    ${qualityBanner}
     ${shardsBlock}
     ${typeof buildSkillPackEarnedPanelHtml === 'function' ? buildSkillPackEarnedPanelHtml() : ''}
-    ${typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : ''}
-    ${typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(replay) : ''}
-    ${C.panel('复盘分析', result.summary || '')}
-    ${v2Blocks}
-    ${replayPanel}
-    ${tipsPanel}
-    ${renderMasterRecommendation(opp)}
     ${bossReviewPanel}
-    ${typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''}
+    ${fold('📋 选择复盘 · 逐回合分析 · 改进建议', replayPanel, true)}
+    ${fold('👑 传奇大师推荐', renderMasterRecommendation(opp), true)}
+    ${fold('📖 复盘分析与本局详情', C.panel('复盘分析', result.summary || '') + v2Blocks, false)}
+    ${fold(`💡 应对 ${opp ? opp.type : '对手'} 的专项技巧`, tipsPanel, false)}
+    ${fold('🎓 教练总结与理论档案', (typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(replay) : '') + (typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : '') + (typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''), false)}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
       <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>
@@ -7729,6 +7920,40 @@ renderResult.afterRender = function () {
   if (newCards && newCards.length) {
     Store.set('pendingNewCards', null);
     setTimeout(() => renderBoxOpenModal(newCards, null), 600);
+  }
+
+  // P0 技巧升档：全屏庆祝模态（稀有事件，给足仪式感）
+  const lvl = Store.get('lastTechniqueLevelUp');
+  if (lvl && typeof TECHNIQUE_LIBRARY !== 'undefined' && TECHNIQUE_LIBRARY[lvl.tech]) {
+    Store.set('lastTechniqueLevelUp', null);
+    const tech = TECHNIQUE_LIBRARY[lvl.tech];
+    const tierInfo = TECHNIQUE_TIERS.find((t) => t.label === lvl.to) || {};
+    const unlockNote = lvl.to === '熟练'
+      ? '🔥 该技巧关联场景的「高压模式」现已解锁！'
+      : lvl.to === '精通' ? '你已能在高压情境下稳定输出该技巧。'
+      : lvl.to === '大师' ? '★ 该技巧已内化为肌肉记忆——8 大技巧全大师即为满级。' : '';
+    setTimeout(() => {
+      const ov = document.createElement('div');
+      ov.className = 'levelup-modal-overlay';
+      ov.innerHTML = `
+        <div class="levelup-modal">
+          <div class="levelup-rays"></div>
+          <div class="levelup-icon-big">${tech.icon}</div>
+          <div class="levelup-title-big">技巧升档</div>
+          <div class="levelup-tech-name">${tech.name}</div>
+          <div class="levelup-tier-shift">
+            <span class="levelup-from">${lvl.from}</span>
+            <span class="levelup-arrow">→</span>
+            <span class="levelup-to" style="color:${tierInfo.color || '#f6c453'}">${tierInfo.icon || '★'} ${lvl.to}</span>
+          </div>
+          ${unlockNote ? `<div class="levelup-unlock">${unlockNote}</div>` : ''}
+          <button class="btn btn-green levelup-close">继续 →</button>
+        </div>`;
+      document.body.appendChild(ov);
+      const close = () => ov.remove();
+      ov.querySelector('.levelup-close').addEventListener('click', close);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    }, 350);
   }
 };
 

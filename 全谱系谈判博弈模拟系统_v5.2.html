@@ -5235,12 +5235,21 @@ class BaseScenario {
   variantHint() { return this.variant ? this.variant.hint : ''; }
 
   // 顶部开场白 + 场景情境块
+  // 注意：当该场景×对手存在叙事情境包（SCENARIO_NARRATIVES）时，
+  // 旧的变体文案（如"涉嫌合伙盗窃被分别审讯"）与情境包故事互相矛盾，
+  // 此时只保留情境包叙事，完全屏蔽变体文案，避免同屏出现两个场景。
   experienceBanner() {
     let html = '';
     if (this._openingLine) {
       html += C.dialogBubble(this._openingLine, 'ai', `${this.opp.name} 开场`);
     }
-    if (this.variant) {
+    const narr = this.scenarioKey ? getNarrative(this.scenarioKey, this.opp.id) : null;
+    if (narr) {
+      const roundNow = this.round != null ? this.round : (this.stage || 0);
+      if (roundNow > 0) {
+        html += C.hint(`<b>🎭 ${narr.playerRole}</b>｜${narr.situation}`, 'cyan');
+      }
+    } else if (this.variant) {
       html += C.hint(`<b>${this.variant.name}：</b>${this.variantContext()}　<span style="color:var(--dim);font-size:11px">${this.variantHint()}</span>`, 'cyan');
     }
     if (this.hiddenObjective) {
@@ -7663,8 +7672,14 @@ function renderResult() {
   }
 
   // v2 体验增强结果块
+  // 存在叙事情境包时优先展示情境包身份，避免与旧变体文案双重叙事
   let v2Blocks = '';
-  if (result.variant) {
+  const resultNarr = (opp && result.kind && typeof getNarrative === 'function') ? getNarrative(result.kind, opp.id) : null;
+  if (resultNarr) {
+    v2Blocks += C.panel('本局情境',
+      C.infoRow('你的身份', resultNarr.playerRole) +
+      C.infoRow('情境', resultNarr.situation));
+  } else if (result.variant) {
     v2Blocks += C.panel('本局情境',
       C.infoRow('情境名称', result.variant.name) +
       C.infoRow('胜利指标', (result.variant.successMetric || []).join(' / ')));
@@ -7882,7 +7897,7 @@ function renderResult() {
     ${fold('👑 传奇大师推荐', renderMasterRecommendation(opp), true)}
     ${fold('📖 复盘分析与本局详情', C.panel('复盘分析', result.summary || '') + v2Blocks, false)}
     ${fold(`💡 应对 ${opp ? opp.type : '对手'} 的专项技巧`, tipsPanel, false)}
-    ${fold('🎓 教练总结与理论档案', (typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(replay) : '') + (typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : '') + (typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''), false)}
+    ${fold('🎓 教练总结与理论档案', (typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(Object.assign({}, replay, { opponentName: opp ? opp.name : '对手', outcome: result.outcome })) : '') + (typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : '') + (typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''), false)}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
       <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>
@@ -15559,7 +15574,8 @@ function renderDuelResult() {
     duelistName: state.duelist.name,
     log: state.log,
     perRoundTags: state.perRoundTags,
-    turning: state.log.length ? { round: state.log.length, label: state.log[state.log.length - 1]?.phase || '终局', playerAction: state.log[state.log.length - 1]?.label || '' } : null
+    turning: state.log.length ? { round: state.log.length, label: state.log[state.log.length - 1]?.phase || '终局', playerAction: state.log[state.log.length - 1]?.label || '' } : null,
+    outcome: /Win$/.test(state.outcome) ? 'win' : 'lose'
   };
   const coachSummary = renderCoachReplaySummary(duelReplayData);
   return `<div class="flex-between">
@@ -16874,57 +16890,111 @@ function evaluateOpponentHearing(lineItem, opponentProfile) {
 /* ────────────────────────────────────────────────────────────────────────────
    复盘叙事引擎
    ────────────────────────────────────────────────────────────────────────── */
-function buildHeadline(avg, opponentName) {
-  if (avg < 50) return `本局不是输在不会谈，而是你被${opponentName}的节奏带走了。`;
-  if (avg < 70) return `本局你有反击意识，但策略切换还不够稳。`;
-  return `本局整体策略有效，下一步要练的是把优势稳定带到终局。`;
+function buildHeadline(avg, opponentName, outcome) {
+  if (outcome === 'win') {
+    return avg >= 70
+      ? '这局赢得有质量——决策与执行都在线，把这套打法固化下来。'
+      : '赢了，但过程有波动：结果是后程拉回来的，前期那几手值得复盘。';
+  }
+  if (outcome === 'draw') return '平局：你守住了底线，但没有创造出超额收益——差的是主动出手的那一步。';
+  if (outcome === 'lose') {
+    return avg >= 60
+      ? '单回合质量不差，输在一两个关键节点——看下方关键回合。'
+      : `本局不是输在不会谈，而是你被${opponentName}的节奏带走了。`;
+  }
+  if (avg < 50) return `本局你被${opponentName}的节奏带走了，先解决稳定性。`;
+  if (avg < 70) return '本局你有反击意识，但策略切换还不够稳。';
+  return '本局整体策略有效，下一步要练的是把优势稳定带到终局。';
 }
 function buildReplayStory(replay) {
-  const first = replay.perRound && replay.perRound[0];
+  const pr = replay.perRound || [];
+  if (pr.length) {
+    const opening = pr[0];
+    const worst = pr.reduce((a, b) => (b.score < a.score ? b : a));
+    const best = pr.reduce((a, b) => (b.score > a.score ? b : a));
+    let s = `开局（${opening.label}，${opening.score}分）：${opening.comment}`;
+    if (worst.score < 55 && worst !== opening) {
+      s += `　转折出现在${worst.label}（${worst.score}分）：${worst.comment}`;
+    }
+    if (best.score >= 70 && best !== opening && best !== worst) {
+      s += `　本局最佳一手是${best.label}（${best.score}分）。`;
+    }
+    return s;
+  }
   const key = replay.turning || {};
-  if (!first) return '这局的核心问题在于：你需要把态度、依据和路径连起来，而不是只表达立场。';
-  return `开局你尝试推进谈判，但对手没有完全接住你的信号。到第 ${key.round || '关键'} 轮，局势出现转折：你的表达没有把边界、依据和下一步路径同时说清楚，所以对手继续按照自己的节奏推进。`;
+  if (key.round) {
+    return `到第 ${key.round} 回合（${key.label || '关键阶段'}），局势进入决定性时刻${key.playerAction ? `：${key.playerAction}` : '。'}`;
+  }
+  return '这局的核心在于：把态度、依据和路径连起来，而不是只表达立场。';
 }
-function buildKeyMistakeChain(turning, opponentName) {
+// 仅当真实存在低分回合时才生成失误链；表现良好时返回 null（改为展示最佳一手）
+function buildKeyMistakeChain(replay, opponentName) {
+  const pr = replay.perRound || [];
+  const worst = pr.length ? pr.reduce((a, b) => (b.score < a.score ? b : a)) : null;
+  if (!worst || worst.score >= 55) return null;
   return {
-    playerAction: (turning && turning.playerAction) || '你的表达有态度，但缺少支撑。',
-    opponentRead: `${opponentName}更容易把它理解成情绪反应，而不是有底气的谈判边界。`,
-    consequence: (turning && turning.label) || '局势进入低收益对抗。',
-    betterMove: '先要求依据，再表达边界，最后给出继续谈的路径。'
+    playerAction: `${worst.label}（${worst.score}分）${worst.chosenText ? `——你选了「${worst.chosenText}」` : `：${worst.comment}`}`,
+    opponentRead: `${opponentName}据此判断你${worst.score < 40 ? '已经失去章法，会加大施压力度' : '还没站稳立场，会继续测试你的底线'}。`,
+    consequence: worst.comment,
+    betterMove: worst.bestFeedback || (worst.bestText ? `更优选择是「${worst.bestText}」。` : ((replay.advice && replay.advice[0]) || '先要求依据，再表达边界，最后给出继续谈的路径。'))
   };
 }
-function buildNextPractice() {
+// 本局最佳一手（无失误链时展示，避免"赢了却被批评"的矛盾）
+function buildBestMoveHighlight(replay) {
+  const pr = replay.perRound || [];
+  if (!pr.length) return null;
+  const best = pr.reduce((a, b) => (b.score > a.score ? b : a));
+  if (best.score < 60) return null;
+  return { label: best.label, score: best.score, comment: best.comment, chosenText: best.chosenText || '' };
+}
+function buildNextPractice(replay) {
+  if (replay.advice && replay.advice.length) {
+    return replay.advice.slice(0, 3).map((a) => String(a).replace(/^💡\s*/, ''));
+  }
   return ['下一局先不要急着让步，第一步先问依据。', '对方强硬时，不直接硬碰硬，先锁住规则。', '让步必须换承诺，不做单方面退让。'];
 }
-function buildSampleLine() { return '可以继续谈，但我需要先看到依据。没有依据的压力，我不会接。'; }
-function buildMemoryCard() { return '不要用情绪反击压力，要用规则接住压力。'; }
+function buildSampleLine(avg) {
+  if (avg >= 70) return '这个条件可以谈，但我需要对应的承诺——单方面让步不在选项里。';
+  return '可以继续谈，但我需要先看到依据。没有依据的压力，我不会接。';
+}
+function buildMemoryCard(avg, hasMistake) {
+  if (!hasMistake && avg >= 70) return '赢的时候也要复盘：记住这局生效的那一手，下次主动复制它。';
+  return '不要用情绪反击压力，要用规则接住压力。';
+}
 
 function buildReplayNarrative(replay) {
-  const turning = replay.turning || replay.keyTurn || {};
-  const avg = replay.avgScore || replay.score || 0;
+  const avg = replay.avgScore != null ? replay.avgScore : (replay.score || 0);
   const opponentName = replay.opponentName || replay.duelistName || '对手';
+  const keyMistake = buildKeyMistakeChain(replay, opponentName);
   return {
-    headline: buildHeadline(avg, opponentName),
+    headline: buildHeadline(avg, opponentName, replay.outcome),
     story: buildReplayStory(replay),
-    keyMistake: buildKeyMistakeChain(turning, opponentName),
-    nextPractice: buildNextPractice(),
-    sampleLine: buildSampleLine(),
-    memoryCard: buildMemoryCard()
+    keyMistake,
+    bestMove: keyMistake ? null : buildBestMoveHighlight(replay),
+    nextPractice: buildNextPractice(replay),
+    sampleLine: buildSampleLine(avg),
+    memoryCard: buildMemoryCard(avg, !!keyMistake)
   };
 }
 
 function renderCoachReplaySummary(replay) {
   if (!replay || typeof replay !== 'object') return '';
   const narrative = buildReplayNarrative(replay);
+  const mk = narrative.keyMistake;
+  const bm = narrative.bestMove;
+  const keySection = mk ? `<section><h3>关键失误链</h3>
+      <div style="font-size:12px;line-height:1.7">你的动作：${mk.playerAction}</div>
+      <div style="font-size:12px;line-height:1.7">对手理解：${mk.opponentRead}</div>
+      <div style="font-size:12px;line-height:1.7">造成后果：${mk.consequence}</div>
+      <div style="font-size:12px;line-height:1.7;color:var(--cyan)">下次改法：${mk.betterMove}</div>
+    </section>` : bm ? `<section><h3>本局最佳一手</h3>
+      <div style="font-size:12px;line-height:1.7">⭐ ${bm.label}（${bm.score}分）${bm.chosenText ? `——「${bm.chosenText}」` : ''}</div>
+      <div style="font-size:12px;line-height:1.7">${bm.comment}</div>
+    </section>` : '';
   return `<div class="coach-replay-summary">
     <section class="coach-headline">${narrative.headline}</section>
     <section><h3>本局发生了什么</h3><p>${narrative.story}</p></section>
-    <section><h3>关键失误链</h3>
-      <div style="font-size:12px;line-height:1.7">你的动作：${narrative.keyMistake.playerAction}</div>
-      <div style="font-size:12px;line-height:1.7">对手理解：${narrative.keyMistake.opponentRead}</div>
-      <div style="font-size:12px;line-height:1.7">造成后果：${narrative.keyMistake.consequence}</div>
-      <div style="font-size:12px;line-height:1.7;color:var(--cyan)">下次改法：${narrative.keyMistake.betterMove}</div>
-    </section>
+    ${keySection}
     <section><h3>下一局只练三件事</h3><ol>${narrative.nextPractice.map((x) => `<li>${x}</li>`).join('')}</ol></section>
     <section class="sample-line">可直接使用："${narrative.sampleLine}"</section>
     <section class="memory-card">${narrative.memoryCard}</section>

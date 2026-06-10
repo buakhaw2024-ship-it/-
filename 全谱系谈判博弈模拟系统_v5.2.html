@@ -7901,7 +7901,7 @@ function renderResult() {
     ${fold('👑 传奇大师推荐', renderMasterRecommendation(opp), true)}
     ${fold('📖 复盘分析与本局详情', C.panel('复盘分析', result.summary || '') + v2Blocks, false)}
     ${fold(`💡 应对 ${opp ? opp.type : '对手'} 的专项技巧`, tipsPanel, false)}
-    ${fold('🎓 教练总结与理论档案', (typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(Object.assign({}, replay, { opponentName: opp ? opp.name : '对手', outcome: result.outcome })) : '') + (typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : '') + (typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''), false)}
+    ${fold('🎓 教练总结与理论档案', (typeof renderCoachReplaySummary === 'function' && replay ? renderCoachReplaySummary(Object.assign({}, replay, { opponentName: opp ? opp.name : '对手', outcome: result.outcome, kind: result.kind })) : '') + (typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : '') + (typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''), false)}
     <div style="margin-top:16px;text-align:center">
       <button class="btn" data-nav="${SCREENS.MAIN}" style="margin:4px">← 返回主菜单</button>
       <button class="btn btn-green" data-action="quick" style="margin:4px">再来一局 ⚡</button>
@@ -16894,7 +16894,7 @@ function evaluateOpponentHearing(lineItem, opponentProfile) {
 /* ────────────────────────────────────────────────────────────────────────────
    复盘叙事引擎
    ────────────────────────────────────────────────────────────────────────── */
-function buildHeadline(avg, opponentName, outcome) {
+function buildHeadline(avg, opponentName, outcome, profile) {
   if (outcome === 'win') {
     return avg >= 70
       ? '这局赢得有质量——决策与执行都在线，把这套打法固化下来。'
@@ -16904,13 +16904,86 @@ function buildHeadline(avg, opponentName, outcome) {
   if (outcome === 'lose') {
     return avg >= 60
       ? '单回合质量不差，输在一两个关键节点——看下方关键回合。'
-      : `本局不是输在不会谈，而是你被${opponentName}的节奏带走了。`;
+      : (profile ? profile.loseLow(opponentName) : `本局不是输在不会谈，而是你被${opponentName}的节奏带走了。`);
   }
   if (avg < 50) return `本局你被${opponentName}的节奏带走了，先解决稳定性。`;
   if (avg < 70) return '本局你有反击意识，但策略切换还不够稳。';
   return '本局整体策略有效，下一步要练的是把优势稳定带到终局。';
 }
-function buildReplayStory(replay) {
+/* 按博弈类型分流的教练画像。
+   决策型博弈（囚徒/信任/公共品）练的是模式识别与回应节奏，
+   不能套用话术型谈判（商谈/危机/试炼场）的"边界-依据-路径"框架。 */
+const COACH_KIND_PROFILES = {
+  prisoners: {
+    family: 'decision', sampleLabel: '策略口诀',
+    sampleHigh: '开局合作示好；对方背叛，下一轮立刻回应；对方回头，我也及时原谅。',
+    sampleLow: '不要连续单方面合作喂养背叛者——回应要快，原谅也要快。',
+    memoryCard: '重复博弈里，单轮收益最大化 ≠ 全局最优：你的行为模式才是真正的筹码。',
+    memoryCardGood: '记住这局的回应节奏：报复及时、原谅及时，这就是以牙还牙的精髓。',
+    practice: ['开局先合作，向对方释放可合作信号。', '对方背叛后下一轮立即回应，不拖延也不过度报复。', '对方回归合作时及时原谅，避免陷入互相背叛的循环。'],
+    opponentRead: (n, low) => `${n}会把这一手写进对你的行为预测里${low ? '，并断定你可以被持续剥削' : '，下一轮据此选择合作或背叛'}。`,
+    loseLow: (n) => `本局输在模式被看穿：${n}比你更早读懂了对方的出招规律。`,
+    coreFallback: '这局的核心在于：让对方相信"背叛必有代价、合作必有回报"。'
+  },
+  trust: {
+    family: 'decision', sampleLabel: '策略口诀',
+    sampleHigh: '继续分批给信任：小步加码，每一轮都看上一轮的返还率说话。',
+    sampleLow: '信任不是一次性押注——先小额测试返还率，再决定加码还是撤回。',
+    memoryCard: '信任要分批给：返还率就是对方的人品报价单。',
+    memoryCardGood: '记住这局的投放节奏：用小额试探读出了对方的返还模式。',
+    practice: ['第一轮用中等投入（4-7）试探对方返还率。', '返还率稳定在 50% 以上再逐步加码。', '警惕"先高返还引你加码、再收割"的钓鱼模式，识破后立即降到零投入。'],
+    opponentRead: (n, low) => `${n}会把你的投入读成信任定价${low ? '，并认定你的信任可以零成本收割' : '，据此决定返还还是吞没'}。`,
+    loseLow: (n) => `本局输在信任投放失控：${n}用返还率牵着你的投入走。`,
+    coreFallback: '这局的核心在于：用投入节奏测试对方，而不是一次性押上全部信任。'
+  },
+  publicgoods: {
+    family: 'decision', sampleLabel: '策略口诀',
+    sampleHigh: '维持条件合作：我的贡献跟着你上一轮走——你出多少，决定我出多少。',
+    sampleLow: '别做唯一的贡献者——对方搭便车一次，下一轮就同步下调。',
+    memoryCard: '公共品博弈的铁律：无条件贡献养出搭便车者，条件合作才能养出伙伴。',
+    memoryCardGood: '记住这局的贡献节奏：跟随对方水平、守住终局轮，就是最优解。',
+    practice: ['开局中高额贡献（7-10）建立合作氛围。', '对方贡献下降时，下一轮同步下调，传递"合作是有条件的"。', '终局轮警惕对方突然搭便车，提前收缩。'],
+    opponentRead: (n, low) => `${n}会把你的贡献水平当作公共池的安全垫${low ? '，并放心地继续搭便车' : '，据此决定跟进还是抽身'}。`,
+    loseLow: (n) => `本局输在单方面供养：${n}搭了你的便车，而你没有让他付出代价。`,
+    coreFallback: '这局的核心在于：贡献要跟随对方水平浮动，而不是无条件供养公共池。'
+  },
+  ultimatum: {
+    family: 'verbal', sampleLabel: '可直接使用',
+    sampleHigh: '这个分法对应了双方的实际贡献——你拒绝的话，我们都归零。',
+    sampleLow: '低于三成的方案我不接——宁可双方归零，也不接受被定价为弱势方。',
+    memoryCard: '最后通牒的胜负在锚点：贪一分可能输全部，让一分未必换感激。',
+    memoryCardGood: '记住这局的锚点：55-60 的提案既占优又不触发对方的公平怒火。',
+    practice: ['作为提议者，把锚点放在 55-60：占优但不羞辱对方。', '作为接受者，30% 以上的方案先收下——拒绝是在花钱买情绪。', '逐轮记录对方的拒绝阈值，下一轮提案贴着阈值出。'],
+    opponentRead: (n, low) => `${n}会把这个分配读成你对他价值的定价${low ? '，并用拒绝让你付出代价' : '，据此校准下一轮的提案'}。`,
+    loseLow: (n) => `本局输在锚点失准：${n}的公平底线比你预估的更硬。`,
+    coreFallback: '这局的核心在于：提案是定价权，拒绝是否决权——两边都要算得准。'
+  },
+  bargaining: {
+    family: 'verbal', sampleLabel: '可直接使用',
+    sampleHigh: '我可以加 3——这是基于市场对标的最后空间，但你也得在条件上让一步。',
+    sampleLow: '可以继续谈，但我需要先看到你报价的依据。没有依据的价格，我不会接。',
+    memoryCard: '让步的节奏就是信息：递减的让步才像底线，等幅的让步像还有余地。',
+    memoryCardGood: '记住这局的让步曲线：幅度递减 + 每步带条件，这就是教科书级的收口。',
+    practice: ['让步幅度递减（+8 → +5 → +3），传递逼近底线的信号。', '每次让步都附带一个条件，不做单方面退让。', '对方报价纹丝不动时，先质疑其依据，再考虑是否让步。'],
+    opponentRead: (n, low) => `${n}会把你的让步节奏读成底线探测器${low ? '，并断定你还有大幅空间可压' : '，据此决定收口还是继续压价'}。`,
+    loseLow: (n) => `本局不是输在不会谈，而是你被${n}的让步节奏带走了。`,
+    coreFallback: '这局的核心在于：让步的幅度和节奏，本身就是你最重要的报价语言。'
+  },
+  default: {
+    family: 'verbal', sampleLabel: '可直接使用',
+    sampleHigh: '这个条件可以谈，但我需要对应的承诺——单方面让步不在选项里。',
+    sampleLow: '可以继续谈，但我需要先看到依据。没有依据的压力，我不会接。',
+    memoryCard: '不要用情绪反击压力，要用规则接住压力。',
+    memoryCardGood: '赢的时候也要复盘：记住这局生效的那一手，下次主动复制它。',
+    practice: ['下一局先不要急着让步，第一步先问依据。', '对方强硬时，不直接硬碰硬，先锁住规则。', '让步必须换承诺，不做单方面退让。'],
+    opponentRead: (n, low) => `${n}据此判断你${low ? '已经失去章法，会加大施压力度' : '还没站稳立场，会继续测试你的底线'}。`,
+    loseLow: (n) => `本局不是输在不会谈，而是你被${n}的节奏带走了。`,
+    coreFallback: '这局的核心在于：把态度、依据和路径连起来，而不是只表达立场。'
+  }
+};
+function getCoachProfile(kind) { return COACH_KIND_PROFILES[kind] || COACH_KIND_PROFILES.default; }
+
+function buildReplayStory(replay, profile) {
   const pr = replay.perRound || [];
   if (pr.length) {
     const opening = pr[0];
@@ -16929,18 +17002,18 @@ function buildReplayStory(replay) {
   if (key.round) {
     return `到第 ${key.round} 回合（${key.label || '关键阶段'}），局势进入决定性时刻${key.playerAction ? `：${key.playerAction}` : '。'}`;
   }
-  return '这局的核心在于：把态度、依据和路径连起来，而不是只表达立场。';
+  return profile.coreFallback;
 }
 // 仅当真实存在低分回合时才生成失误链；表现良好时返回 null（改为展示最佳一手）
-function buildKeyMistakeChain(replay, opponentName) {
+function buildKeyMistakeChain(replay, opponentName, profile) {
   const pr = replay.perRound || [];
   const worst = pr.length ? pr.reduce((a, b) => (b.score < a.score ? b : a)) : null;
   if (!worst || worst.score >= 55) return null;
   return {
     playerAction: `${worst.label}（${worst.score}分）${worst.chosenText ? `——你选了「${worst.chosenText}」` : `：${worst.comment}`}`,
-    opponentRead: `${opponentName}据此判断你${worst.score < 40 ? '已经失去章法，会加大施压力度' : '还没站稳立场，会继续测试你的底线'}。`,
+    opponentRead: profile.opponentRead(opponentName, worst.score < 40),
     consequence: worst.comment,
-    betterMove: worst.bestFeedback || (worst.bestText ? `更优选择是「${worst.bestText}」。` : ((replay.advice && replay.advice[0]) || '先要求依据，再表达边界，最后给出继续谈的路径。'))
+    betterMove: worst.bestFeedback || (worst.bestText ? `更优选择是「${worst.bestText}」。` : ((replay.advice && replay.advice[0]) || profile.practice[0]))
   };
 }
 // 本局最佳一手（无失误链时展示，避免"赢了却被批评"的矛盾）
@@ -16951,33 +17024,28 @@ function buildBestMoveHighlight(replay) {
   if (best.score < 60) return null;
   return { label: best.label, score: best.score, comment: best.comment, chosenText: best.chosenText || '' };
 }
-function buildNextPractice(replay) {
+function buildNextPractice(replay, profile) {
   if (replay.advice && replay.advice.length) {
     return replay.advice.slice(0, 3).map((a) => String(a).replace(/^💡\s*/, ''));
   }
-  return ['下一局先不要急着让步，第一步先问依据。', '对方强硬时，不直接硬碰硬，先锁住规则。', '让步必须换承诺，不做单方面退让。'];
-}
-function buildSampleLine(avg) {
-  if (avg >= 70) return '这个条件可以谈，但我需要对应的承诺——单方面让步不在选项里。';
-  return '可以继续谈，但我需要先看到依据。没有依据的压力，我不会接。';
-}
-function buildMemoryCard(avg, hasMistake) {
-  if (!hasMistake && avg >= 70) return '赢的时候也要复盘：记住这局生效的那一手，下次主动复制它。';
-  return '不要用情绪反击压力，要用规则接住压力。';
+  return profile.practice;
 }
 
 function buildReplayNarrative(replay) {
   const avg = replay.avgScore != null ? replay.avgScore : (replay.score || 0);
   const opponentName = replay.opponentName || replay.duelistName || '对手';
-  const keyMistake = buildKeyMistakeChain(replay, opponentName);
+  const profile = getCoachProfile(replay.kind);
+  const keyMistake = buildKeyMistakeChain(replay, opponentName, profile);
   return {
-    headline: buildHeadline(avg, opponentName, replay.outcome),
-    story: buildReplayStory(replay),
+    headline: buildHeadline(avg, opponentName, replay.outcome, profile),
+    story: buildReplayStory(replay, profile),
     keyMistake,
     bestMove: keyMistake ? null : buildBestMoveHighlight(replay),
-    nextPractice: buildNextPractice(replay),
-    sampleLine: buildSampleLine(avg),
-    memoryCard: buildMemoryCard(avg, !!keyMistake)
+    nextPractice: buildNextPractice(replay, profile),
+    sampleLabel: profile.sampleLabel,
+    sampleQuoted: profile.family === 'verbal',
+    sampleLine: avg >= 70 ? profile.sampleHigh : profile.sampleLow,
+    memoryCard: (!keyMistake && avg >= 70) ? profile.memoryCardGood : profile.memoryCard
   };
 }
 
@@ -17000,7 +17068,7 @@ function renderCoachReplaySummary(replay) {
     <section><h3>本局发生了什么</h3><p>${narrative.story}</p></section>
     ${keySection}
     <section><h3>下一局只练三件事</h3><ol>${narrative.nextPractice.map((x) => `<li>${x}</li>`).join('')}</ol></section>
-    <section class="sample-line">可直接使用："${narrative.sampleLine}"</section>
+    <section class="sample-line">${narrative.sampleLabel}：${narrative.sampleQuoted ? `"${narrative.sampleLine}"` : narrative.sampleLine}</section>
     <section class="memory-card">${narrative.memoryCard}</section>
   </div>`;
 }

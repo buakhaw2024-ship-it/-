@@ -1061,6 +1061,59 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 /* 阶段目标横幅（对局中） */
 .stage-objective-banner{margin:10px 0 12px;padding:10px 14px;background:linear-gradient(90deg,rgba(160,144,192,.14),rgba(160,144,192,.04));border-left:3px solid #c084fc;border-radius:0 6px 6px 0;font-size:12.5px;color:#e8e0f0;line-height:1.6}
 .stage-objective-banner b{color:#c084fc;margin-right:6px}
+.pressure-mode-badge{margin:6px 0 10px;padding:8px 12px;background:linear-gradient(90deg,rgba(232,80,80,.18),rgba(232,80,80,.04));border:1px solid #e85050;border-radius:6px;font-size:12px;color:#ffb0b0;text-align:center;letter-spacing:.04em;animation:pulse-pressure 2.5s ease-in-out infinite}
+@keyframes pulse-pressure{0%,100%{box-shadow:0 0 0 0 rgba(232,80,80,.4)}50%{box-shadow:0 0 0 6px rgba(232,80,80,0)}}
+
+/* 技巧熟练度面板（P3 螺旋成长） */
+.mastery-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:600px){.mastery-summary{grid-template-columns:repeat(2,1fr)}}
+.mastery-stat{background:linear-gradient(160deg,#14121e,#0a0814);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px;text-align:center}
+.mastery-stat-num{display:block;font-size:22px;font-weight:bold;color:#fff;line-height:1.2}
+.mastery-stat-lbl{display:block;font-size:11px;color:var(--dim);margin-top:3px}
+.mastery-intro{padding:12px 14px;background:rgba(192,132,252,.06);border:1px solid rgba(192,132,252,.2);border-radius:8px;margin-bottom:14px;font-size:12px;line-height:1.7;color:#d8d2e8}
+.mastery-intro b{color:#c084fc}
+.mastery-tiers{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mastery-tier-chip{font-size:11px;padding:2px 10px;border-radius:12px;border:1px solid;background:rgba(0,0,0,.25);font-weight:bold;letter-spacing:.04em}
+.mastery-group{margin-bottom:18px}
+.mastery-group-title{font-size:13px;font-weight:bold;color:#f6c453;letter-spacing:.05em;padding-bottom:6px;border-bottom:1px solid rgba(246,196,83,.18);margin-bottom:10px}
+.mastery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.mastery-card{position:relative;background:linear-gradient(160deg,#14121e,#0a0814);border:1px solid rgba(255,255,255,.08);border-left:3px solid var(--tier-color);border-radius:8px;padding:12px 14px;transition:transform .15s,box-shadow .15s}
+.mastery-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.mastery-card-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mastery-card-icon{font-size:22px;flex:0 0 auto}
+.mastery-card-titles{flex:1;min-width:0}
+.mastery-card-name{font-size:13px;font-weight:bold;color:#fff;line-height:1.2}
+.mastery-card-src{font-size:10px;color:var(--dim);margin-top:2px}
+.mastery-card-tier{font-size:11px;font-weight:bold;color:var(--tier-color);padding:2px 8px;border:1px solid var(--tier-color);border-radius:10px;letter-spacing:.04em;flex:0 0 auto}
+.mastery-card-desc{font-size:11.5px;color:#c8c0d8;line-height:1.55;margin-bottom:6px}
+.mastery-card-when{font-size:10.5px;color:#a090c0;background:rgba(160,144,192,.08);padding:4px 8px;border-radius:4px;margin-bottom:10px}
+.mastery-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-bottom:5px}
+.mastery-bar-fill{height:100%;background:linear-gradient(90deg,var(--tier-color),var(--tier-color)dd);transition:width .3s}
+.mastery-bar-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
+
+/* 场景卡上的高压模式徽章 + 全局切换开关 */
+.scenario-pressure-badge{margin-top:8px;padding:5px 9px;border-radius:4px;font-size:10.5px;letter-spacing:.04em;font-weight:bold}
+.scenario-pressure-badge.unlocked{background:rgba(232,80,80,.12);color:#ff8888;border:1px solid rgba(232,80,80,.4)}
+.scenario-pressure-badge.locked{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid rgba(255,255,255,.08)}
+.pressure-toggle-row{margin:0 0 14px;padding:10px 14px;background:linear-gradient(135deg,rgba(232,80,80,.06),rgba(0,0,0,.2));border:1px solid rgba(232,80,80,.25);border-radius:8px}
+.pressure-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;flex-wrap:wrap;user-select:none}
+.pressure-toggle input{position:absolute;opacity:0;pointer-events:none}
+.pressure-toggle-track{position:relative;width:40px;height:20px;background:rgba(255,255,255,.12);border-radius:10px;transition:background .2s;flex:0 0 auto}
+.pressure-toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s}
+.pressure-toggle input:checked+.pressure-toggle-track{background:#e85050}
+.pressure-toggle input:checked+.pressure-toggle-track::after{left:22px}
+.pressure-toggle-label{font-size:13px;font-weight:bold;color:#fff;letter-spacing:.03em}
+.pressure-toggle input:checked~.pressure-toggle-label{color:#ff8888}
+.pressure-toggle-hint{font-size:11px;color:var(--dim);flex:1 1 100%;margin-left:50px}
+
+/* 技巧升级横幅（结算页） */
+.tech-levelup-banner{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:14px 16px;background:linear-gradient(135deg,rgba(246,196,83,.16),rgba(192,132,252,.08));border:1px solid #f6c453;border-radius:8px;animation:levelup-glow 2s ease-in-out infinite}
+@keyframes levelup-glow{0%,100%{box-shadow:0 0 0 0 rgba(246,196,83,.4)}50%{box-shadow:0 0 0 8px rgba(246,196,83,0)}}
+.tech-levelup-icon{font-size:32px;flex:0 0 auto}
+.tech-levelup-body{flex:1}
+.tech-levelup-title{font-size:13px;font-weight:bold;color:#f6c453;letter-spacing:.06em;margin-bottom:4px}
+.tech-levelup-text{font-size:14px;color:#fff;margin-bottom:4px}
+.tech-levelup-hint{font-size:11px;color:var(--dim)}
 
 /* 选择复盘 · 你的选择 vs 最佳选择 */
 .choice-summary{font-size:12px;color:var(--dim);padding:8px 0 12px;border-bottom:1px dashed rgba(255,255,255,.08);margin-bottom:10px;text-align:center}
@@ -1070,6 +1123,8 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .choice-stage{font-size:12px;font-weight:bold;color:#fff;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .choice-tag-best{font-size:10px;color:#7eb55a;background:rgba(126,181,90,.18);padding:1px 7px;border-radius:8px;font-weight:bold}
 .choice-tag-gap{font-size:10px;color:#e8b850;background:rgba(232,184,80,.18);padding:1px 7px;border-radius:8px;font-weight:bold}
+.choice-tag-pressure{font-size:10px;color:#ff8888;background:rgba(232,80,80,.18);padding:1px 7px;border-radius:8px;font-weight:bold;margin-left:4px}
+.choice-tech-chip{display:inline-block;font-size:10px;color:#c084fc;background:rgba(192,132,252,.12);border:1px solid rgba(192,132,252,.3);padding:1px 7px;border-radius:8px;margin-left:6px;font-weight:bold}
 .choice-objective{font-size:11px;color:#a090c0;margin-bottom:8px;padding:4px 8px;background:rgba(160,144,192,.08);border-radius:4px}
 .choice-row{display:flex;gap:8px;align-items:baseline;margin:4px 0;font-size:12px;line-height:1.5}
 .choice-label{flex:0 0 48px;font-size:10px;font-weight:bold;letter-spacing:.05em;color:var(--dim);padding-top:1px}
@@ -1447,6 +1502,68 @@ const MASTERS = {
 };
 
 // ─── 大师系列辅助：对手→大师推荐 + 策略难度推断 ────────────────
+/* ===== data/techniques.js — 8 大核心谈判技巧（P3 螺旋成长系统）===== */
+const TECHNIQUE_LIBRARY = {
+  empathy:     { name: '战术性同理心', icon: '💗', source: 'voss', category: '关系建立', desc: '通过情绪验证降低对方防御', when: '对方处于高情绪状态、防御性强' },
+  calibrated:  { name: '校准问题',     icon: '❓', source: 'voss', category: '信息挖掘', desc: '用「什么/如何」开放式问题挖掘核心利益', when: '对方立场模糊、需要深挖底层动机' },
+  labeling:    { name: '情绪贴标签',   icon: '🏷', source: 'voss', category: '情绪调节', desc: '准确命名对方情绪以降低张力', when: '对方情绪外溢但未明说' },
+  integrative: { name: '整合性谈判',   icon: '🤝', source: 'fisher', category: '价值创造', desc: '寻找立场背后的真实利益，扩大共同收益', when: '议题多、双方立场对立但利益不冲突' },
+  conditional: { name: '条件让步',     icon: '⚖', source: 'dawson', category: '谈判控制', desc: '「如果你能X，我可以Y」绑定每一次让步', when: '已进入议价阶段、对方期望让步' },
+  batna:       { name: 'BATNA底线',    icon: '🛡', source: 'fisher', category: '底线管理', desc: '识别并坚守自己的最佳替代方案', when: '面对强压、需要表明退出选项' },
+  intel:       { name: '信息收集',     icon: '🔍', source: 'shell', category: '信息挖掘', desc: '通过倾听、观察、追问获取关键信息', when: '局势模糊、对手未充分暴露' },
+  coalition:   { name: '联盟构建',     icon: '🌐', source: 'diamond', category: '关系建立', desc: '通过利益对接和价值交换建立同盟', when: '多方谈判、需要争取中立方' },
+};
+
+const TECHNIQUE_TIERS = [
+  { key: 'novice',     label: '入门', min: 0,  color: '#888',     icon: '○', desc: '尚未在压力情境下验证' },
+  { key: 'practiced',  label: '熟练', min: 3,  color: '#4a8ef5',  icon: '◐', desc: '可解锁该场景的「高压模式」' },
+  { key: 'proficient', label: '精通', min: 8,  color: '#c084fc',  icon: '●', desc: '在高压情境下也能稳定输出' },
+  { key: 'master',     label: '大师', min: 16, color: '#f6c453',  icon: '★', desc: '已内化为肌肉记忆' },
+];
+
+function getTechniqueTier(optimal) {
+  for (let i = TECHNIQUE_TIERS.length - 1; i >= 0; i--) {
+    if (optimal >= TECHNIQUE_TIERS[i].min) return TECHNIQUE_TIERS[i];
+  }
+  return TECHNIQUE_TIERS[0];
+}
+
+function ensureTechniqueMastery(player) {
+  if (!player) return null;
+  player.techniqueMastery = player.techniqueMastery || {};
+  for (const k of Object.keys(TECHNIQUE_LIBRARY)) {
+    if (!player.techniqueMastery[k]) {
+      player.techniqueMastery[k] = { uses: 0, optimal: 0 };
+    }
+  }
+  return player.techniqueMastery;
+}
+
+function recordTechniqueUse(player, techKey, isOptimal) {
+  if (!player || !techKey || !TECHNIQUE_LIBRARY[techKey]) return null;
+  ensureTechniqueMastery(player);
+  const slot = player.techniqueMastery[techKey];
+  const beforeTier = getTechniqueTier(slot.optimal);
+  slot.uses += 1;
+  if (isOptimal) slot.optimal += 1;
+  const afterTier = getTechniqueTier(slot.optimal);
+  return { slot, beforeTier, afterTier, leveledUp: beforeTier.key !== afterTier.key };
+}
+
+// 每个场景关联的"主技巧"（用于显示高压模式解锁条件）
+const SCENARIO_PRIMARY_TECH = {
+  crisis: 'empathy',
+  coalition: 'coalition',
+};
+
+function isPressureModeUnlocked(player, scenarioKey) {
+  if (!player) return false;
+  ensureTechniqueMastery(player);
+  const tech = SCENARIO_PRIMARY_TECH[scenarioKey];
+  if (!tech) return false;
+  return getTechniqueTier(player.techniqueMastery[tech].optimal).key !== 'novice';
+}
+
 const OPPONENT_MASTER_MAP = {
   rational:     ['fisher', 'shell'],
   aggressive:   ['dawson', 'cohen'],
@@ -2292,6 +2409,8 @@ function loadPlayer(name) {
       p.negotiationBehaviorProfile = p.negotiationBehaviorProfile || null;
       // 教学UI模式（v5新增）
       p.ui = p.ui || { teachingMode: 'learner', dataDisclosure: 'collapsed' };
+      // 8 大技巧熟练度档案（P3 螺旋成长系统）
+      if (typeof ensureTechniqueMastery === 'function') ensureTechniqueMastery(p);
       return p;
     }
   } catch (e) {
@@ -2562,9 +2681,12 @@ function scoreStaged(rounds) {
       chosenText: r.chosenText,
       chosenPs: r.ps,
       chosenFeedback: r.feedback,
+      chosenTech: r.chosenTech || null,
       bestText: r.bestText,
       bestPs: r.bestPs,
       bestFeedback: r.bestFeedback,
+      bestTech: r.bestTech || null,
+      pressure: r.pressure || false,
       isBest,
       gap: r.bestPs != null ? r.bestPs - r.ps : null,
     };
@@ -4849,36 +4971,36 @@ class CrisisNegotiation extends BaseScenario {
         context:`危机现场：${opp.name}声称持有重要文件，威胁要公开引发连锁反应。您是谈判代表，需要建立接触。`,
         objective:'降低对方防御心理，打开沟通通道（避免威胁/压制）',
         options:[
-          { text:'战术性同理心："我理解您现在的压力，这一定非常困难..."', ps:15, os:-10, feedback:'很好！同理心降低了防御性，对话通道初步建立。' },
+          { text:'战术性同理心："我理解您现在的压力，这一定非常困难..."', ps:15, os:-10, tech:'empathy', feedback:'很好！同理心降低了防御性，对话通道初步建立。' },
           { text:'直接要求："请立即停止威胁行为，我们来谈条件。"', ps:5, os:0, feedback:'过于强硬，对方防御性增加，但明确了谈判立场。' },
-          { text:'倾听策略：沉默让对方先说，使用镜像技术复述', ps:12, os:-5, feedback:'有效的倾听技巧，获取了更多信息。' },
+          { text:'倾听策略：沉默让对方先说，使用镜像技术复述', ps:12, os:-5, tech:'intel', feedback:'有效的倾听技巧，获取了更多信息。' },
           { text:'权威压制："上级已经授权我全权处理，必须服从。"', ps:-5, os:10, feedback:'权威策略激化矛盾，对方更加警觉。' },
         ] },
       { title:'第二阶段：深化沟通理解',
         context:'初步接触建立后，需要深入了解对方诉求，寻找核心利益。',
         objective:'识别对方核心利益与情绪根源（用问题挖深，不要做承诺）',
         options:[
-          { text:'校准问题："您最担心的具体是什么？我如何才能帮助您？"', ps:15, os:-10, feedback:'开放式校准问题触发深度思考，获取关键信息。' },
-          { text:'贴标签技术："看起来您对当前局面感到非常愤怒和失望。"', ps:12, os:-8, feedback:'准确标签降低情绪张力，建立情感连接。' },
-          { text:'利益置换："告诉我您真正需要的，也许我们能找到另一条路。"', ps:18, os:-15, feedback:'直指核心利益，突破立场僵局！' },
+          { text:'校准问题："您最担心的具体是什么？我如何才能帮助您？"', ps:15, os:-10, tech:'calibrated', feedback:'开放式校准问题触发深度思考，获取关键信息。' },
+          { text:'贴标签技术："看起来您对当前局面感到非常愤怒和失望。"', ps:12, os:-8, tech:'labeling', feedback:'准确标签降低情绪张力，建立情感连接。' },
+          { text:'利益置换："告诉我您真正需要的，也许我们能找到另一条路。"', ps:18, os:-15, tech:'integrative', feedback:'直指核心利益，突破立场僵局！' },
           { text:'拖延策略："让我去请示上级，需要一些时间。"', ps:3, os:5, feedback:'拖延可能激怒对方，但为内部协调争取时间。' },
         ] },
       { title:'第三阶段：寻找解决方案',
         context:'对方核心诉求已初步明确，需要创造可接受的解决方案。',
         objective:'创造扩大双方收益的整合性方案（避免施压逼成）',
         options:[
-          { text:'整合性方案："如果我们能保证您的A需求，您是否愿意在B上妥协？"', ps:18, os:-12, feedback:'整合性谈判创造新价值，双方空间扩大。' },
-          { text:'小步骤策略："先解决最小的问题，建立信任后再谈大问题。"', ps:15, os:-10, feedback:'增量式推进降低风险，积累谈判动力。' },
-          { text:'"就是这样"技术：重新表述对方诉求直到获得确认', ps:12, os:-8, feedback:'确认理解减少误解，为方案奠定基础。' },
+          { text:'整合性方案："如果我们能保证您的A需求，您是否愿意在B上妥协？"', ps:18, os:-12, tech:'integrative', feedback:'整合性谈判创造新价值，双方空间扩大。' },
+          { text:'小步骤策略："先解决最小的问题，建立信任后再谈大问题。"', ps:15, os:-10, tech:'conditional', feedback:'增量式推进降低风险，积累谈判动力。' },
+          { text:'"就是这样"技术：重新表述对方诉求直到获得确认', ps:12, os:-8, tech:'calibrated', feedback:'确认理解减少误解，为方案奠定基础。' },
           { text:'最后期限压力："我们只有30分钟，现在必须做决定。"', ps:-8, os:15, feedback:'人工期限适得其反，破坏了之前建立的信任。' },
         ] },
       { title:'第四阶段：巩固协议',
         context:'双方接近共识，需要巩固并确保协议落实。',
         objective:'锁定执行机制，防止事后反悔（保护信任，避免强制）',
         options:[
-          { text:'书面确认："让我们把达成的共识逐条写下来，确保理解一致。"', ps:15, os:-10, feedback:'书面确认防止事后争议，体现专业性。' },
-          { text:'"不"的保护：提供可接受的最低条件，让对方主动选择', ps:12, os:-8, feedback:'选择权归还给对方，增加协议持久性。' },
-          { text:'条件绑定："如果执行协议，我们将提供额外的保障措施。"', ps:18, os:-15, feedback:'条件让步激励执行，创造正向反馈机制！' },
+          { text:'书面确认："让我们把达成的共识逐条写下来，确保理解一致。"', ps:15, os:-10, tech:'batna', feedback:'书面确认防止事后争议，体现专业性。' },
+          { text:'"不"的保护：提供可接受的最低条件，让对方主动选择', ps:12, os:-8, tech:'calibrated', feedback:'选择权归还给对方，增加协议持久性。' },
+          { text:'条件绑定："如果执行协议，我们将提供额外的保障措施。"', ps:18, os:-15, tech:'conditional', feedback:'条件让步激励执行，创造正向反馈机制！' },
           { text:'强制结束："时间到，必须立即执行，否则后果自负。"', ps:-10, os:20, feedback:'强制性结束摧毁信任，协议可能不持久。' },
         ] },
     ];
@@ -4906,8 +5028,10 @@ class CrisisNegotiation extends BaseScenario {
     }).join('');
 
     const objectiveBanner = s.objective ? `<div class="stage-objective-banner">🎯 <b>本阶段目标</b>：${s.objective}</div>` : '';
+    const pressureBadge = Store.get('pressureMode') === true ? `<div class="pressure-mode-badge">🔥 高压模式 · 错误代价 ×1.5 · 风险值上升加快</div>` : '';
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
+      ${pressureBadge}
       ${C.stageProgress(this.stage, this.stages.length)}
       <div class="grid2" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '谈判积分')}
@@ -4947,32 +5071,55 @@ class CrisisNegotiation extends BaseScenario {
     if (type !== 'stage') return;
     const s = this.stages[this.stage];
     const opt = s.options[parseInt(value, 10)];
-    this.playerScore += opt.ps;
-    this.oppScore += opt.os;
+    // 高压模式：负分惩罚 ×1.5
+    const pressure = Store.get('pressureMode') === true;
+    const psAdjusted = pressure && opt.ps < 0 ? Math.round(opt.ps * 1.5) : opt.ps;
+    const osAdjusted = pressure && opt.os > 0 ? Math.round(opt.os * 1.5) : opt.os;
+    this.playerScore += psAdjusted;
+    this.oppScore += osAdjusted;
     const maxPs = Math.max(...s.options.map((o) => o.ps));
     const bestIdx = s.options.findIndex((o) => o.ps === maxPs);
     const best = s.options[bestIdx];
+    // 螺旋成长：记录技巧使用
+    const isOptimal = parseInt(value, 10) === bestIdx;
+    if (opt.tech) {
+      const player = Store.get('player');
+      if (player) {
+        const result = recordTechniqueUse(player, opt.tech, isOptimal);
+        Store.set('player', player);
+        if (result && result.leveledUp) {
+          Store.set('lastTechniqueLevelUp', {
+            tech: opt.tech,
+            from: result.beforeTier.label,
+            to: result.afterTier.label,
+          });
+        }
+      }
+    }
     this.log.push({
       stage: `第${this.stage + 1}阶段`,
       stageTitle: s.title,
       stageContext: s.context,
       objective: s.objective || '',
       feedback: opt.feedback,
-      ps: opt.ps,
+      ps: psAdjusted,
       maxPs,
       chosenText: opt.text,
       chosenIdx: parseInt(value, 10),
+      chosenTech: opt.tech || null,
       bestIdx,
       bestText: best.text,
       bestPs: best.ps,
+      bestTech: best.tech || null,
       bestFeedback: best.feedback,
+      pressure,
       allOptions: s.options.map((o, idx) => ({ idx, text: o.text, ps: o.ps, feedback: o.feedback })),
     });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
       this.emitRender(`${C.gameHeader('危机谈判 — 处理中...')}
-        ${C.hint(`<b>反馈：</b>${opt.feedback}`, opt.ps > 0 ? 'green' : 'red')}
+        ${C.hint(`<b>反馈：</b>${opt.feedback}`, psAdjusted > 0 ? 'green' : 'red')}
         ${C.hint('正在进入下一阶段...', 'cyan')}`);
       setTimeout(() => this._render(), 1500);
     } else {
@@ -5109,17 +5256,17 @@ class CoalitionGame extends BaseScenario {
         context:'多方谈判开始。您需要了解各方立场，识别潜在盟友和威胁。',
         objective:'通过信息收集识别盟友与威胁（避免过早绑定/暴露底线）',
         options:[
-          { text:'广泛信息收集：私下约谈每一方，了解各自核心诉求', ps:15, allies:1, feedback:'信息优势确立，识别了两个潜在盟友。' },
+          { text:'广泛信息收集：私下约谈每一方，了解各自核心诉求', ps:15, allies:1, tech:'intel', feedback:'信息优势确立，识别了两个潜在盟友。' },
           { text:'公开立场宣示：直接阐明你的方案，测试各方反应', ps:8, allies:0, feedback:'立场清晰但暴露了底线，灵活性下降。' },
-          { text:'观察等待：保持中立，让各方先交锋', ps:5, allies:0, feedback:'获得了观察机会，但错过了主动建联时机。' },
-          { text:'与最强方结盟：立即接近实力最强的参与者', ps:-5, allies:1, feedback:'提前绑定可能失去其他联盟机会。' },
+          { text:'观察等待：保持中立，让各方先交锋', ps:5, allies:0, tech:'intel', feedback:'获得了观察机会，但错过了主动建联时机。' },
+          { text:'与最强方结盟：立即接近实力最强的参与者', ps:-5, allies:1, tech:'coalition', feedback:'提前绑定可能失去其他联盟机会。' },
         ] },
       { title:'第二阶段：联盟构建',
         context:`您已掌握部分信息。${opp.name}正在积极游说，与您竞争关键盟友。`,
         objective:'用利益整合赢得关键盟友（避免过度承诺/损害可信度）',
         options:[
-          { text:'利益整合提案：设计满足盟友核心诉求的联合方案', ps:20, allies:1, feedback:'精准的利益对接赢得关键盟友加入！' },
-          { text:'价值交换：提供对方高度需要的资源，换取联盟承诺', ps:15, allies:1, feedback:'等价交换达成，联盟基础稳固。' },
+          { text:'利益整合提案：设计满足盟友核心诉求的联合方案', ps:20, allies:1, tech:'integrative', feedback:'精准的利益对接赢得关键盟友加入！' },
+          { text:'价值交换：提供对方高度需要的资源，换取联盟承诺', ps:15, allies:1, tech:'coalition', feedback:'等价交换达成，联盟基础稳固。' },
           { text:'揭露竞争对手弱点：向潜在盟友展示对手方案的缺陷', ps:8, allies:0, feedback:'有一定效果，但道德风险影响长期声誉。' },
           { text:'激进报价：承诺给盟友超额利益', ps:-10, allies:0, feedback:'过度承诺损害可信度，盟友持观望态度。' },
         ] },
@@ -5127,19 +5274,19 @@ class CoalitionGame extends BaseScenario {
         context:`联盟初步形成，但内部存在分歧，外部 ${opp.name} 在尝试分化。`,
         objective:'增强联盟内聚力，防止被分化（建设性优先于对抗性）',
         options:[
-          { text:'建立内部共识机制：定期沟通，透明决策过程', ps:18, allies:1, feedback:'内聚力增强，联盟稳定性大幅提升。' },
-          { text:'创造集体认同：塑造"我们"的共同价值和目标', ps:15, allies:0, feedback:'集体认同建立，联盟更具凝聚力。' },
-          { text:'设立退出成本：建立联盟离开的代价机制', ps:10, allies:0, feedback:'约束机制有效，但也限制了联盟灵活性。' },
+          { text:'建立内部共识机制：定期沟通，透明决策过程', ps:18, allies:1, tech:'coalition', feedback:'内聚力增强，联盟稳定性大幅提升。' },
+          { text:'创造集体认同：塑造"我们"的共同价值和目标', ps:15, allies:0, tech:'coalition', feedback:'集体认同建立，联盟更具凝聚力。' },
+          { text:'设立退出成本：建立联盟离开的代价机制', ps:10, allies:0, tech:'batna', feedback:'约束机制有效，但也限制了联盟灵活性。' },
           { text:'孤立对手：切断对手与中立方的联系', ps:5, allies:0, feedback:'孤立策略有风险，可能激化对抗。' },
         ] },
       { title:'第四阶段：最终谈判',
         context:'联盟谈判进入终局，需要将联盟优势转化为最终协议。',
         objective:'用联盟优势促成整体最优协议（实力展示 > 期限威胁）',
         options:[
-          { text:'展示联盟实力：明确但非威胁性地呈现联盟的综合优势', ps:20, allies:0, feedback:'实力展示改变了对手的BATNA评估，协议加速达成。' },
-          { text:'提出一揽子方案：将所有议题打包，寻找整体最优解', ps:18, allies:0, feedback:'打包策略创造了额外价值，多方受益。' },
+          { text:'展示联盟实力：明确但非威胁性地呈现联盟的综合优势', ps:20, allies:0, tech:'batna', feedback:'实力展示改变了对手的BATNA评估，协议加速达成。' },
+          { text:'提出一揽子方案：将所有议题打包，寻找整体最优解', ps:18, allies:0, tech:'integrative', feedback:'打包策略创造了额外价值，多方受益。' },
           { text:'设置最后期限：宣布联盟在X时间后单方面行动', ps:8, allies:0, feedback:'期限有效但破坏了部分谈判善意。' },
-          { text:'妥协型收尾：主动放弃部分次要利益以确保核心利益', ps:15, allies:0, feedback:'战略性妥协展现了成熟的谈判风范。' },
+          { text:'妥协型收尾：主动放弃部分次要利益以确保核心利益', ps:15, allies:0, tech:'conditional', feedback:'战略性妥协展现了成熟的谈判风范。' },
         ] },
     ];
   }
@@ -5165,8 +5312,10 @@ class CoalitionGame extends BaseScenario {
     }).join('');
 
     const objectiveBanner = s.objective ? `<div class="stage-objective-banner">🎯 <b>本阶段目标</b>：${s.objective}</div>` : '';
+    const pressureBadge = Store.get('pressureMode') === true ? `<div class="pressure-mode-badge">🔥 高压模式 · 错误代价 ×1.5 · 风险值上升加快</div>` : '';
     this.emitRender(`
       ${C.gameHeader(`联盟谈判 — ${s.title}`)}
+      ${pressureBadge}
       ${C.stageProgress(this.stage, this.stages.length)}
       <div class="grid3" style="margin:12px 0">
         ${C.scoreBox(this.playerScore, '谈判积分')}
@@ -5206,26 +5355,46 @@ class CoalitionGame extends BaseScenario {
     if (type !== 'stage') return;
     const s = this.stages[this.stage];
     const opt = s.options[parseInt(value, 10)];
-    this.playerScore += opt.ps;
+    const pressure = Store.get('pressureMode') === true;
+    const psAdjusted = pressure && opt.ps < 0 ? Math.round(opt.ps * 1.5) : opt.ps;
+    this.playerScore += psAdjusted;
     this.allies += opt.allies || 0;
-    this.oppScore += (5 - Math.floor(opt.ps / 5));
+    this.oppScore += (5 - Math.floor(psAdjusted / 5));
     const maxPs = Math.max(...s.options.map((o) => o.ps));
     const bestIdx = s.options.findIndex((o) => o.ps === maxPs);
     const best = s.options[bestIdx];
+    const isOptimal = parseInt(value, 10) === bestIdx;
+    if (opt.tech) {
+      const player = Store.get('player');
+      if (player) {
+        const result = recordTechniqueUse(player, opt.tech, isOptimal);
+        Store.set('player', player);
+        if (result && result.leveledUp) {
+          Store.set('lastTechniqueLevelUp', {
+            tech: opt.tech,
+            from: result.beforeTier.label,
+            to: result.afterTier.label,
+          });
+        }
+      }
+    }
     this.log.push({
       stage: `第${this.stage + 1}阶段`,
       stageTitle: s.title,
       stageContext: s.context,
       objective: s.objective || '',
       feedback: opt.feedback,
-      ps: opt.ps,
+      ps: psAdjusted,
       maxPs,
       chosenText: opt.text,
       chosenIdx: parseInt(value, 10),
+      chosenTech: opt.tech || null,
       bestIdx,
       bestText: best.text,
       bestPs: best.ps,
+      bestTech: best.tech || null,
       bestFeedback: best.feedback,
+      pressure,
       allOptions: s.options.map((o, idx) => ({ idx, text: o.text, ps: o.ps, feedback: o.feedback })),
     });
     this.stage += 1;
@@ -6032,8 +6201,23 @@ renderMainMenu.afterRender = function () {
 
 function renderScenarioSelect() {
   const diff = Store.get('difficulty') || 'medium';
+  const player = Store.get('player');
+  const pressureOn = Store.get('pressureMode') === true;
+  // 高压模式解锁条件：crisis 或 coalition 的主技巧达到熟练
+  const crisisUnlocked = isPressureModeUnlocked(player, 'crisis');
+  const coalitionUnlocked = isPressureModeUnlocked(player, 'coalition');
+  const anyUnlocked = crisisUnlocked || coalitionUnlocked;
+
   const cards = Object.entries(SCENARIO_META).map(([key, s]) => {
     const variantHint = previewVariantName(key, diff);
+    let pressureBadge = '';
+    if (SCENARIO_PRIMARY_TECH[key]) {
+      const unlocked = isPressureModeUnlocked(player, key);
+      const primaryTech = TECHNIQUE_LIBRARY[SCENARIO_PRIMARY_TECH[key]];
+      pressureBadge = unlocked
+        ? `<div class="scenario-pressure-badge unlocked">🔥 高压模式已解锁 · 错误代价 ×1.5</div>`
+        : `<div class="scenario-pressure-badge locked">🔒 解锁高压模式：${primaryTech.icon} ${primaryTech.name} 熟练度 ≥3</div>`;
+    }
     return `
     <div class="card" data-key="${key}">
       <h3>${s.name}</h3>
@@ -6041,14 +6225,26 @@ function renderScenarioSelect() {
       ${C.tag(s.domain)}
       <p style="margin-top:8px">${s.desc}</p>
       ${variantHint ? `<div style="font-size:10px;color:var(--yellow);margin-top:6px">本局可能情境：${variantHint}</div>` : ''}
+      ${pressureBadge}
     </div>`;
   }).join('');
+
+  const pressureToggle = anyUnlocked ? `
+    <div class="pressure-toggle-row">
+      <label class="pressure-toggle">
+        <input type="checkbox" id="pressure-toggle-input" ${pressureOn ? 'checked' : ''}>
+        <span class="pressure-toggle-track"></span>
+        <span class="pressure-toggle-label">🔥 启用高压模式</span>
+        <span class="pressure-toggle-hint">所有阶段化场景的错误代价 ×1.5（仅对已解锁场景生效）</span>
+      </label>
+    </div>` : '';
 
   return `
     <div class="flex-between">
       <div class="section-title">▶ 选择训练场景</div>
       <button class="back-btn" data-nav="${SCREENS.MAIN}">← 返回</button>
     </div>
+    ${pressureToggle}
     <div class="grid2">${cards}</div>
   `;
 }
@@ -6056,10 +6252,23 @@ function renderScenarioSelect() {
 renderScenarioSelect.afterRender = function () {
   document.querySelectorAll('.card[data-key]').forEach((el) => {
     el.addEventListener('click', () => {
-      Store.set('scenarioKey', el.getAttribute('data-key'));
+      const key = el.getAttribute('data-key');
+      // 高压模式：若开启但当前场景未解锁，自动关闭以避免不公平惩罚
+      if (Store.get('pressureMode') === true && SCENARIO_PRIMARY_TECH[key]) {
+        if (!isPressureModeUnlocked(Store.get('player'), key)) {
+          Store.set('pressureMode', false);
+        }
+      }
+      Store.set('scenarioKey', key);
       EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.OPPONENT_SELECT, params: {} });
     });
   });
+  const toggle = document.getElementById('pressure-toggle-input');
+  if (toggle) {
+    toggle.addEventListener('change', (e) => {
+      Store.set('pressureMode', e.target.checked);
+    });
+  }
   const back = document.querySelector('[data-nav]');
   if (back) back.addEventListener('click', () =>
     EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
@@ -6455,30 +6664,36 @@ function renderResult() {
     if (stagedRounds.length) {
       const bestCount = stagedRounds.filter((pr) => pr.isBest).length;
       const summary = `<div class="choice-summary">本局共 ${stagedRounds.length} 个选择节点，最佳选择 <b style="color:var(--green)">${bestCount}</b> 次，可改进 <b style="color:var(--yellow)">${stagedRounds.length - bestCount}</b> 次</div>`;
+      const techChip = (techKey) => {
+        if (!techKey || !TECHNIQUE_LIBRARY[techKey]) return '';
+        const t = TECHNIQUE_LIBRARY[techKey];
+        return `<span class="choice-tech-chip">${t.icon} ${t.name}</span>`;
+      };
       const cards = stagedRounds.map((pr, i) => {
         const stageLabel = pr.stageTitle || pr.label;
+        const pressureTag = pr.pressure ? '<span class="choice-tag-pressure">🔥 高压</span>' : '';
         if (pr.isBest) {
           return `<div class="choice-card choice-best">
-            <div class="choice-stage">第 ${i + 1} 节 · ${stageLabel} <span class="choice-tag-best">✓ 最佳</span></div>
+            <div class="choice-stage">第 ${i + 1} 节 · ${stageLabel} <span class="choice-tag-best">✓ 最佳</span>${pressureTag}</div>
             ${pr.objective ? `<div class="choice-objective">🎯 阶段目标：${pr.objective}</div>` : ''}
             <div class="choice-row choice-row-best">
               <div class="choice-label">你选了</div>
-              <div class="choice-text">「${pr.chosenText}」 <span class="choice-ps">+${pr.chosenPs}</span></div>
+              <div class="choice-text">「${pr.chosenText}」 <span class="choice-ps">+${pr.chosenPs}</span>${techChip(pr.chosenTech)}</div>
             </div>
             <div class="choice-feedback">${pr.chosenFeedback || ''}</div>
           </div>`;
         }
         return `<div class="choice-card choice-suboptimal">
-          <div class="choice-stage">第 ${i + 1} 节 · ${stageLabel} <span class="choice-tag-gap">差距 ${pr.gap} 分</span></div>
+          <div class="choice-stage">第 ${i + 1} 节 · ${stageLabel} <span class="choice-tag-gap">差距 ${pr.gap} 分</span>${pressureTag}</div>
           ${pr.objective ? `<div class="choice-objective">🎯 阶段目标：${pr.objective}</div>` : ''}
           <div class="choice-row choice-row-yours">
             <div class="choice-label">你选了</div>
-            <div class="choice-text">「${pr.chosenText}」 <span class="choice-ps choice-ps-yours">${pr.chosenPs > 0 ? '+' : ''}${pr.chosenPs}</span></div>
+            <div class="choice-text">「${pr.chosenText}」 <span class="choice-ps choice-ps-yours">${pr.chosenPs > 0 ? '+' : ''}${pr.chosenPs}</span>${techChip(pr.chosenTech)}</div>
           </div>
           <div class="choice-feedback choice-feedback-yours">${pr.chosenFeedback || ''}</div>
           <div class="choice-row choice-row-best">
             <div class="choice-label">最佳是</div>
-            <div class="choice-text">「${pr.bestText}」 <span class="choice-ps">+${pr.bestPs}</span></div>
+            <div class="choice-text">「${pr.bestText}」 <span class="choice-ps">+${pr.bestPs}</span>${techChip(pr.bestTech)}</div>
           </div>
           <div class="choice-feedback choice-feedback-best">${pr.bestFeedback || ''}</div>
         </div>`;
@@ -6517,6 +6732,21 @@ function renderResult() {
       ${C.scoreBox(result.oppScore, `${opp ? opp.name : '对手'} 得分`)}
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
+    ${(() => {
+      const lvl = Store.get('lastTechniqueLevelUp');
+      if (!lvl) return '';
+      Store.set('lastTechniqueLevelUp', null);
+      const tech = TECHNIQUE_LIBRARY[lvl.tech];
+      if (!tech) return '';
+      return `<div class="tech-levelup-banner">
+        <div class="tech-levelup-icon">${tech.icon}</div>
+        <div class="tech-levelup-body">
+          <div class="tech-levelup-title">🎓 技巧升级！</div>
+          <div class="tech-levelup-text"><b>${tech.name}</b>　${lvl.from} → <b style="color:#f6c453">${lvl.to}</b></div>
+          <div class="tech-levelup-hint">前往「策略理论库 → 技巧熟练度」查看完整档案</div>
+        </div>
+      </div>`;
+    })()}
     ${(() => {
       if (!replay || !replay.perRound) return '';
       const staged = replay.perRound.filter((pr) => pr.chosenText);
@@ -6602,6 +6832,7 @@ renderResult.afterRender = function () {
 
 
 const TABS = [
+  ['mastery', '技巧熟练度'],
   ['cards', '策略卡牌'],
   ['comm', '沟通技术'],
   ['defense', '心理防御'],
@@ -6623,6 +6854,69 @@ function renderStrategyLib() {
 }
 
 function contentFor(tab) {
+  if (tab === 'mastery') {
+    const player = Store.get('player');
+    if (!player) return C.hint('请先创建训练员档案以查看熟练度', 'yellow');
+    const mastery = ensureTechniqueMastery(player);
+    const totalOptimal = Object.values(mastery).reduce((s, m) => s + m.optimal, 0);
+    const totalUses = Object.values(mastery).reduce((s, m) => s + m.uses, 0);
+    const masteredCount = Object.values(mastery).filter((m) => getTechniqueTier(m.optimal).key === 'master').length;
+    const proficientCount = Object.values(mastery).filter((m) => ['proficient', 'master'].includes(getTechniqueTier(m.optimal).key)).length;
+    const practicedCount = Object.values(mastery).filter((m) => getTechniqueTier(m.optimal).key !== 'novice').length;
+    const summary = `
+      <div class="mastery-summary">
+        <div class="mastery-stat"><span class="mastery-stat-num">${totalOptimal}</span><span class="mastery-stat-lbl">最佳选择累计</span></div>
+        <div class="mastery-stat"><span class="mastery-stat-num">${totalUses}</span><span class="mastery-stat-lbl">总练习次数</span></div>
+        <div class="mastery-stat"><span class="mastery-stat-num" style="color:#4a8ef5">${practicedCount}/8</span><span class="mastery-stat-lbl">已熟练技巧</span></div>
+        <div class="mastery-stat"><span class="mastery-stat-num" style="color:#f6c453">${masteredCount}/8</span><span class="mastery-stat-lbl">已成大师</span></div>
+      </div>`;
+    const intro = `<div class="mastery-intro">
+      💡 <b>螺旋成长机制</b>：每次在对局中选对「最佳选项」，对应技巧 +1 经验。达到「熟练」即解锁该场景的<b style="color:#e85050">🔥 高压模式</b>——错误代价 ×1.5，逼你在压力下也能稳定输出。
+      <div class="mastery-tiers">
+        ${TECHNIQUE_TIERS.map(t => `<span class="mastery-tier-chip" style="color:${t.color};border-color:${t.color}33">${t.icon} ${t.label} <span style="opacity:.6">≥${t.min}</span></span>`).join('')}
+      </div>
+    </div>`;
+    const groups = {};
+    Object.entries(TECHNIQUE_LIBRARY).forEach(([k, t]) => {
+      groups[t.category] = groups[t.category] || [];
+      groups[t.category].push([k, t]);
+    });
+    const cards = Object.entries(groups).map(([cat, items]) => {
+      const tiles = items.map(([k, t]) => {
+        const m = mastery[k];
+        const tier = getTechniqueTier(m.optimal);
+        const nextTier = TECHNIQUE_TIERS.find((tt) => tt.min > m.optimal);
+        const progress = nextTier ? Math.round((m.optimal / nextTier.min) * 100) : 100;
+        const progressLabel = nextTier ? `${m.optimal} / ${nextTier.min}` : `${m.optimal} ★ 大师`;
+        const accuracy = m.uses > 0 ? Math.round((m.optimal / m.uses) * 100) : 0;
+        return `
+          <div class="mastery-card" style="--tier-color:${tier.color}">
+            <div class="mastery-card-head">
+              <span class="mastery-card-icon">${t.icon}</span>
+              <div class="mastery-card-titles">
+                <div class="mastery-card-name">${t.name}</div>
+                <div class="mastery-card-src">源自 ${t.source} · ${t.category}</div>
+              </div>
+              <span class="mastery-card-tier">${tier.icon} ${tier.label}</span>
+            </div>
+            <div class="mastery-card-desc">${t.desc}</div>
+            <div class="mastery-card-when">📍 ${t.when}</div>
+            <div class="mastery-card-progress">
+              <div class="mastery-bar"><div class="mastery-bar-fill" style="width:${progress}%"></div></div>
+              <div class="mastery-bar-meta">
+                <span>${progressLabel}</span>
+                <span>准确率 ${accuracy}%（${m.optimal}/${m.uses}）</span>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+      return `<div class="mastery-group">
+        <div class="mastery-group-title">${cat}</div>
+        <div class="mastery-grid">${tiles}</div>
+      </div>`;
+    }).join('');
+    return summary + intro + cards;
+  }
   if (tab === 'cards') {
     return STRATEGY_CARDS.map((c) => `
       <div class="master-card">

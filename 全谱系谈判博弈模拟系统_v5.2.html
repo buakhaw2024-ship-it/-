@@ -5491,7 +5491,11 @@ class PrisonersDilemma extends BaseScenario {
       }
       const narr_ = getNarrative('prisoners', opp.id);
       const pSpoken = l.spokenLine || (l.player === 'coop' ? '选择合作' : '选择背叛');
-      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}${l.opp === 'coop' ? '保持沉默 (合作)' : '揭露你 (背叛)'} (+${l.pScore} vs +${l.oScore})<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
+      // 有情境包时用中性术语，避免"保持沉默/揭露你"的审讯故事与情境包叙事冲突
+      const oMoveLabel = narr_
+        ? (l.opp === 'coop' ? '选择合作' : '选择背叛')
+        : (l.opp === 'coop' ? '保持沉默 (合作)' : '揭露你 (背叛)');
+      const oText = `${l.line ? `<b>${l.line}</b><br>` : ''}${oMoveLabel} (+${l.pScore} vs +${l.oScore})<br><span style="color:var(--dim);font-size:10px">${l.reason || ''}</span>`;
       return C.dialogBubble(pSpoken, 'player', `第${l.round}轮`) + C.dialogBubble(oText, 'ai', `${opp.name} ${C.moodEmoji(l.mood)}`);
     }).join('');
 
@@ -5513,8 +5517,8 @@ class PrisonersDilemma extends BaseScenario {
       ${situationHtml}
       ${questionHtml}
       ${blockNormal ? '' : C.panel('该你说话了',
-        C.actionBtn('choice', 'coop', `<b>[沉默 / 合作]</b><br><span class="action-spoken">${coopLine}</span>`) +
-        C.actionBtn('choice', 'defect', `<b>[揭露 / 背叛]</b><br><span class="action-spoken">${defectLine}</span>`) +
+        C.actionBtn('choice', 'coop', `<b>[${narr ? '合作' : '沉默 / 合作'}]</b><br><span class="action-spoken">${coopLine}</span>`) +
+        C.actionBtn('choice', 'defect', `<b>[${narr ? '背叛' : '揭露 / 背叛'}]</b><br><span class="action-spoken">${defectLine}</span>`) +
         this.peekControls())}
       ${logHtml ? `<div class="bubble-log">${logHtml}</div>` : ''}
     `);
@@ -5648,7 +5652,7 @@ class UltimatumGame extends BaseScenario {
       const keep = this.pendingOffer;
       const give = TOTAL - keep;
       this.emitRender(`${head}
-        ${C.hint(`${opp.name} 提议：<b style="color:var(--cyan)">给您 ${give} 元，自己保留 ${keep} 元</b>。`)}
+        ${C.hint(`${opp.name} 提议：<b style="color:var(--cyan)">给您 ${give}${narrU ? ' 份' : ' 元'}，自己保留 ${keep}${narrU ? ' 份' : ' 元'}</b>（总量 ${TOTAL}）。`)}
         ${C.panel('该你回应了',
           C.actionBtn('respond', 'accept', `<b>[接受 · 双方各得所得]</b><br><span class="action-spoken">${uLine('respond', 'accept')}</span>`) +
           C.actionBtn('respond', 'reject', `<b>[拒绝 · 双方归零]</b><br><span class="action-spoken">${uLine('respond', 'reject')}</span>`))}

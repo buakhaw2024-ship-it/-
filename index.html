@@ -997,6 +997,72 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .training-rec-tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .training-rec-tag{padding:3px 10px;background:rgba(32,215,255,.1);border:1px solid rgba(32,215,255,.3);border-radius:20px;font-size:11px;color:var(--cyan)}
 
+
+/* ── 传奇大师系列：新视觉 ────────────────────────────────── */
+.master-intro-banner{background:linear-gradient(135deg,#1a1428,#0a0814);border:1px solid rgba(246,196,83,.3);border-radius:10px;padding:14px 16px;margin-bottom:16px;box-shadow:0 0 24px rgba(246,196,83,.1)}
+.master-intro-title{font-size:16px;font-weight:bold;color:#f6c453;letter-spacing:.08em;margin-bottom:4px}
+.master-intro-sub{font-size:11px;color:#a090c0;margin-bottom:10px}
+.master-intro-guide{font-size:11.5px;color:#c0b8d8;line-height:1.7;padding:8px 10px;background:rgba(0,0,0,.3);border-radius:6px;border-left:2px solid #f6c453}
+.master-intro-guide b{color:#f6c453}
+.master-intro-guide a.master-quick{color:#7ab8e6;text-decoration:underline;cursor:pointer;margin:0 2px}
+.master-intro-guide a.master-quick:hover{color:#f6c453}
+
+.master-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.master-card-new{position:relative;background:linear-gradient(160deg,#14121e,#0a0814);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 14px 12px;cursor:pointer;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.master-card-new::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--mc);box-shadow:0 0 12px var(--mg)}
+.master-card-new:hover{transform:translateY(-4px);box-shadow:0 8px 24px var(--mg),0 0 0 1px var(--mc)}
+.master-card-bar{display:none}
+.master-card-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;margin-top:4px}
+.master-card-icon{font-size:22px}
+.master-card-no{font-size:11px;font-weight:bold;color:var(--mc);letter-spacing:.05em}
+.master-card-name{font-size:15px;font-weight:bold;color:#fff;margin-bottom:2px}
+.master-card-title{font-size:11px;color:var(--mc);margin-bottom:8px}
+.master-card-stats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.master-card-stat{font-size:10px;color:#b0a8c8;padding:2px 7px;background:rgba(255,255,255,.05);border-radius:8px;border:1px solid rgba(255,255,255,.08)}
+.master-card-quote{font-size:11px;line-height:1.5;color:#e0d8c8;padding:7px 9px;background:rgba(0,0,0,.4);border-left:2px solid var(--mc);border-radius:0 4px 4px 0;font-style:italic}
+
+.master-detail-card{background:linear-gradient(160deg,#14121e,#0a0814);border:1px solid var(--mc);border-radius:14px;padding:18px;box-shadow:0 0 24px var(--mg)}
+.master-detail-head{display:flex;gap:14px;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.master-detail-icon{font-size:40px}
+.master-detail-headtext{flex:1}
+.master-detail-no{font-size:11px;font-weight:bold;letter-spacing:.08em;margin-bottom:2px}
+.master-detail-name{font-size:18px;font-weight:bold;color:#fff;margin-bottom:2px}
+.master-detail-title{font-size:12px;color:#b0a8c8}
+.master-detail-quote{font-size:13px;line-height:1.6;padding:10px 14px;background:rgba(0,0,0,.4);border-left:3px solid;border-radius:0 6px 6px 0;font-style:italic;margin-bottom:12px}
+.master-detail-meta{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#a090c0;padding:8px 12px;background:rgba(0,0,0,.25);border-radius:6px;margin-bottom:14px}
+.master-detail-meta b{color:var(--mc)}
+.master-stage-label{font-size:12px;font-weight:bold;color:var(--yellow);letter-spacing:.1em;margin-bottom:8px;padding-left:6px;border-left:3px solid var(--yellow)}
+.master-tactic-card{border-left-width:3px;border-left-style:solid;padding:8px 10px;margin-bottom:6px;background:rgba(255,255,255,.02);border-radius:0 4px 4px 0}
+.tactic-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.tactic-level{font-size:10px;font-weight:bold;letter-spacing:.05em;padding:1px 6px;border-radius:8px}
+.tactic-level.lv-1{color:#7eb55a;background:rgba(126,181,90,.15)}
+.tactic-level.lv-2{color:#e8b850;background:rgba(232,184,80,.15)}
+.tactic-level.lv-3{color:#e85050;background:rgba(232,80,80,.15)}
+
+/* 结算页推荐 */
+.master-rec-panel{border-color:#f6c453;background:linear-gradient(160deg,#1a1428,#0a0814)}
+.master-rec-list{display:flex;flex-direction:column;gap:10px}
+.master-rec-card{padding:10px 12px;border-radius:0 6px 6px 0;background:rgba(0,0,0,.25)}
+.master-rec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.master-rec-icon{font-size:18px}
+.master-rec-no{font-size:11px;font-weight:bold;letter-spacing:.05em}
+.master-rec-name{font-size:14px;font-weight:bold;color:#fff}
+.master-rec-title{font-size:11px;color:#a090c0}
+.master-rec-quote{font-size:12px;line-height:1.5;font-style:italic;margin:5px 0;padding:5px 0}
+.master-rec-meta{font-size:10.5px;color:#9088a0;margin-bottom:8px}
+.master-rec-jump{font-size:11px;padding:5px 12px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;letter-spacing:.04em}
+.master-rec-jump:hover{filter:brightness(1.15)}
+
+/* 欢迎屏增强 */
+.welcome-tagline{text-align:center;font-size:11px;color:#a090c0;margin-top:10px;letter-spacing:.04em;line-height:1.7}
+.welcome-master-guide{padding:14px 16px;background:linear-gradient(135deg,rgba(246,196,83,.06),rgba(0,0,0,.3));border:1px solid rgba(246,196,83,.25);border-radius:10px}
+.welcome-master-title{font-size:12px;color:#f6c453;margin-bottom:10px;letter-spacing:.04em}
+.welcome-master-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.welcome-master-btn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;background:rgba(0,0,0,.3);border:1px solid var(--mc,#888);border-left:3px solid var(--mc,#888);border-radius:6px;color:#e0d8c8;cursor:pointer;text-align:left;transition:all .15s}
+.welcome-master-btn b{font-size:12.5px;color:#fff}
+.welcome-master-btn span{font-size:10px;color:var(--mc,#888)}
+.welcome-master-btn:hover{background:rgba(255,255,255,.05);transform:translateX(2px);box-shadow:0 0 10px var(--mc,#888)}
+@media (max-width:520px){.welcome-master-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1233,6 +1299,10 @@ const DIFF_CLASS = { easy:'diff-easy', med:'diff-med', hard:'diff-hard' };
 
 const MASTERS = {
   dawson: {
+    icon: '🎯', color: '#4a90c2', glow: 'rgba(74,144,194,.55)',
+    seriesNo: 1, scene: '商业谈判 / 强硬对手',
+    counters: ['aggressive', 'trumpBoss'],
+    quote: '要价远高于预期——这不是贪婪，是策略。',
     name: '罗杰·道森', title: '《优势谈判》',
     intro: '15大谈判策略，覆盖开局、中局、终局三大阶段，是谈判实战的权威教程。',
     tactics: [
@@ -1254,6 +1324,10 @@ const MASTERS = {
     ],
   },
   fisher: {
+    icon: '⚖️', color: '#7eb55a', glow: 'rgba(126,181,90,.55)',
+    seriesNo: 2, scene: '复杂多方 / 长期合作',
+    counters: ['rational', 'manipulative'],
+    quote: '聚焦于利益，而不是立场。',
     name: '罗杰·费希尔 & 威廉·尤里', title: '《谈判力》',
     intro: '哈佛谈判项目成果：基于利益的原则性谈判四步法，被全球无数谈判者奉为圣经。',
     tactics: [
@@ -1267,6 +1341,10 @@ const MASTERS = {
     ],
   },
   voss: {
+    icon: '🎭', color: '#a08060', glow: 'rgba(160,128,96,.55)',
+    seriesNo: 3, scene: '高情绪 / 高对抗场景',
+    counters: ['emotional', 'manipulative'],
+    quote: '"不"才是谈判真正的开始。',
     name: '克里斯·沃斯', title: '《掌控谈话》',
     intro: 'FBI首席人质谈判专家的实战技巧，以战术性同理心取代对抗，创造突破性结果。',
     tactics: [
@@ -1283,6 +1361,10 @@ const MASTERS = {
     ],
   },
   cohen: {
+    icon: '⏳', color: '#e8b850', glow: 'rgba(232,184,80,.6)',
+    seriesNo: 4, scene: '时间压力 / 信息博弈',
+    counters: ['manipulative', 'aggressive'],
+    quote: '一切皆可谈判——只要你懂得权力、时间和信息。',
     name: '赫布·科恩', title: '《谈判无处不在》',
     intro: '权力、时间、信息三角模型，认为世界就是一张巨大的谈判桌，万事皆可谈。',
     tactics: [
@@ -1295,6 +1377,10 @@ const MASTERS = {
     ],
   },
   diamond: {
+    icon: '🧭', color: '#e85050', glow: 'rgba(232,80,80,.55)',
+    seriesNo: 5, scene: '感知冲突 / 跨文化',
+    counters: ['coalition', 'emotional'],
+    quote: '目标第一——其他一切都是手段。',
     name: '斯图尔特·戴蒙德', title: '《Getting More》',
     intro: '沃顿商学院谈判教授，强调人比流程更重要，情感和感知是谈判的核心战场。',
     tactics: [
@@ -1309,6 +1395,10 @@ const MASTERS = {
     ],
   },
   shell: {
+    icon: '🎨', color: '#a070d8', glow: 'rgba(160,112,216,.55)',
+    seriesNo: 6, scene: '风格识别 / 因地制宜',
+    counters: ['rational', 'coalition'],
+    quote: '不存在最佳风格——只有最适合的风格。',
     name: '理查德·谢尔', title: '《为优势而谈判》',
     intro: '沃顿商学院教授，五种谈判风格框架，强调知己知彼、因地制宜的适应性策略。',
     tactics: [
@@ -1326,6 +1416,56 @@ const MASTERS = {
     ],
   },
 };
+
+// ─── 大师系列辅助：对手→大师推荐 + 策略难度推断 ────────────────
+const OPPONENT_MASTER_MAP = {
+  rational:     ['fisher', 'shell'],
+  aggressive:   ['dawson', 'cohen'],
+  manipulative: ['voss', 'cohen'],
+  emotional:    ['voss', 'diamond'],
+  coalition:    ['diamond', 'shell'],
+  trumpBoss:    ['dawson', 'voss'],
+};
+function inferTacticLevel(stage) {
+  if (['开局', '原则1', '原则', '工具'].includes(stage)) return 1;
+  if (['中局', '原则2', '原则3', '五种风格', '六步骤', '策略', '风格'].includes(stage)) return 2;
+  return 3;
+}
+function tacticLevelStars(lv) {
+  return lv === 1 ? '★☆☆' : lv === 2 ? '★★☆' : '★★★';
+}
+function tacticLevelLabel(lv) {
+  return lv === 1 ? '基础' : lv === 2 ? '进阶' : '高阶';
+}
+function getMasterByCounter(opponentId) {
+  const keys = OPPONENT_MASTER_MAP[opponentId] || [];
+  return keys.map(k => ({ key: k, ...MASTERS[k] })).filter(m => m.name);
+}
+function renderMasterRecommendation(opp) {
+  if (!opp) return '';
+  const recs = getMasterByCounter(opp.id);
+  if (!recs.length) return '';
+  const cards = recs.map(m => `
+    <div class="master-rec-card" style="border-left:3px solid ${m.color};background:linear-gradient(90deg,${m.color}1a,transparent)">
+      <div class="master-rec-head">
+        <span class="master-rec-icon" style="color:${m.color}">${m.icon}</span>
+        <span class="master-rec-no" style="color:${m.color}">#0${m.seriesNo}</span>
+        <span class="master-rec-name">${m.name}</span>
+        <span class="master-rec-title">${m.title}</span>
+      </div>
+      <div class="master-rec-quote" style="color:${m.color}">「${m.quote}」</div>
+      <div class="master-rec-meta">共 ${m.tactics.length} 个策略 · 最适用：${m.scene}</div>
+      <button class="btn-mini master-rec-jump" data-master-key="${m.key}" style="background:${m.color};color:#0a0e1a">查看全部策略 →</button>
+    </div>`).join('');
+  return `
+    <div class="panel master-rec-panel">
+      <div class="panel-title">
+        <span style="color:#f6c453">👑 传奇大师推荐</span>
+        <span style="font-size:11px;color:var(--dim);font-weight:normal">本局对手类型：${opp.type || opp.name}</span>
+      </div>
+      <div class="master-rec-list">${cards}</div>
+    </div>`;
+}
 
 
 /* ===== data/strategies.js ===== */
@@ -5593,8 +5733,11 @@ function renderWelcome() {
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
+      <div class="welcome-tagline">
+        交互式谈判训练系统 · 经典博弈 → 多阶段并购 · 7类AI对手 · 7条剧情弧线 · 30+张收藏卡牌
+      </div>
     </div>
-    <div class="panel" style="max-width:420px;margin:0 auto">
+    <div class="panel" style="max-width:480px;margin:0 auto">
       <div class="panel-title">▶ 进入系统</div>
       <div class="input-wrap">
         <label>输入您的训练代号</label>
@@ -5603,10 +5746,30 @@ function renderWelcome() {
       <button class="btn btn-green" style="width:100%" id="btn-enter">进入训练系统 →</button>
       ${C.hint('数据保存在本地浏览器（LocalStorage），兼容历史存档。')}
     </div>
+    <div class="welcome-master-guide" style="max-width:480px;margin:14px auto 0">
+      <div class="welcome-master-title">👑 想直接看大师策略？选一个你想提升的方向：</div>
+      <div class="welcome-master-grid">
+        <button class="welcome-master-btn" data-master-pick="dawson"  style="--mc:#4a90c2"><b>🛡 应对强硬对手</b><span>道森《优势谈判》</span></button>
+        <button class="welcome-master-btn" data-master-pick="voss"    style="--mc:#a08060"><b>💬 处理情绪冲突</b><span>沃斯《掌控谈话》</span></button>
+        <button class="welcome-master-btn" data-master-pick="fisher"  style="--mc:#7eb55a"><b>📊 用利益取代立场</b><span>哈佛《谈判力》</span></button>
+        <button class="welcome-master-btn" data-master-pick="cohen"   style="--mc:#e8b850"><b>🔍 识别对方套路</b><span>科恩《一切皆可谈判》</span></button>
+      </div>
+    </div>
   `;
 }
 
 renderWelcome.afterRender = function () {
+  document.querySelectorAll('.welcome-master-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mk = btn.getAttribute('data-master-pick');
+      const nameInput = document.getElementById('player-name-input');
+      const guestName = (nameInput && nameInput.value || '').trim() || '访客';
+      const player = loadPlayer(guestName);
+      Store.set('player', player);
+      Store.set('strategyLibSubview', { type: 'master', key: mk });
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STRATEGY, params: { master: mk } });
+    });
+  });
   const input = document.getElementById('player-name-input');
   const enter = () => {
     const name = (input.value || '').trim();
@@ -6225,6 +6388,7 @@ function renderResult() {
     ${v2Blocks}
     ${replayPanel}
     ${tipsPanel}
+    ${renderMasterRecommendation(opp)}
     ${bossReviewPanel}
     ${typeof renderProfileTheoryReplayBlock === 'function' ? renderProfileTheoryReplayBlock(replay || {}) : ''}
     <div style="margin-top:16px;text-align:center">
@@ -6235,6 +6399,13 @@ function renderResult() {
 }
 
 renderResult.afterRender = function () {
+  document.querySelectorAll('.master-rec-jump').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const k = btn.getAttribute('data-master-key');
+      Store.set('strategyLibSubview', { type: 'master', key: k });
+      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.STRATEGY, params: { master: k } });
+    });
+  });
   const back = document.querySelector('[data-nav]');
   if (back) back.addEventListener('click', () =>
     EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
@@ -6330,30 +6501,70 @@ function contentFor(tab) {
     </div>`;
   }
   // masters
-  return `<div class="grid2">${Object.entries(MASTERS).map(([k, m]) => `
-    <div class="card" data-master="${k}">
-      <h3>${m.name}</h3>
-      <div style="color:var(--yellow);font-size:11px;margin-bottom:6px">${m.title}</div>
-      <p>${m.intro}</p>
-      <div style="margin-top:8px;font-size:11px;color:var(--cyan)">共 ${m.tactics.length} 个策略/原则 →</div>
-    </div>`).join('')}</div>`;
+  const sortedMasters = Object.entries(MASTERS).sort((a, b) => (a[1].seriesNo||99) - (b[1].seriesNo||99));
+  const introBanner = `
+    <div class="master-intro-banner">
+      <div class="master-intro-title">👑 SSR · 传奇大师系列</div>
+      <div class="master-intro-sub">六位全球顶级谈判理论权威 · 共 ${sortedMasters.reduce((s,[,m])=>s+m.tactics.length,0)} 条策略 · 三大难度梯度</div>
+      <div class="master-intro-guide">
+        💡 <b>新手指引：</b>
+        常输给强硬对手 → 看 <a class="master-quick" data-master="dawson">#01 道森</a>　|　
+        难处理情绪冲突 → 看 <a class="master-quick" data-master="voss">#03 沃斯</a>　|　
+        想用利益取代立场 → 看 <a class="master-quick" data-master="fisher">#02 费希尔</a>
+      </div>
+    </div>`;
+  const cards = sortedMasters.map(([k, m]) => `
+    <div class="master-card-new" data-master="${k}" style="--mc:${m.color};--mg:${m.glow}">
+      <div class="master-card-bar"></div>
+      <div class="master-card-head">
+        <span class="master-card-icon">${m.icon}</span>
+        <span class="master-card-no">#0${m.seriesNo}</span>
+      </div>
+      <div class="master-card-name">${m.name}</div>
+      <div class="master-card-title">${m.title}</div>
+      <div class="master-card-stats">
+        <span class="master-card-stat">${m.tactics.length} 策略</span>
+        <span class="master-card-stat">克制：${(m.counters||[]).map(c => ({rational:'理性派',aggressive:'强硬派',manipulative:'操纵者',emotional:'情绪型',coalition:'联盟代表',trumpBoss:'终极交易者'}[c]||c)).join(' / ')}</span>
+      </div>
+      <div class="master-card-quote">「${m.quote}」</div>
+    </div>`).join('');
+  return `${introBanner}<div class="master-card-grid">${cards}</div>`;
 }
 
 function masterDetail(key) {
   const m = MASTERS[key];
   const stages = [...new Set(m.tactics.map((t) => t.stage))];
   const body = stages.map((stage) => `
-    <div style="margin-bottom:12px">
-      <div style="color:var(--yellow);font-size:11px;letter-spacing:1px;margin-bottom:6px">【${stage}】</div>
-      ${m.tactics.filter((t) => t.stage === stage).map((t) =>
-        `<div class="tactic" style="margin-bottom:6px"><div class="tactic-name">${t.name}</div><div class="tactic-desc">${t.desc}</div></div>`).join('')}
+    <div style="margin-bottom:14px">
+      <div class="master-stage-label">【${stage}】</div>
+      ${m.tactics.filter((t) => t.stage === stage).map((t) => {
+        const lv = t.level || inferTacticLevel(t.stage);
+        return `<div class="tactic master-tactic-card" style="border-left-color:${m.color}">
+          <div class="tactic-head">
+            <span class="tactic-name">${t.name}</span>
+            <span class="tactic-level lv-${lv}" title="${tacticLevelLabel(lv)}">${tacticLevelStars(lv)}</span>
+          </div>
+          <div class="tactic-desc">${t.desc}</div>
+        </div>`;
+      }).join('')}
     </div>`).join('');
   return `
     <button class="back-btn" id="master-back" style="margin-bottom:12px">← 返回宗师列表</button>
-    <div class="master-card">
-      <div class="master-name">${m.name}</div>
-      <div class="master-title">${m.title}</div>
+    <div class="master-detail-card" style="--mc:${m.color};--mg:${m.glow}">
+      <div class="master-detail-head">
+        <span class="master-detail-icon">${m.icon}</span>
+        <div class="master-detail-headtext">
+          <div class="master-detail-no" style="color:${m.color}">SSR · 大师系列 #0${m.seriesNo}</div>
+          <div class="master-detail-name">${m.name}</div>
+          <div class="master-detail-title">${m.title}</div>
+        </div>
+      </div>
+      <div class="master-detail-quote" style="color:${m.color};border-color:${m.color}">「${m.quote}」</div>
       ${C.hint(m.intro, 'yellow')}
+      <div class="master-detail-meta">
+        <div><b>最适用：</b>${m.scene}</div>
+        <div><b>策略难度：</b>★☆☆ 基础　★★☆ 进阶　★★★ 高阶</div>
+      </div>
       ${body}
     </div>`;
 }
@@ -6385,7 +6596,17 @@ renderStrategyLib.afterRender = function () {
   if (back) back.addEventListener('click', () =>
     EventBus.emit(EVENTS.NAV_GOTO, { screen: back.getAttribute('data-nav'), params: {} }));
 
-  showTab('cards');
+  // Deep-link：检查是否需要直接打开某位大师
+  const sub = Store.get('strategyLibSubview');
+  if (sub && sub.type === 'master' && MASTERS[sub.key]) {
+    showTab('masters');
+    contentEl.innerHTML = masterDetail(sub.key);
+    const mback = document.getElementById('master-back');
+    if (mback) mback.addEventListener('click', () => showTab('masters'));
+    Store.set('strategyLibSubview', null);
+  } else {
+    showTab('cards');
+  }
 };
 
 

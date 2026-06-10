@@ -1058,6 +1058,30 @@ body.hell-mode .header h1{color:var(--red);text-shadow:0 0 20px rgba(255,79,106,
 .master-rec-jump{font-size:11px;padding:5px 12px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;letter-spacing:.04em}
 .master-rec-jump:hover{filter:brightness(1.15)}
 
+/* 阶段目标横幅（对局中） */
+.stage-objective-banner{margin:10px 0 12px;padding:10px 14px;background:linear-gradient(90deg,rgba(160,144,192,.14),rgba(160,144,192,.04));border-left:3px solid #c084fc;border-radius:0 6px 6px 0;font-size:12.5px;color:#e8e0f0;line-height:1.6}
+.stage-objective-banner b{color:#c084fc;margin-right:6px}
+
+/* 选择复盘 · 你的选择 vs 最佳选择 */
+.choice-summary{font-size:12px;color:var(--dim);padding:8px 0 12px;border-bottom:1px dashed rgba(255,255,255,.08);margin-bottom:10px;text-align:center}
+.choice-card{border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:11px 13px;margin-bottom:10px;background:rgba(0,0,0,.18)}
+.choice-card.choice-best{border-left:3px solid #7eb55a;background:linear-gradient(90deg,rgba(126,181,90,.06),transparent)}
+.choice-card.choice-suboptimal{border-left:3px solid #e8b850;background:linear-gradient(90deg,rgba(232,184,80,.05),transparent)}
+.choice-stage{font-size:12px;font-weight:bold;color:#fff;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.choice-tag-best{font-size:10px;color:#7eb55a;background:rgba(126,181,90,.18);padding:1px 7px;border-radius:8px;font-weight:bold}
+.choice-tag-gap{font-size:10px;color:#e8b850;background:rgba(232,184,80,.18);padding:1px 7px;border-radius:8px;font-weight:bold}
+.choice-objective{font-size:11px;color:#a090c0;margin-bottom:8px;padding:4px 8px;background:rgba(160,144,192,.08);border-radius:4px}
+.choice-row{display:flex;gap:8px;align-items:baseline;margin:4px 0;font-size:12px;line-height:1.5}
+.choice-label{flex:0 0 48px;font-size:10px;font-weight:bold;letter-spacing:.05em;color:var(--dim);padding-top:1px}
+.choice-row-yours .choice-label{color:#e8b850}
+.choice-row-best .choice-label{color:#7eb55a}
+.choice-text{flex:1;color:#d0d0d0}
+.choice-ps{font-weight:bold;color:#7eb55a;margin-left:4px}
+.choice-ps-yours{color:#e8b850}
+.choice-feedback{font-size:11px;color:var(--dim);font-style:italic;line-height:1.5;padding:3px 0 3px 56px;border-left:1px dashed rgba(255,255,255,.06);margin-left:24px}
+.choice-feedback-yours{color:rgba(232,184,80,.7)}
+.choice-feedback-best{color:rgba(126,181,90,.75)}
+
 /* 欢迎屏增强 */
 .welcome-tagline{text-align:center;font-size:11px;color:#a090c0;margin-top:10px;letter-spacing:.04em;line-height:1.7}
 .welcome-master-guide{padding:14px 16px;background:linear-gradient(135deg,rgba(246,196,83,.06),rgba(0,0,0,.3));border:1px solid rgba(246,196,83,.25);border-radius:10px}
@@ -2520,8 +2544,30 @@ function scoreStaged(rounds) {
   return rounds.map((r, i) => {
     const max = r.maxPs || 20;
     const score = clampScore(Math.round((r.ps / max) * 100));
-    const comment = r.ps >= max * 0.8 ? '上佳选择' : r.ps > 0 ? '有效推进' : '适得其反，激化局面';
-    return { label: r.stage || `第${i + 1}阶段`, score, comment };
+    const isBest = r.bestIdx != null && r.chosenIdx === r.bestIdx;
+    let comment;
+    if (isBest) comment = '✓ 最佳选择';
+    else if (r.ps >= max * 0.8) comment = '次优选择，方向正确';
+    else if (r.ps > 0) comment = '有效推进，但有更优解';
+    else if (r.ps === 0) comment = '中性选择，未取得进展';
+    else comment = '适得其反，激化局面';
+    return {
+      label: r.stage || `第${i + 1}阶段`,
+      score,
+      comment,
+      // 复盘可解释字段
+      stageTitle: r.stageTitle,
+      stageContext: r.stageContext,
+      objective: r.objective,
+      chosenText: r.chosenText,
+      chosenPs: r.ps,
+      chosenFeedback: r.feedback,
+      bestText: r.bestText,
+      bestPs: r.bestPs,
+      bestFeedback: r.bestFeedback,
+      isBest,
+      gap: r.bestPs != null ? r.bestPs - r.ps : null,
+    };
   });
 }
 
@@ -4801,6 +4847,7 @@ class CrisisNegotiation extends BaseScenario {
     this.stages = [
       { title:'第一阶段：建立初步接触',
         context:`危机现场：${opp.name}声称持有重要文件，威胁要公开引发连锁反应。您是谈判代表，需要建立接触。`,
+        objective:'降低对方防御心理，打开沟通通道（避免威胁/压制）',
         options:[
           { text:'战术性同理心："我理解您现在的压力，这一定非常困难..."', ps:15, os:-10, feedback:'很好！同理心降低了防御性，对话通道初步建立。' },
           { text:'直接要求："请立即停止威胁行为，我们来谈条件。"', ps:5, os:0, feedback:'过于强硬，对方防御性增加，但明确了谈判立场。' },
@@ -4809,6 +4856,7 @@ class CrisisNegotiation extends BaseScenario {
         ] },
       { title:'第二阶段：深化沟通理解',
         context:'初步接触建立后，需要深入了解对方诉求，寻找核心利益。',
+        objective:'识别对方核心利益与情绪根源（用问题挖深，不要做承诺）',
         options:[
           { text:'校准问题："您最担心的具体是什么？我如何才能帮助您？"', ps:15, os:-10, feedback:'开放式校准问题触发深度思考，获取关键信息。' },
           { text:'贴标签技术："看起来您对当前局面感到非常愤怒和失望。"', ps:12, os:-8, feedback:'准确标签降低情绪张力，建立情感连接。' },
@@ -4817,6 +4865,7 @@ class CrisisNegotiation extends BaseScenario {
         ] },
       { title:'第三阶段：寻找解决方案',
         context:'对方核心诉求已初步明确，需要创造可接受的解决方案。',
+        objective:'创造扩大双方收益的整合性方案（避免施压逼成）',
         options:[
           { text:'整合性方案："如果我们能保证您的A需求，您是否愿意在B上妥协？"', ps:18, os:-12, feedback:'整合性谈判创造新价值，双方空间扩大。' },
           { text:'小步骤策略："先解决最小的问题，建立信任后再谈大问题。"', ps:15, os:-10, feedback:'增量式推进降低风险，积累谈判动力。' },
@@ -4825,6 +4874,7 @@ class CrisisNegotiation extends BaseScenario {
         ] },
       { title:'第四阶段：巩固协议',
         context:'双方接近共识，需要巩固并确保协议落实。',
+        objective:'锁定执行机制，防止事后反悔（保护信任，避免强制）',
         options:[
           { text:'书面确认："让我们把达成的共识逐条写下来，确保理解一致。"', ps:15, os:-10, feedback:'书面确认防止事后争议，体现专业性。' },
           { text:'"不"的保护：提供可接受的最低条件，让对方主动选择', ps:12, os:-8, feedback:'选择权归还给对方，增加协议持久性。' },
@@ -4855,6 +4905,7 @@ class CrisisNegotiation extends BaseScenario {
       return C.dialogBubble(`${l.feedback} <span style="color:${color}">${l.ps > 0 ? '+' : ''}${l.ps}分</span>`, 'system', l.stage);
     }).join('');
 
+    const objectiveBanner = s.objective ? `<div class="stage-objective-banner">🎯 <b>本阶段目标</b>：${s.objective}</div>` : '';
     this.emitRender(`
       ${C.gameHeader(`危机谈判 — ${s.title}`)}
       ${C.stageProgress(this.stage, this.stages.length)}
@@ -4865,6 +4916,7 @@ class CrisisNegotiation extends BaseScenario {
       ${this.experienceBanner()}
       ${C.relationshipPanel(opp)}
       ${C.hint(s.context, 'yellow')}
+      ${objectiveBanner}
       ${cramHtml}
       ${situationHtml}
       ${questionHtml}
@@ -4898,7 +4950,24 @@ class CrisisNegotiation extends BaseScenario {
     this.playerScore += opt.ps;
     this.oppScore += opt.os;
     const maxPs = Math.max(...s.options.map((o) => o.ps));
-    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
+    const bestIdx = s.options.findIndex((o) => o.ps === maxPs);
+    const best = s.options[bestIdx];
+    this.log.push({
+      stage: `第${this.stage + 1}阶段`,
+      stageTitle: s.title,
+      stageContext: s.context,
+      objective: s.objective || '',
+      feedback: opt.feedback,
+      ps: opt.ps,
+      maxPs,
+      chosenText: opt.text,
+      chosenIdx: parseInt(value, 10),
+      bestIdx,
+      bestText: best.text,
+      bestPs: best.ps,
+      bestFeedback: best.feedback,
+      allOptions: s.options.map((o, idx) => ({ idx, text: o.text, ps: o.ps, feedback: o.feedback })),
+    });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
@@ -5038,6 +5107,7 @@ class CoalitionGame extends BaseScenario {
     this.stages = [
       { title:'第一阶段：利益扫描',
         context:'多方谈判开始。您需要了解各方立场，识别潜在盟友和威胁。',
+        objective:'通过信息收集识别盟友与威胁（避免过早绑定/暴露底线）',
         options:[
           { text:'广泛信息收集：私下约谈每一方，了解各自核心诉求', ps:15, allies:1, feedback:'信息优势确立，识别了两个潜在盟友。' },
           { text:'公开立场宣示：直接阐明你的方案，测试各方反应', ps:8, allies:0, feedback:'立场清晰但暴露了底线，灵活性下降。' },
@@ -5046,6 +5116,7 @@ class CoalitionGame extends BaseScenario {
         ] },
       { title:'第二阶段：联盟构建',
         context:`您已掌握部分信息。${opp.name}正在积极游说，与您竞争关键盟友。`,
+        objective:'用利益整合赢得关键盟友（避免过度承诺/损害可信度）',
         options:[
           { text:'利益整合提案：设计满足盟友核心诉求的联合方案', ps:20, allies:1, feedback:'精准的利益对接赢得关键盟友加入！' },
           { text:'价值交换：提供对方高度需要的资源，换取联盟承诺', ps:15, allies:1, feedback:'等价交换达成，联盟基础稳固。' },
@@ -5054,6 +5125,7 @@ class CoalitionGame extends BaseScenario {
         ] },
       { title:'第三阶段：巩固联盟',
         context:`联盟初步形成，但内部存在分歧，外部 ${opp.name} 在尝试分化。`,
+        objective:'增强联盟内聚力，防止被分化（建设性优先于对抗性）',
         options:[
           { text:'建立内部共识机制：定期沟通，透明决策过程', ps:18, allies:1, feedback:'内聚力增强，联盟稳定性大幅提升。' },
           { text:'创造集体认同：塑造"我们"的共同价值和目标', ps:15, allies:0, feedback:'集体认同建立，联盟更具凝聚力。' },
@@ -5062,6 +5134,7 @@ class CoalitionGame extends BaseScenario {
         ] },
       { title:'第四阶段：最终谈判',
         context:'联盟谈判进入终局，需要将联盟优势转化为最终协议。',
+        objective:'用联盟优势促成整体最优协议（实力展示 > 期限威胁）',
         options:[
           { text:'展示联盟实力：明确但非威胁性地呈现联盟的综合优势', ps:20, allies:0, feedback:'实力展示改变了对手的BATNA评估，协议加速达成。' },
           { text:'提出一揽子方案：将所有议题打包，寻找整体最优解', ps:18, allies:0, feedback:'打包策略创造了额外价值，多方受益。' },
@@ -5091,6 +5164,7 @@ class CoalitionGame extends BaseScenario {
       return C.dialogBubble(`${l.feedback}（<span style="color:${color}">+${l.ps}分</span>）`, 'system', l.stage);
     }).join('');
 
+    const objectiveBanner = s.objective ? `<div class="stage-objective-banner">🎯 <b>本阶段目标</b>：${s.objective}</div>` : '';
     this.emitRender(`
       ${C.gameHeader(`联盟谈判 — ${s.title}`)}
       ${C.stageProgress(this.stage, this.stages.length)}
@@ -5102,6 +5176,7 @@ class CoalitionGame extends BaseScenario {
       ${this.experienceBanner()}
       ${C.relationshipPanel(this.opp)}
       ${C.hint(s.context)}
+      ${objectiveBanner}
       ${cramHtml}
       ${situationHtml}
       ${questionHtml}
@@ -5135,7 +5210,24 @@ class CoalitionGame extends BaseScenario {
     this.allies += opt.allies || 0;
     this.oppScore += (5 - Math.floor(opt.ps / 5));
     const maxPs = Math.max(...s.options.map((o) => o.ps));
-    this.log.push({ stage: `第${this.stage + 1}阶段`, feedback: opt.feedback, ps: opt.ps, maxPs });
+    const bestIdx = s.options.findIndex((o) => o.ps === maxPs);
+    const best = s.options[bestIdx];
+    this.log.push({
+      stage: `第${this.stage + 1}阶段`,
+      stageTitle: s.title,
+      stageContext: s.context,
+      objective: s.objective || '',
+      feedback: opt.feedback,
+      ps: opt.ps,
+      maxPs,
+      chosenText: opt.text,
+      chosenIdx: parseInt(value, 10),
+      bestIdx,
+      bestText: best.text,
+      bestPs: best.ps,
+      bestFeedback: best.feedback,
+      allOptions: s.options.map((o, idx) => ({ idx, text: o.text, ps: o.ps, feedback: o.feedback })),
+    });
     this.stage += 1;
 
     if (this.stage < this.stages.length) {
@@ -6357,8 +6449,45 @@ function renderResult() {
     }).join('');
     const turning = replay.turning ? C.hint((replay.turning.type === 'bad' ? '⚠ ' : '★ ') + replay.turning.text, replay.turning.type === 'bad' ? 'red' : 'green') : '';
     const spark = replay.moodSeries ? C.moodSparkline(replay.moodSeries) : '';
+    // 阶段化场景：渲染"你的选择 vs 最佳选择"对比卡
+    const stagedRounds = replay.perRound.filter((pr) => pr.chosenText);
+    let choiceCompareBlock = '';
+    if (stagedRounds.length) {
+      const bestCount = stagedRounds.filter((pr) => pr.isBest).length;
+      const summary = `<div class="choice-summary">本局共 ${stagedRounds.length} 个选择节点，最佳选择 <b style="color:var(--green)">${bestCount}</b> 次，可改进 <b style="color:var(--yellow)">${stagedRounds.length - bestCount}</b> 次</div>`;
+      const cards = stagedRounds.map((pr, i) => {
+        const stageLabel = pr.stageTitle || pr.label;
+        if (pr.isBest) {
+          return `<div class="choice-card choice-best">
+            <div class="choice-stage">第 ${i + 1} 节 · ${stageLabel} <span class="choice-tag-best">✓ 最佳</span></div>
+            ${pr.objective ? `<div class="choice-objective">🎯 阶段目标：${pr.objective}</div>` : ''}
+            <div class="choice-row choice-row-best">
+              <div class="choice-label">你选了</div>
+              <div class="choice-text">「${pr.chosenText}」 <span class="choice-ps">+${pr.chosenPs}</span></div>
+            </div>
+            <div class="choice-feedback">${pr.chosenFeedback || ''}</div>
+          </div>`;
+        }
+        return `<div class="choice-card choice-suboptimal">
+          <div class="choice-stage">第 ${i + 1} 节 · ${stageLabel} <span class="choice-tag-gap">差距 ${pr.gap} 分</span></div>
+          ${pr.objective ? `<div class="choice-objective">🎯 阶段目标：${pr.objective}</div>` : ''}
+          <div class="choice-row choice-row-yours">
+            <div class="choice-label">你选了</div>
+            <div class="choice-text">「${pr.chosenText}」 <span class="choice-ps choice-ps-yours">${pr.chosenPs > 0 ? '+' : ''}${pr.chosenPs}</span></div>
+          </div>
+          <div class="choice-feedback choice-feedback-yours">${pr.chosenFeedback || ''}</div>
+          <div class="choice-row choice-row-best">
+            <div class="choice-label">最佳是</div>
+            <div class="choice-text">「${pr.bestText}」 <span class="choice-ps">+${pr.bestPs}</span></div>
+          </div>
+          <div class="choice-feedback choice-feedback-best">${pr.bestFeedback || ''}</div>
+        </div>`;
+      }).join('');
+      choiceCompareBlock = C.panel(`选择复盘 · 你的选择 vs 最佳选择`, summary + cards);
+    }
     replayPanel =
       C.panel(`逐回合复盘　平均 ${replay.avgScore} 分`, turning + rows + spark) +
+      choiceCompareBlock +
       C.panel('改进建议', replay.advice.map((a) => C.hint(`• ${a}`)).join(''));
   }
 
@@ -6388,6 +6517,33 @@ function renderResult() {
       ${C.scoreBox(result.oppScore, `${opp ? opp.name : '对手'} 得分`)}
     </div>
     <div style="text-align:center;margin-bottom:16px">${C.outcomeBadge(result.outcome)}</div>
+    ${(() => {
+      if (!replay || !replay.perRound) return '';
+      const staged = replay.perRound.filter((pr) => pr.chosenText);
+      if (!staged.length) return '';
+      const bestCount = staged.filter((pr) => pr.isBest).length;
+      const total = staged.length;
+      const won = result.outcome === 'win' || result.outcome === 'cooperative';
+      const quality = bestCount / total;
+      let title, color, msg;
+      if (won && quality >= 0.75) {
+        title = '🏆 高质量胜利'; color = 'green';
+        msg = `${bestCount}/${total} 节做出最佳选择——目标达成，技巧也用对了。这是真正的训练成果。`;
+      } else if (won && quality >= 0.5) {
+        title = '✓ 胜利，但有提升空间'; color = 'cyan';
+        msg = `你赢了，但 ${total - bestCount}/${total} 节存在更优解。看下方"选择复盘"，差距在哪里、为什么、应该用什么技巧。`;
+      } else if (won) {
+        title = '⚠ 险胜：靠运气，不是靠技巧'; color = 'yellow';
+        msg = `你赢了——但 ${total - bestCount}/${total} 节选择并非最优。在更高难度下这种打法会失败。务必查看"选择复盘"补齐基础。`;
+      } else if (quality >= 0.5) {
+        title = '虽败犹胜：方向对了'; color = 'cyan';
+        msg = `结果未达成，但 ${bestCount}/${total} 节选择正确。失败可能源于场景外因素，技巧本身是对的。`;
+      } else {
+        title = '需要系统补课'; color = 'red';
+        msg = `${total - bestCount}/${total} 节存在更优解。先看"选择复盘"理解每个差距，再去策略库针对性学习。`;
+      }
+      return C.hint(`<b>${title}</b>　${msg}`, color);
+    })()}
     ${shardsBlock}
     ${typeof buildSkillPackEarnedPanelHtml === 'function' ? buildSkillPackEarnedPanelHtml() : ''}
     ${typeof buildSkillReplayPanelHtml === 'function' ? buildSkillReplayPanelHtml() : ''}

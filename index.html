@@ -2602,59 +2602,152 @@ const PsychAnalyzer = { accumulate, computeProfile, getProfileType, hasEnoughDat
 
 const clampScore = (x, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, x));
 
+// 计算回合所在阶段（开局/中局/末局），用于评语上下文化
+function phaseOf(i, total) {
+  if (i === 0) return '开局';
+  if (i >= total - 2) return '末局';
+  return `第${i + 1}轮`;
+}
+
 function scorePrisoners(rounds) {
-  return rounds.map((r) => {
+  return rounds.map((r, i) => {
+    const total = rounds.length;
+    const phase = phaseOf(i, total);
+    const prev = i > 0 ? rounds[i - 1] : null;
+    const myCoopBefore = rounds.slice(0, i).filter((x) => x.player === 'coop').length;
+    const myDefBefore = i - myCoopBefore;
+    const oppCoopBefore = rounds.slice(0, i).filter((x) => x.opp === 'coop').length;
+    const oppDefBefore = i - oppCoopBefore;
     let score, comment;
-    if (r.player === 'coop' && r.opp === 'coop') { score = 85; comment = '互利合作，稳健可持续'; }
-    else if (r.player === 'defect' && r.opp === 'coop') { score = 66; comment = '占得便宜，但易招致后续报复'; }
-    else if (r.player === 'coop' && r.opp === 'defect') { score = 40; comment = '被对方利用，吃亏'; }
-    else { score = 32; comment = '双输僵局，零和内耗'; }
+    if (r.player === 'coop' && r.opp === 'coop') {
+      score = 85;
+      if (i === 0) comment = '开局互信：双方释放善意，建立合作通道';
+      else if (prev && (prev.player === 'defect' || prev.opp === 'defect')) comment = `${phase}修复：上轮裂痕通过双方合作弥合`;
+      else comment = `${phase}维持互信（你方已合作 ${myCoopBefore + 1} 次 · 对方合作 ${oppCoopBefore + 1} 次）`;
+    } else if (r.player === 'defect' && r.opp === 'coop') {
+      score = 66;
+      if (i === 0) comment = '开局背叛：本轮抢分，但放弃了合作信号';
+      else if (i === total - 1) comment = '末轮背叛：短期得分但牺牲长期信誉（重复博弈中代价更大）';
+      else if (prev && prev.opp === 'defect') comment = `${phase}以背叛回应背叛：可能进入TFT死锁`;
+      else comment = `${phase}单边背叛：对方累计合作 ${oppCoopBefore + 1} 次，你已背叛 ${myDefBefore + 1} 次`;
+    } else if (r.player === 'coop' && r.opp === 'defect') {
+      score = 40;
+      if (i === 0) comment = '开局被利用：你释放善意，对方借机抢分';
+      else if (prev && prev.opp === 'defect') comment = `${phase}再次被利用：对方已连续背叛 ${oppDefBefore - (i > 1 && rounds[i - 2].opp === 'coop' ? 0 : 0) + 1} 次仍未调整`;
+      else comment = `${phase}信任受损：你累计被截获 ${i - oppCoopBefore} 次善意`;
+    } else {
+      score = 32;
+      if (i === 0) comment = '开局双输：首轮双背叛，互信成本上升';
+      else comment = `${phase}对耗：双方都在防守，谁也得不到合作红利`;
+    }
     return { label: `第${r.round}轮`, score, comment, mood: r.mood };
   });
 }
 
 function scoreTrust(rounds) {
-  return rounds.map((r) => {
+  let cumulInvest = 0;
+  let cumulReturn = 0;
+  return rounds.map((r, i) => {
+    cumulInvest += r.invested;
+    cumulReturn += r.returned;
+    const prev = i > 0 ? rounds[i - 1] : null;
+    const phase = phaseOf(i, rounds.length);
     const score = clampScore(50 + r.myNet * 4);
-    const comment = r.myNet > 3 ? '信任获得正回报' : r.myNet >= 0 ? '基本持平' : '信任被辜负，受损';
+    let comment;
+    if (r.myNet > 3) {
+      if (i === 0) comment = `开局投 ${r.invested}：对方回报 +${r.myNet}，信任基础建立`;
+      else if (prev && prev.myNet < 0) comment = `${phase}投 ${r.invested}：上轮亏损后仍获正回报（+${r.myNet}），关系恢复`;
+      else comment = `${phase}投 ${r.invested}：净赚 ${r.myNet}（累计投资 ${cumulInvest} / 收回 ${cumulReturn}）`;
+    } else if (r.myNet >= 0) {
+      comment = `${phase}投 ${r.invested}：基本持平（+${r.myNet}），对方刚好按本金返还`;
+    } else {
+      if (i === 0) comment = `开局投 ${r.invested}：被对方截留 ${-r.myNet}，开局即受损`;
+      else if (prev && prev.myNet < 0) comment = `${phase}投 ${r.invested}：连续 ${i + 1 - rounds.slice(0, i + 1).reverse().findIndex((x) => x.myNet >= 0)} 轮被截留，应降低投资`;
+      else comment = `${phase}投 ${r.invested}：被对方截留 ${-r.myNet}（累计净盈亏 ${cumulReturn - cumulInvest}）`;
+    }
     return { label: `第${r.round}轮(投${r.invested})`, score, comment, mood: r.mood };
   });
 }
 
 function scorePublicGoods(rounds) {
-  return rounds.map((r) => {
+  let myCumul = 0;
+  let oppCumul = 0;
+  return rounds.map((r, i) => {
+    myCumul += r.my;
+    oppCumul += r.opp;
+    const phase = phaseOf(i, rounds.length);
     const gain = r.share - r.my;
     const score = clampScore(50 + gain * 6);
-    const comment = r.my >= 5 && r.opp >= 5 ? '集体共赢' : r.my === 0 ? '搭便车，短期获利但侵蚀信任' : '谨慎参与';
+    let comment;
+    if (r.my >= 5 && r.opp >= 5) {
+      comment = `${phase}集体共赢：你贡 ${r.my} 对方贡 ${r.opp}，公池 ${r.pool} 每人分 ${r.share}`;
+    } else if (r.my === 0) {
+      comment = `${phase}搭便车：自己 0 贡献分到 ${r.share}（累计贡 ${myCumul} 对方 ${oppCumul}）— 若对方察觉将停止贡献`;
+    } else if (r.my < r.opp) {
+      comment = `${phase}低贡（${r.my} vs 对方 ${r.opp}）：你已占对方便宜 ${oppCumul - myCumul} 单位`;
+    } else if (r.my > r.opp) {
+      comment = `${phase}独自高贡（${r.my} vs 对方 ${r.opp}）：你被占便宜 ${myCumul - oppCumul} 单位，对方在测试上限`;
+    } else {
+      comment = `${phase}对称参与（双方各贡 ${r.my}）：稳定但未拉高集体产出`;
+    }
     return { label: `第${r.round}轮(贡${r.my})`, score, comment, mood: r.mood };
   });
 }
 
 function scoreBargaining(rounds, result) {
   const per = rounds.map((r, i) => {
-    const prev = i > 0 ? rounds[i - 1].my : r.my;
-    const conc = r.my - prev;
-    const score = clampScore(88 - conc * 3);
-    const comment = conc <= 3 ? '小步施压，纪律良好' : conc >= 12 ? '让步过快，丢失筹码' : '让步适中';
+    const phase = phaseOf(i, rounds.length);
+    const prev = i > 0 ? rounds[i - 1] : null;
+    const myConc = prev ? r.my - prev.my : 0;
+    const oppConc = prev ? prev.opp - r.opp : 0;
+    const score = clampScore(88 - myConc * 3);
+    let comment;
+    if (i === 0) {
+      comment = `${phase}首轮报价 ${r.my} 元（对方 ${r.opp}）：双方报价差 ${r.opp - r.my}`;
+    } else if (myConc <= 1) {
+      comment = `${phase}几乎不让步（+${myConc}）：对方让 ${oppConc}，纪律良好，议价节奏在你手里`;
+    } else if (myConc <= 3) {
+      comment = `${phase}小步让步（+${myConc}）：对方让 ${oppConc}，让步速率匹配`;
+    } else if (myConc >= 12) {
+      comment = `${phase}让步过快（+${myConc}）：对方仅让 ${oppConc}，你正在丢筹码`;
+    } else {
+      comment = `${phase}让步 ${myConc} 元（对方让 ${oppConc}）：基本对称`;
+    }
     return { label: `第${r.round}轮(出${r.my})`, score, comment, mood: r.mood };
   });
   // 追加成交评分
   const price = 100 - result.playerScore;
+  const totalRounds = rounds.length;
   per.push({
-    label: `成交(${price}元)`,
+    label: `成交(${price}元 · ${totalRounds}轮)`,
     score: clampScore(price <= 55 ? 92 : price <= 65 ? 70 : 45),
-    comment: price <= 55 ? '远低于真实价值，出色' : price <= 65 ? '接近真实价值' : '偏高，议价不足',
+    comment: price <= 55 ? `远低于真实价值（约 70 元）— 节省 ${70 - price} 元，议价出色` :
+             price <= 65 ? `接近真实价值（${price} 元），双方都没吃亏` :
+             `偏高（多付 ${price - 65} 元）— 让步过快或锚定不足`,
   });
   return per;
 }
 
 function scoreUltimatum(rounds) {
-  return rounds.map((r) => {
+  return rounds.map((r, i) => {
+    const phase = phaseOf(i, rounds.length);
+    const prev = i > 0 ? rounds[i - 1] : null;
     let score, comment;
-    if (!r.accepted) { score = 30; comment = '提案被否，双方归零'; }
-    else if (r.myOffer >= 40 && r.myOffer <= 62) { score = 85; comment = '分配合理，顺利达成'; }
-    else if (r.myOffer > 62) { score = 60; comment = '自留偏多，侥幸通过'; }
-    else { score = 70; comment = '偏让利，关系友好'; }
+    if (!r.accepted) {
+      score = 30;
+      if (r.myOffer > 62) comment = `${phase}提案被否（自留 ${r.myOffer}）：对方因感到不公而拒绝，双方归零`;
+      else comment = `${phase}提案被否（自留 ${r.myOffer}）：对方可能在试探你的底线，下次保留度可适度调整`;
+    } else if (r.myOffer >= 40 && r.myOffer <= 62) {
+      score = 85;
+      comment = `${phase}公平达成（自留 ${r.myOffer} / 让 ${100 - r.myOffer}）：分配落在双方满意区间`;
+    } else if (r.myOffer > 62) {
+      score = 60;
+      if (prev && !prev.accepted) comment = `${phase}冒险得手（自留 ${r.myOffer}）：对方上轮拒绝后仍接受，但可能在记账`;
+      else comment = `${phase}自留偏多（${r.myOffer}）：本轮侥幸通过，下轮对方期望可能上调`;
+    } else {
+      score = 70;
+      comment = `${phase}让利型（自留 ${r.myOffer}）：关系友好但牺牲了 ${50 - r.myOffer} 单位收益`;
+    }
     return { label: `第${r.round}轮`, score, comment };
   });
 }
@@ -2703,10 +2796,120 @@ const SCORERS = {
   coalition: scoreStaged,
 };
 
+// 根据真实回合数据生成具体观察 + 建议，替代写死的 3 条通用文案
+function buildContextualAdvice(kind, rounds, opp, result, perRound) {
+  const advice = [];
+  if (!rounds || !rounds.length) return advice;
+
+  if (kind === 'prisoners') {
+    const myCoop = rounds.filter((r) => r.player === 'coop').length;
+    const oppCoop = rounds.filter((r) => r.opp === 'coop').length;
+    const myCoopRate = myCoop / rounds.length;
+    const total = rounds.length;
+    // 找出连续被背叛
+    let maxBetrayalStreak = 0, cur = 0, streakEnd = 0;
+    rounds.forEach((r, i) => {
+      if (r.opp === 'defect' && r.player === 'coop') { cur += 1; if (cur > maxBetrayalStreak) { maxBetrayalStreak = cur; streakEnd = i; } }
+      else cur = 0;
+    });
+    // 第一次报复
+    const firstRetaliation = rounds.findIndex((r, i) => i > 0 && r.player === 'defect' && rounds[i - 1].opp === 'defect');
+    advice.push(`本局合作 ${myCoop}/${total}（${Math.round(myCoopRate * 100)}%）· 对方合作 ${oppCoop}/${total}。${myCoop > oppCoop ? '你更善意，得分天花板被压低' : myCoop < oppCoop ? '你更进取，但损耗了关系红利' : '势均力敌'}。`);
+    if (maxBetrayalStreak >= 2) {
+      advice.push(`第 ${streakEnd - maxBetrayalStreak + 2}-${streakEnd + 1} 轮你连续 ${maxBetrayalStreak} 轮被背叛仍合作 → 应当在第 ${streakEnd - maxBetrayalStreak + 3} 轮就以背叛回应（Tit-for-Tat）。`);
+    }
+    if (firstRetaliation > 0 && rounds.slice(firstRetaliation).every((r) => r.player === 'defect')) {
+      advice.push(`第 ${firstRetaliation + 1} 轮报复后未尝试恢复（保持背叛到最后）→ 错过了 forgiving-TFT 重启合作的机会。`);
+    }
+    if (rounds[rounds.length - 1].player === 'defect' && total >= 4) {
+      advice.push('末轮选择背叛：在重复博弈中，最后一手定义对手对你的整体印象，建议保留 1-2 轮"和善结尾"。');
+    }
+  } else if (kind === 'trust') {
+    const totalInv = rounds.reduce((s, r) => s + r.invested, 0);
+    const totalRet = rounds.reduce((s, r) => s + r.returned, 0);
+    const negNets = rounds.filter((r) => r.myNet < 0);
+    const avgInv = (totalInv / rounds.length).toFixed(1);
+    advice.push(`总投资 ${totalInv}（均 ${avgInv}/轮）→ 回收 ${totalRet}，净 ${totalRet - totalInv >= 0 ? '+' : ''}${totalRet - totalInv}。被截留 ${negNets.length}/${rounds.length} 轮。`);
+    if (negNets.length >= 2) {
+      const lastTwo = negNets.slice(-2);
+      advice.push(`第 ${lastTwo.map((r) => r.round).join('、')} 轮均被截留 → 对方截留模式已暴露，应当降低投资到 1-2 区间观察。`);
+    }
+    const risingAfterBetrayal = rounds.findIndex((r, i) => i > 0 && rounds[i - 1].myNet < 0 && r.invested > rounds[i - 1].invested);
+    if (risingAfterBetrayal > 0) {
+      advice.push(`第 ${risingAfterBetrayal + 1} 轮你在被截留后反而提高投资（${rounds[risingAfterBetrayal - 1].invested} → ${rounds[risingAfterBetrayal].invested}）→ 缺少信任建立证据时不应加注。`);
+    }
+  } else if (kind === 'publicgoods') {
+    const myTot = rounds.reduce((s, r) => s + r.my, 0);
+    const oppTot = rounds.reduce((s, r) => s + r.opp, 0);
+    const freeRides = rounds.filter((r) => r.my === 0).length;
+    advice.push(`累计贡献：你 ${myTot} 对方 ${oppTot}（差 ${Math.abs(myTot - oppTot)}）${freeRides > 0 ? ` · 你搭便车 ${freeRides} 轮` : ''}。`);
+    if (myTot > oppTot + 5) {
+      advice.push(`你比对方多贡 ${myTot - oppTot} 单位 → 对方在测试你的容忍极限，下轮应降至与对方持平。`);
+    } else if (oppTot > myTot + 5 && freeRides === 0) {
+      advice.push(`你比对方少贡 ${oppTot - myTot} 单位但未完全搭便车 → 集体收益不充分，建议在末轮拉高一次拉动整体。`);
+    }
+    if (freeRides >= 2) {
+      advice.push(`搭便车 ${freeRides} 轮 → 若对方使用条件合作策略将完全停贡，你的总收益会快速下降。`);
+    }
+  } else if (kind === 'bargaining') {
+    const totalRounds = rounds.length;
+    const startOffer = rounds[0].my;
+    const endOffer = rounds[rounds.length - 1].my;
+    const myConc = endOffer - startOffer;
+    const startOpp = rounds[0].opp;
+    const endOpp = rounds[rounds.length - 1].opp;
+    const oppConc = startOpp - endOpp;
+    advice.push(`你从 ${startOffer} → ${endOffer}（共让 ${myConc}）· 对方从 ${startOpp} → ${endOpp}（共让 ${oppConc}）· 共 ${totalRounds} 轮。`);
+    if (myConc > oppConc + 5) {
+      advice.push(`你让步比对方多 ${myConc - oppConc}：议价节奏被对方掌握，应延长锚定期。`);
+    } else if (oppConc > myConc + 5) {
+      advice.push(`对方让步比你多 ${oppConc - myConc}：你成功锚定了对方，可以更稳健。`);
+    }
+    const finalPrice = 100 - result.playerScore;
+    if (finalPrice > 65) advice.push(`成交价 ${finalPrice} 元 > 65 → 多付 ${finalPrice - 65} 元，源于让步节奏失控（参考砍价让步：5%-3%-2%-1% 递减）。`);
+    else if (finalPrice <= 55) advice.push(`成交价 ${finalPrice} 元 ≤ 55 → 远低于真实价值 (70)，议价出色。可以挑战更强硬对手。`);
+  } else if (kind === 'ultimatum') {
+    const accepted = rounds.filter((r) => r.accepted);
+    const rejected = rounds.filter((r) => !r.accepted);
+    const fair = accepted.filter((r) => r.myOffer >= 40 && r.myOffer <= 62);
+    const greedy = rounds.filter((r) => r.myOffer > 62);
+    advice.push(`${rounds.length} 轮中接受 ${accepted.length}（公平 ${fair.length}）· 拒绝 ${rejected.length}${greedy.length ? ` · 自留 >62 共 ${greedy.length} 次` : ''}。`);
+    if (rejected.length >= 2) {
+      advice.push(`${rejected.length} 次被拒 → 对方对公平度敏感，建议自留压到 55 以下试探接受阈值。`);
+    }
+    if (greedy.length > fair.length && accepted.length) {
+      advice.push(`贪婪轮数（${greedy.length}）多于公平轮数（${fair.length}）→ 接受率会快速下降，建议在中段试一次 50-50 重置关系。`);
+    }
+  } else if (kind === 'crisis' || kind === 'coalition') {
+    // 阶段化场景：基于"最佳选择比例"给建议（P1 改造已覆盖）
+    const optimal = perRound.filter((p) => p.isBest).length;
+    advice.push(`${optimal}/${perRound.length} 节做出最佳选择${optimal === perRound.length ? '——全程最优，已具备进入高压模式的能力' : optimal >= perRound.length / 2 ? '——方向正确但有 ' + (perRound.length - optimal) + ' 节存在更优解' : '——多数节存在更优解，建议优先去策略库补课'}。`);
+    const techUsed = {};
+    perRound.forEach((p) => { if (p.chosenTech) techUsed[p.chosenTech] = (techUsed[p.chosenTech] || 0) + 1; });
+    const mostUsed = Object.entries(techUsed).sort((a, b) => b[1] - a[1])[0];
+    if (mostUsed && TECHNIQUE_LIBRARY[mostUsed[0]]) {
+      const t = TECHNIQUE_LIBRARY[mostUsed[0]];
+      advice.push(`本局主要使用：${t.icon} ${t.name}（${mostUsed[1]} 次）— 源自 ${t.source} 宗师。可去"策略理论库 → 技巧熟练度"查看完整档案。`);
+    }
+    const missedTechs = perRound.filter((p) => !p.isBest && p.bestTech && TECHNIQUE_LIBRARY[p.bestTech]).map((p) => TECHNIQUE_LIBRARY[p.bestTech].name);
+    if (missedTechs.length) {
+      const uniq = [...new Set(missedTechs)];
+      advice.push(`未掌握的最佳技巧：${uniq.join('、')}（在这些节本应使用）。`);
+    }
+  }
+
+  // 始终附加 1 条对手专项 tip（不再重复 2 条）
+  if (opp) {
+    const oppTips = getOpponentTips(opp.id);
+    if (oppTips && oppTips.length) advice.push(`💡 应对 ${opp.type}：${oppTips[0]}`);
+  }
+  return advice;
+}
+
 function buildReplay(kind, rounds, opp, result) {
   const scorer = SCORERS[kind];
   if (!scorer || !rounds || !rounds.length) {
-    return { perRound: [], avgScore: null, turning: null, advice: opp ? getOpponentTips(opp.id).slice(0, 2) : [], moodSeries: null };
+    return { perRound: [], avgScore: null, turning: null, advice: opp ? [`💡 应对 ${opp.type}：${(getOpponentTips(opp.id) || [''])[0]}`] : [], moodSeries: null };
   }
   const perRound = scorer(rounds, result);
   const avgScore = Math.round(perRound.reduce((s, r) => s + r.score, 0) / perRound.length);
@@ -2725,12 +2928,8 @@ function buildReplay(kind, rounds, opp, result) {
   const moods = perRound.filter((r) => r.mood).map((r) => r.mood);
   const moodSeries = moods.length ? moods : null;
 
-  // 改进建议：表现 + 对手专项
-  const advice = [];
-  if (avgScore >= 75) advice.push('整体决策质量高，可尝试更高难度对手或更激进的目标。');
-  else if (avgScore >= 55) advice.push('决策稳健但有提升空间，关注转折点回合的更优解。');
-  else advice.push('多个回合失分明显，建议复盘转折点，调整对该类对手的策略。');
-  if (opp) advice.push(...getOpponentTips(opp.id).slice(0, 2));
+  // 改进建议：基于真实回合数据的具体观察
+  const advice = buildContextualAdvice(kind, rounds, opp, result, perRound);
 
   return { perRound, avgScore, turning, advice, moodSeries };
 }

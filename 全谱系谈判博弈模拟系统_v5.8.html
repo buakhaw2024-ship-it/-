@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系谈判博弈模拟系统 v5.7</title>
+<title>全谱系谈判博弈模拟系统 v5.8</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -7146,7 +7146,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系谈判博弈模拟系统  v5.7        ║<br>
+║  全谱系谈判博弈模拟系统  v5.8        ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -8533,7 +8533,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.7',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.8',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },
@@ -15261,12 +15261,43 @@ const LegendDuel = (() => {
     const aKey = adaptMap[choice.tag] || 'strategy';
     state.adaptation[aKey] = Math.min(100, (state.adaptation[aKey] || 0) + (5 + Math.round(8 * (1 - dim.multiplier))));
 
-    // 对手"反向施压"：在玩家强项的反面降 1-3 分
+    // 对手"反向施压"：随适应度与回合数升级（v5.8 修复"怎么选都赢"）
     const counterMetric = choice.metric === 'information' ? 'pressure' :
                           choice.metric === 'agenda' ? 'trust' :
                           choice.metric === 'pressure' ? 'trust' :
                           choice.metric === 'trust' ? 'pressure' : 'pressure';
-    state.metrics[counterMetric] = Math.max(0, state.metrics[counterMetric] - (2 + Math.round(2 * dim.multiplier)));
+    const counterHit = 3 + Math.round(2 * dim.multiplier) +
+      Math.floor((state.adaptation[aKey] || 0) / 25) + Math.floor(state.round / 2);
+    state.metrics[counterMetric] = Math.max(0, state.metrics[counterMetric] - counterHit);
+    // 中后期对手主动出招：再压一个随机弱项
+    if (state.round >= 2) {
+      const weakest = DUEL_METRICS.reduce((a, b) => (state.metrics[b] < state.metrics[a] ? b : a));
+      state.metrics[weakest] = Math.max(0, state.metrics[weakest] - (2 + Math.floor(state.round / 2)));
+    }
+
+    // v5.8 局势条与对手记忆移入引擎（终局判定前生效）
+    const cineKey = CINE_CHOICE_MAP[choice.key] || choice.tag;
+    const barEffects = CINE_BAR_EFFECTS[cineKey] || {};
+    const barDeltas = {};
+    Object.entries(barEffects).forEach(([k, v]) => {
+      barDeltas[k] = v;
+      state.bars[k] = Math.max(0, Math.min(100, (state.bars[k] || 50) + v));
+    });
+    // 重复同一手段：对手耐心额外流失
+    if (state.lastCineKey === cineKey) {
+      state.bars.patience = Math.max(0, state.bars.patience - 6);
+      barDeltas.patience = (barDeltas.patience || 0) - 6;
+    }
+    state.cineCounts[cineKey] = (state.cineCounts[cineKey] || 0) + 1;
+    const memoryHits = detectCineMemory(state, cineKey, state.round);
+    memoryHits.forEach((m) => {
+      state.memoryNotes.push({ round: state.round, behavior: m.behavior, counter: m.counter });
+      // 被记下的行为模式有实际代价：条款空间与己方信任受损
+      state.bars.space = Math.max(0, state.bars.space - 5);
+      state.bars.ownTrust = Math.max(0, state.bars.ownTrust - 3);
+    });
+    state.lastCineKey = cineKey;
+    state.lastCineConseq = { cineKey, deltas: barDeltas, memory: memoryHits };
 
     // AI 记忆
     AIMemoryV2.observe(choice.tag);
@@ -15355,15 +15386,22 @@ const LegendDuel = (() => {
 
   function computeDuelOutcome(state) {
     const m = state.metrics;
+    const b = state.bars || {};
     const high = (k) => m[k] >= 65;
     const low = (k) => m[k] <= 35;
     const lowCount = DUEL_METRICS.filter(low).length;
     const highCount = DUEL_METRICS.filter(high).length;
-    if (lowCount >= 3) return 'collapse';
-    if (high('trust') && high('endgame') && !low('information')) return 'cooperativeWin';
-    if (high('agenda') && high('endgame')) return 'strategicWin';
-    if (high('trust') && (m.information >= 50 || m.pressure >= 50)) return 'defensiveWin';
-    if (highCount >= 1 && lowCount <= 1) return 'narrowLoss';
+    const avg = Math.round(DUEL_METRICS.reduce((s, k) => s + m[k], 0) / DUEL_METRICS.length);
+    const barOf = (k, dft) => (typeof b[k] === 'number' ? b[k] : dft);
+    const barCrit = ['patience', 'ownTrust', 'clarity', 'space'].filter((k) => barOf(k, 50) <= 22).length;
+    // 败北条件（v5.8：局势条崩盘 / 多项低权 / 整体平庸都会输）
+    if (lowCount >= 3 || barCrit >= 2 || barOf('patience', 50) <= 8) return 'collapse';
+    if (lowCount >= 2 || barCrit >= 1 || avg < 51) return 'narrowLoss';
+    // 胜利条件：必须同时满足权重与局势条
+    if (high('trust') && high('endgame') && barOf('clarity', 50) >= 48 && !low('information')) return 'cooperativeWin';
+    if (high('agenda') && high('endgame') && avg >= 60) return 'strategicWin';
+    if (avg >= 56 && highCount >= 2 && barOf('patience', 50) >= 28) return 'defensiveWin';
+    if (avg >= 58 && highCount >= 1 && lowCount === 0) return 'defensiveWin';
     return 'narrowLoss';
   }
 
@@ -15522,7 +15560,8 @@ const STORY_SCRIPTS = {
           '阖闾追问："孙卿常言五事七计。你替寡人算——吴楚相较，胜算几何？"',
           '殿议将散，阖闾盯着你："给寡人一句实话：现在，能不能打？"',
         ],
-        lesson: '庙算＝谈判前的准备：先比较双方实力、代价与退路，没算清就不开局。' },
+        lesson: '庙算＝谈判前的准备：先比较双方实力、代价与退路，没算清就不开局。',
+        voices: { info: '"楚使深夜独来，不带仪仗——大王想先听战报，还是先听楚国怕什么？"', reframe: '"今日不议战和，先议吴国输不起什么。"', pressure: '"主战诸将就在帐外。王上一声令下，臣无话可说——但粮草只够九十日。"', build: '"王上息怒。先听完各方实情，打的主动权依然在吴。"', lock: '"请王上允臣先核五事七计，三日后廷议再定——只此三日。"' }, },
       { opponent: '楚国使者',
         scene: '楚使入吴探听虚实。孙武授计"三师肄楚"：示弱于外，疲楚于内——你负责接待这位嗅觉敏锐的客人。',
         beats: [
@@ -15531,7 +15570,8 @@ const STORY_SCRIPTS = {
           '楚使抛出条件："若吴愿遣质子入郢，两国可约互不相攻。"',
           '楚使起身告辞，忽然回头："吴王的真实意图，到底是什么？"',
         ],
-        lesson: '虚实＝信息管理：让对方看到的，永远只是你想让他看到的那部分。' },
+        lesson: '虚实＝信息管理：让对方看到的，永远只是你想让他看到的那部分。',
+        voices: { info: '"十万舟师？敢问贵使，汉水冬枯，三百戈船泊于何处？"', reframe: '"兵力多寡不是今夜的题目——两国边邑十年不宁，才是。"', pressure: '"吴军三师轮战已两年，楚师疲于奔命——这笔账贵使心里有数。"', build: '"使者远来辛苦。吴国无意羞辱楚国，只想知道楚王真正的底线。"', lock: '"虚言到此为止。两国各自的实数，写下来换着看，敢吗？"' }, },
       { opponent: '唐侯与蔡侯',
         scene: '唐、蔡两国君主皆受楚令尹勒索之辱，怨楚已久。孙武命你出使结盟——把"可胜之机"先攥在手里。',
         beats: [
@@ -15540,7 +15580,8 @@ const STORY_SCRIPTS = {
           '蔡侯提出条件："吴军必须先渡淮水，盟约才能落笔。"',
           '两君对视，唐侯开口："吴国能给的承诺，哪一条是写在简上、事后可验的？"',
         ],
-        lesson: '先胜后战＝先把同盟、补给、退路锁死，开谈只是把既定优势兑现。' },
+        lesson: '先胜后战＝先把同盟、补给、退路锁死，开谈只是把既定优势兑现。',
+        voices: { info: '"敢问二位君上：楚人扣留唐侯三年——除了名马，他们还要过什么？"', reframe: '"二位忧楚师朝发夕至——可若吴唐蔡三家成盟，朝发夕至的就是我们。"', pressure: '"楚令尹的勒索不会停在名马——今日不盟，明年贡赋翻倍。"', build: '"蔡侯所虑极是：吴军先渡淮水、先入战地——贵国之兵，殿后即可。"', lock: '"盟约三条刻简为凭：吴军先动、战利三分、败则同退——可验可执，今日歃血。"' }, },
       { opponent: '楚军令尹的使者',
         scene: '柏举之战前夜，吴军三战皆捷。楚令尹遣使求和缓兵。孙武授意：围师必阙——给台阶，但不给喘息。',
         beats: [
@@ -15549,7 +15590,8 @@ const STORY_SCRIPTS = {
           '楚使私下递话："令尹愿以三城换吴军北撤——此事，可以不入盟书。"',
           '楚使摊牌："给条活路，楚军让出汉东；逼急了，二十万人拼死一战。"',
         ],
-        lesson: '围而不战＝收掉对方退路的同时保留体面出口：谈判中的压力要留"阙口"。' },
+        lesson: '围而不战＝收掉对方退路的同时保留体面出口：谈判中的压力要留"阙口"。',
+        voices: { info: '"楚国要的体面，是诸侯口中的说法，还是盟书上的字句？说清楚，才好给。"', reframe: '"面子归楚，里子归吴——这局可以双收，但顺序由我定。"', pressure: '"今夜不定，明日柏举阵前，楚国连体面都换不回。"', build: '""全师而归"四字，吴国愿昭告诸侯——以此换汉东之地与关市。"', lock: '"体面入盟书序文，实利入正文条款——一字一码，现在就写。"' }, },
       { opponent: '吴王阖闾（主张乘胜灭楚）',
         scene: '吴军入郢，阖闾欲毁楚宗庙、尽收其地。孙武主张"全国为上"——这一次，你要说服的是胜利者。',
         beats: [
@@ -15558,7 +15600,8 @@ const STORY_SCRIPTS = {
           '阖闾不悦："寡人血战得胜，你却劝寡人把吃下的吐出来？"',
           '阖闾最终问："若依你言，留楚社稷——吴国十年之后，得到什么？"',
         ],
-        lesson: '全胜＝赢的方式决定收益的可持续性：把对手打碎，往往也打碎了自己的长期利益。' },
+        lesson: '全胜＝赢的方式决定收益的可持续性：把对手打碎，往往也打碎了自己的长期利益。',
+        voices: { info: '"敢问王上：灭楚之后，秦师南下、越人北上，吴国以何当之？"', reframe: '"王上，今日之议不是灭不灭楚，是吴国十年后还在不在。"', pressure: '"伍员之言王上也听见了——秦人车马已动。此时吞楚，是替他人火中取栗。"', build: '"王上血战之功，留楚社稷反而更显——存人之国者，霸诸侯。"', lock: '"请王上定约三事：楚迁都、纳贡、质子——吴全师而还。"' }, },
     ],
   },
 
@@ -15581,7 +15624,8 @@ const STORY_SCRIPTS = {
           '重臣樗里疾发难："客卿之位俸禄千石。先生寸功未立，凭什么？"',
           '惠文王身体前倾："给寡人一个——三个月内可以验证的承诺。"',
         ],
-        lesson: '入局＝信任的第一笔存款来自"可验证的小承诺"，而非宏大叙事。' },
+        lesson: '入局＝信任的第一笔存款来自"可验证的小承诺"，而非宏大叙事。',
+        voices: { info: '"大王问臣与苏秦何异——敢先问大王：合纵六年，秦失了哪一寸土地？"', reframe: '"臣不是来游说的，是来给秦国算一笔三个月内可以验证的账。"', pressure: '"六国之盟，今岁又会于洹水——大王还有几个三个月可以等？"', build: '"臣愿以客卿之禄为质：三月无功，请大王取臣之首。"', lock: '"请大王给臣符节一道、三月为期——成则用臣，败则逐臣。"' }, },
       { opponent: '楚怀王',
         scene: '齐楚之盟是秦国东出最大障碍。张仪使楚，以商於六百里之地为饵。你在殿侧执简记录，看一场教科书级的利益诱导。',
         beats: [
@@ -15590,7 +15634,8 @@ const STORY_SCRIPTS = {
           '谋臣陈轸冷言进谏："绝齐之前，何不先遣一使随秦人去接收土地？一验便知真假。"',
           '怀王挥退谏臣，看向使团："寡人即刻与齐绝盟——地契，何时交割？"',
         ],
-        lesson: '离间＝对着对方"想要的"而非"该要的"下注；防离间则靠"先验货、再付款"。' },
+        lesson: '离间＝对着对方"想要的"而非"该要的"下注；防离间则靠"先验货、再付款"。',
+        voices: { info: '"大王且慢决断——先问一句，齐人许楚的淮北之地，兑现了几里？"', reframe: '"商於六百里不是地，是楚国不费一兵而削秦的机会。"', pressure: '"秦楚不和，则齐人坐大——大王是要做齐国的盟友，还是齐国的屏障？"', build: '"秦王仰慕大王久矣。绝齐之日，秦楚兄弟之国，岂止六百里。"', lock: '"绝齐之诏一下，臣亲书地契为凭、使节为证——今日便可定。"' }, },
       { opponent: '魏襄王',
         scene: '张仪相魏，劝魏率先事秦。魏国夹在秦楚齐之间，朝中合纵之声犹烈——你陪师入殿，听他给摇摆者开价。',
         beats: [
@@ -15599,7 +15644,8 @@ const STORY_SCRIPTS = {
           '魏王问："若从连横之策——秦国给魏国的，是哪一条写得进国书的好处？"',
           '魏王最后的顾虑："韩赵若责我背盟，魏国如何自处？"',
         ],
-        lesson: '连横＝给摇摆者一份"单独的、立即兑现的"方案，瓦解松散联盟的公约数。' },
+        lesson: '连横＝给摇摆者一份"单独的、立即兑现的"方案，瓦解松散联盟的公约数。',
+        voices: { info: '"大王忧山东诸国问罪——敢问：去岁秦兵叩境时，山东诸国谁发了一兵一卒？"', reframe: '"大王面前不是"事秦还是抗秦"——是"先安还是先乱"。连横，买的是十年之安。"', pressure: '"合纵之约墨迹未干，秦兵已两度入魏——盟书挡过一次兵车吗？"', build: '"事秦非辱：秦愿以上郡之盐铁市于魏，岁入国库——这一条，写得进国书。"', lock: '"韩赵之责，秦为魏当之——此句入约。魏事秦、秦护魏，两简对换。"' }, },
       { opponent: '楚怀王（欲杀张仪）',
         scene: '怀王受骗后悬赏张仪人头，张仪竟主动入楚——因为他早已买通靳尚、结好郑袖。你随行，亲历一场以"对方阵营内部人"为杠杆的死局翻盘。',
         beats: [
@@ -15608,7 +15654,8 @@ const STORY_SCRIPTS = {
           '怀王犹疑："放了你，寡人颜面何存？"',
           '怀王长叹："说出秦国的条件——这一次，寡人要看到白纸黑字。"',
         ],
-        lesson: '反间＝决策者身边的人也是谈判桌的一部分；死局常从"对方内部的利益分歧"处解开。' },
+        lesson: '反间＝决策者身边的人也是谈判桌的一部分；死局常从"对方内部的利益分歧"处解开。',
+        voices: { info: '"大王悬赏臣之头颅——敢问大王：杀臣之后，商於之地找谁去要？"', reframe: '"大王要的不是臣的命，是秦国的交代——交代臣带来了，就看大王要听不要听。"', pressure: '"靳尚大夫说得是：杀使启战，秦师出武关不过旬日——楚国备好了吗？"', build: '"是臣有负大王。这次臣带的不是许诺，是秦王亲署的国书——请大王过目。"', lock: '"白纸黑字在此：黔中之地、秦楚之盟、互不再犯——三条齐备，臣命由大王处置。"' }, },
       { opponent: '诸侯会盟使团',
         scene: '连横既成，诸侯遣使入秦定约。张仪命你执笔——前四幕的口头之利，要全部落成简上之文。',
         beats: [
@@ -15617,7 +15664,8 @@ const STORY_SCRIPTS = {
           '楚使拖延："兹事体大，容外臣回禀敝国再定。"',
           '张仪低声对你说："每一条都要写明何时、何事、违约如何——你来收尾。"',
         ],
-        lesson: '闭单＝把所有口头共识转为"可执行、可验证、有违约条款"的文本，否则前四幕全部归零。' },
+        lesson: '闭单＝把所有口头共识转为"可执行、可验证、有违约条款"的文本，否则前四幕全部归零。',
+        voices: { info: '"齐使所虑"共尊秦"三字——敢问改为"互不相攻"后，齐国还有什么不能签？"', reframe: '"诸位今日签的不是降书，是各国与秦的"价目表"——价钱谈清，谁也不吃亏。"', pressure: '"楚使要回禀再定——可以。但盟书今日用印，楚国的位置只留到月底。"', build: '"韩使所请宜阳铁山，可单独立附约——主盟归主盟，细账归细账。"', lock: '"每条写明何时、何事、违约如何——空一栏者视同未盟。诸位，用印。"' }, },
     ],
   },
 
@@ -15640,7 +15688,8 @@ const STORY_SCRIPTS = {
           '恭亲王私下提点："你的折子卡在哪一层，比折子写什么更要紧。"',
           '帘后忽然传问："这铁路，洋人掺了多少股？"——第一次直接回应，试探之意明显。',
         ],
-        lesson: '谈判第一课＝先确认"谁能拍板"：对传话人投入再多，也无法成交。' },
+        lesson: '谈判第一课＝先确认"谁能拍板"：对传话人投入再多，也无法成交。',
+        voices: { info: '"请教中堂：折子是停在军机处，还是已进了帘内？卑职好知道该候谁的话。"', reframe: '"三个字"知道了"——卑职斗胆求一句：是准知道了，还是驳知道了？"', pressure: '"英使昨日又递照会催问铁路——朝廷再无答复，洋人便自己来答了。"', build: '"公公留步——卑职备了天津段的图样，太后若问起，烦请代呈御览。"', lock: '"恳请王爷代奏：请明发一道"着总理衙门议奏"——只此六字，卑职便有路可走。"' }, },
       { opponent: '帘后（召对）',
         scene: '太后召对。帘后语调温和，句句留白："再议"、"容后"、"自有恩典"——你要把每一个模糊承诺追成明确条件。',
         beats: [
@@ -15649,7 +15698,8 @@ const STORY_SCRIPTS = {
           '"经费嘛……户部若有的是银子，自然好说。"——球被踢回户部。',
           '"这样吧，先修一段试试。至于哪一段、几时修——军机处再议。"',
         ],
-        lesson: '破解模糊承诺＝把每个"再议"追成三个具体问题：何人、何时、以何形式。' },
+        lesson: '破解模糊承诺＝把每个"再议"追成三个具体问题：何人、何时、以何形式。',
+        voices: { info: '"太后明鉴——"自有恩典"四字，卑职敢问：恩典出自户部，还是出自内帑？"', reframe: '"回太后：此事不是费银子，是替朝廷省将来的兵费——铁路一通，调兵七日变三日。"', pressure: '"洋商已在天津自请筑路——朝廷再"再议"，路还是会修，只是修在谁的章程里。"', build: '"太后圣虑深远。卑职不敢求全准——只求先准天津一段，办妥了再请懿旨。"', lock: '"卑职叩请太后明示三件：何段先修、何时动工、由何人经办——有此三件，万事可办。"' }, },
       { opponent: '帘后与内务府',
         scene: '海军衙门经费与园工之争摆上台面。太后划下一个"池子"：三百万两——铁路、船炮、园工，你们自己去分。',
         beats: [
@@ -15658,7 +15708,8 @@ const STORY_SCRIPTS = {
           '北洋来电：船炮款再削，海防便是纸糊的。',
           '帘后问你："若只能保一样——你保哪样？说与哀家听。"',
         ],
-        lesson: '池子陷阱＝对方设定预算框架时，先质疑池子大小，再谈池内分配；在别人画的池子里争，怎么分都是输。' },
+        lesson: '池子陷阱＝对方设定预算框架时，先质疑池子大小，再谈池内分配；在别人画的池子里争，怎么分都是输。',
+        voices: { info: '"回太后：敢问这三百万，是岁拨，还是一次之数？池子大小不同，分法全然不同。"', reframe: '"太后容禀：园工、船炮、铁路不是分一池水——船炮是堤，堤若不固，池子都保不住。"', pressure: '"北洋电报在此：船炮款再削，渤海门户洞开——届时所费，何止三百万。"', build: '"内务府的难处卑职明白。园工之材，铁路可代运——两项合办，反省二十万。"', lock: '"卑职请旨：三项各立专款、专人、专折奏销——分定之后，再不互挪。"' }, },
       { opponent: '帘后与英国公使（隔空过招）',
         scene: '列强公使联名照会，限期答复通商条款。太后惯用"拖"字诀——但这次，拖延的代价是兵舰泊在大沽口外。',
         beats: [
@@ -15667,7 +15718,8 @@ const STORY_SCRIPTS = {
           '帘后问计："洋人的"限期"，是真是吓？尔在总理衙门当差——你说。"',
           '"若必须答——哪几条可以应，哪几条万不能应？给哀家递个实底。"',
         ],
-        lesson: '拖延是工具不是策略：分清"换时间的拖"与"失信用的拖"，并学会识破对方期限的真假。' },
+        lesson: '拖延是工具不是策略：分清"换时间的拖"与"失信用的拖"，并学会识破对方期限的真假。',
+        voices: { info: '"回太后：十日之限，英使是奉了本国训令，还是自作主张？查清这一层，再定应对。"', reframe: '"洋人限期不是要答案，是要态度——朝廷可以答得慢，但不能答得乱。"', pressure: '"大沽口外兵舰七艘，烧的是真煤——拖字诀挡不住吃水线。"', build: '"卑职愚见：先复照会允其三条之一，示朝廷有诚——余者再议，便拖得有理。"', lock: '"请太后定夺：哪几条可应、哪几条万不能应——卑职据此拟复，一字不多让。"' }, },
       { opponent: '帘后与新任军机',
         scene: '新政章程终于要画押。帘后突然撤换军机全班——所有口头默契一夜归零。你必须把成果固化在制度里，而不是人情里。',
         beats: [
@@ -15676,7 +15728,8 @@ const STORY_SCRIPTS = {
           '帘后再召："章程，哀家可以准——但加一条：随时可由懿旨收回。"',
           '只剩最后一次陛辞的机会——你要把"不可朝令夕改"谈进章程本身。',
         ],
-        lesson: '成果要锚定在制度与文本上：依附于"某个人点头"的协议，会随那个人一起消失。' },
+        lesson: '成果要锚定在制度与文本上：依附于"某个人点头"的协议，会随那个人一起消失。',
+        voices: { info: '"敢问新任中堂：前任所允诸事概不知情——那案上这些有朱批的折子，也不算数么？"', reframe: '"太后："随时收回"四字一加，章程便不是章程，是恩典——洋人商人谁敢入股？"', pressure: '"军机全班更换，洋人观望、商股却步——再迟，今年便又是空年。"', build: '"卑职不敢妄议帘内之事。只求新章程明定一条：非经廷议，不得停废。"', lock: '"卑职最后一请：章程刊入邸抄、昭告各省——白纸黑字，胜过千百人情。"' }, },
     ],
   },
 
@@ -15699,7 +15752,8 @@ const STORY_SCRIPTS = {
           '你翻到财报附注：前五大客户占营收 72%。没有人主动提这一页。',
           '芒格递来一张纸条："问他们：哪一件事发生，这家公司就完了？"',
         ],
-        lesson: '反演法＝评估任何交易先列"致死清单"：能杀死交易的因素，才是定价的核心变量。' },
+        lesson: '反演法＝评估任何交易先列"致死清单"：能杀死交易的因素，才是定价的核心变量。',
+        voices: { info: '"曲线很漂亮。现在请翻到附注14——前五大客户占营收72%，谁来讲讲这一页？"', reframe: '"我们先不谈增长——先谈这家公司怎么死，再谈它值多少。"', pressure: '"我们看过三家同行的数据室。你们是唯一不主动讲客户集中度的。"', build: '"创始人先生，你建了门好生意——正因如此，它值得一次诚实的体检。"', lock: '"今天只确认三件事：客户集中度、提价历史、资本开支——确认完再开下一次会。"' }, },
       { opponent: '卖方律师团',
         scene: '条款谈判。桌上埋着两颗地雷：业绩对赌挂钩毛收入，以及交割后创始人保留品牌全权。',
         beats: [
@@ -15708,7 +15762,8 @@ const STORY_SCRIPTS = {
           '投行施压："另一家买方的报价，可没有你们这些"琐碎"条件。"',
           '芒格只问了一句："如果三年后我们后悔——会是因为今天签了哪一条？"',
         ],
-        lesson: '排雷＝用"未来后悔测试"逐条扫描条款：宁可丢掉交易，不签会致命的那一条。' },
+        lesson: '排雷＝用"未来后悔测试"逐条扫描条款：宁可丢掉交易，不签会致命的那一条。',
+        voices: { info: '"挂毛收入的对赌——请举一个贵行经手的案例，三年后买卖双方都满意的。"', reframe: '"品牌感情我们尊重——但今天谈的是控制权条款，不是纪念馆冠名。"', pressure: '"另一家买方不在乎这些条款？那他们三年后会在乎的。我们可以等。"', build: '"创始人留任我们求之不得——把它写成三年顾问协议，体面且有实权。"', lock: '"两条改完——对赌挂自由现金流、品牌权随股权走——其余今天都可以签。"' }, },
       { opponent: '投行定价委员会',
         scene: '最终定价。现金流折现、重置成本、可比交易——三个模型给出三个相差 40% 的数字。',
         beats: [
@@ -15717,7 +15772,8 @@ const STORY_SCRIPTS = {
           '创始人放话："低于九位数——我们就不卖了。"',
           '芒格收起计算器："三个模型都同意的那部分，才是你真正知道的部分。出价吧。"',
         ],
-        lesson: '多元模型＝用相互独立的估值方法交叉验证，只为"所有模型的交集"付钱。' },
+        lesson: '多元模型＝用相互独立的估值方法交叉验证，只为"所有模型的交集"付钱。',
+        voices: { info: '"可比交易12倍——请问样本里有几家客户集中度超过70%的？"', reframe: '"市场定的是别人的价。这家公司的价，由它自己的现金流定。"', pressure: '"周五我们的报价过期。下一家公司的数据室，周一开门。"', build: '"九位数可以谈——结构上谈：现金一部分，赚出来的一部分。"', lock: '"我们的数字是三个模型的交集——高于它一分都不出。接受就握手，不接受就祝好运。"' }, },
     ],
   },
 
@@ -15740,7 +15796,8 @@ const STORY_SCRIPTS = {
           '他翻开报纸："看到没有？每个人都想跟我合作。你们，排在第七位。"',
           '"今天下班前给答复。过了今晚——条件变六成五。"',
         ],
-        lesson: '反锚定第一式＝不还价、不辩解：先质疑锚点的依据，把"三亿"变成"请展示估值模型"。' },
+        lesson: '反锚定第一式＝不还价、不辩解：先质疑锚点的依据，把"三亿"变成"请展示估值模型"。',
+        voices: { info: '"三亿、六成、冠名——三个数字一个依据都没有。评估报告，第几页？"', reframe: '"今晚过期的是你的耐心，不是我们的地块——它明天还在第五大道。"', pressure: '"排在我们前面的六位——他们有谁拥有第五大道两千平的地块？"', build: '"你要的我听明白了：地标、头条、名字刻在门楣上——这些都可以谈，按出资比谈。"', lock: '"我们出一份条款清单，今晚可以初签——但每个数字后面都要有附录页码。"' }, },
       { opponent: '小报记者与你的董事会',
         scene: '谈判细节出现在小报上，标题写着《老牌地产商拖垮世纪项目》。真正的战场转移到了你的后院。',
         beats: [
@@ -15749,7 +15806,8 @@ const STORY_SCRIPTS = {
           '你的董事会开始动摇："要不……稍微让一点，把事情了结？"',
           '他的助理私下递话："老板其实很想做成这单——给他个台阶，条件都好谈。"',
         ],
-        lesson: '场外噪音不进谈判室：媒体施压的真正目标是你的后院——稳住内部授权，比回应头条重要十倍。' },
+        lesson: '场外噪音不进谈判室：媒体施压的真正目标是你的后院——稳住内部授权，比回应头条重要十倍。',
+        voices: { info: '"记者先生，请问"内部分裂"这条消息的信源——方便透露是谁的办公室吗？"', reframe: '"董事会诸位：头版三天就换，租约二十年不换——我们谈哪个？"', pressure: '"请转告你老板：再上一次头版，我们的公关稿里就会出现他的贷款银行。"', build: '"转告他：台阶有——签字仪式的镁光灯全归他，条款回到上周版本。"', lock: '"对外口径一页纸，董事会今天签：谈判中、条款不公开、一切以合同为准。"' }, },
       { opponent: '开发商与他的律师团',
         scene: '条款基本谈定。签约前夜，他突然要求重谈两条核心条款——教科书式的"终局加价"。',
         beats: [
@@ -15758,7 +15816,8 @@ const STORY_SCRIPTS = {
           '"如果你们坚持原条款，那我只好遗憾宣布交易破裂——媒体已经在楼下了。"',
           '他盯着你，手按在笔上："现在——签，还是不签？"',
         ],
-        lesson: '反"终局加价"＝预先把"重开谈判即触发分手费"写进条款，让反扑变成对方的成本。' },
+        lesson: '反"终局加价"＝预先把"重开谈判即触发分手费"写进条款，让反扑变成对方的成本。',
+        voices: { info: '"凌晨发现的两个问题——你的律师上周就拿到全套文本，请问他上周在干什么？"', reframe: '"楼下的媒体是来拍签约的——破裂的新闻稿，主角不会是我们。"', pressure: '"第七条你自己签的：重开条款，违约金五百万——现在是签字，还是开支票？"', build: '"深夜来电我理解为成交前的紧张——条款不动，签字仪式你站中间。"', lock: '"笔在这里。按上周文本，现在签——十二点后，作废的是你的版本。"' }, },
     ],
   },
 
@@ -15781,7 +15840,8 @@ const STORY_SCRIPTS = {
           '另一间会议室里，鹰派财长冷冷地说："纳税人的钱不能喂无底洞。一分都不能。"',
           '双方各自说完，同时问你："那么——你站哪边？"',
         ],
-        lesson: '听完＝表态之前让双方把诉求全部倒出来：八成的可交易项，藏在情绪化陈述的后半段。' },
+        lesson: '听完＝表态之前让双方把诉求全部倒出来：八成的可交易项，藏在情绪化陈述的后半段。',
+        voices: { info: '"总理先生，请继续说——养老金之后呢？我需要听到全部清单才好工作。"', reframe: '"我不站任何一边——我站在"今晚必须有个框架"这一边。"', pressure: '"两位，亚洲市场六小时后开盘——它不听陈述，只看结果。"', build: '"您说的三次削减，我都记下了——这页纸会原样放到对面桌上。"', lock: '"我把双方诉求整理成十四项清单，一小时后发给两边——今夜以此为底稿。"' }, },
       { opponent: '双方代表团',
         scene: '你把双方诉求拆成十四项，发现有五项双方其实都不反对。今天的目标不是解决分歧——是先把这五项钉死。',
         beats: [
@@ -15790,7 +15850,8 @@ const STORY_SCRIPTS = {
           '有人想夹带私货："把利率减免也放进去——反正都是"技术细节"。"',
           '午夜前，五项共识待双方草签——任何一方反悔，明天将从零开始。',
         ],
-        lesson: '共同清单＝先固化无争议项，制造"已经在前进"的事实，让退出变得越来越贵。' },
+        lesson: '共同清单＝先固化无争议项，制造"已经在前进"的事实，让退出变得越来越贵。',
+        voices: { info: '"财长先生认为第三项措辞有问题——请具体指出哪个词，我们当场改。"', reframe: '"这不是把戏——这五项是双方已经同意的事实，签字只是承认事实。"', pressure: '"若连"不反对清单"都签不了，明早的头条会写：峰会连共识的影子都没找到。"', build: '"第三项措辞按贵方版本改——内容不变，尊严各自保留。"', lock: '"五项、午夜前、双方草签——反悔的一方，明天向全场解释为什么从零开始。"' }, },
       { opponent: '双方谈判组',
         scene: '核心交换开始：每一笔援助拨款，对应一项可验证的改革。一次只谈一对。',
         beats: [
@@ -15799,7 +15860,8 @@ const STORY_SCRIPTS = {
           '第一对"拨款⇄改革"达成——双方语气明显软化。',
           '第三对卡住了：养老金改革触及红线，对方代表起身欲走。',
         ],
-        lesson: '小步交换＝把大交易切成一对一对的小交换：每完成一对，信任就加厚一层。' },
+        lesson: '小步交换＝把大交易切成一对一对的小交换：每完成一对，信任就加厚一层。',
+        voices: { info: '"在谈分期之前——请告诉我，第一笔款项到账后，前两周会用在哪里？"', reframe: '"分期不是不信任——是让每一步都成为下一步的证据。"', pressure: '"先生们，第一对交换已经摆在桌上四十分钟了——它不会更便宜。"', build: '"这样如何：第一笔拨款提高两成，对应的立法附上贵国议会的时间表。"', lock: '"第一对就按这个版本锁定：拨款日即立法生效日——签了它，再谈第二对。"' }, },
       { opponent: '债务国代表团（突袭）',
         scene: '凌晨四点，债务国突然宣布"将把方案交付全民公投"——一颗场外炸弹，谈判面临归零。',
         beats: [
@@ -15808,7 +15870,8 @@ const STORY_SCRIPTS = {
           '鹰派被激怒："让他们退出货币区！立刻！"——你的联盟内部先乱了。',
           '对方私下递话："公投可以取消……如果你们在养老金一项上松口。"',
         ],
-        lesson: '底线防守＝惊吓战术的目标是让你在恐慌中让步：先稳住己方阵营，再要求对方为升级付出对价。' },
+        lesson: '底线防守＝惊吓战术的目标是让你在恐慌中让步：先稳住己方阵营，再要求对方为升级付出对价。',
+        voices: { info: '"公投的提案，是已经发出的决定，还是今晚谈判的一部分？这决定我接下来怎么做。"', reframe: '"公投是贵国的主权——但它进了今晚的谈判桌，就也是一个要标价的条款。"', pressure: '"快讯已经发出，期货已经在跌——现在每过十分钟，贵国的借贷成本涨一个点。"', build: '"我先说服我这边的人留在房间里——然后我们谈：撤回公投，换养老金过渡期延长。"', lock: '"写进文本：公投撤回与过渡期条款互为生效条件——一损俱损，谁都别想单独反悔。"' }, },
       { opponent: '三方法律与翻译团队',
         scene: '清晨六点，文本最后一读。所有人都想赶快结束——而这正是措辞陷阱最容易溜进文本的时刻。',
         beats: [
@@ -15817,7 +15880,8 @@ const STORY_SCRIPTS = {
           '翻译稿里，"自动触发"被译成了"经协商后触发"。',
           '七点整，镁光灯就位。主持人问你："可以宣布达成协议了吗？"',
         ],
-        lesson: '闭单＝疲惫是文本的最大敌人：宣布成交前，逐字核对义务条款的"谁、何时、是否自动"。' },
+        lesson: '闭单＝疲惫是文本的最大敌人：宣布成交前，逐字核对义务条款的"谁、何时、是否自动"。',
+        voices: { info: '"第14段第3行——"宜"是谁改的？请调出修订记录。"', reframe: '"我们没有在抠字眼——我们在决定这份文件有没有法律牙齿。"', pressure: '"直播可以推迟五分钟——一个漏洞要用五年来堵。两位选哪个？"', build: '"追溯条款撤回——作为交换，季度审查报告双方共同署名。"', lock: '"三个语言版本逐条对表："应当"、"自动触发"、日期——全部核对完，我们再面对镜头。"' }, },
     ],
   },
 
@@ -15840,7 +15904,8 @@ const STORY_SCRIPTS = {
           '委员会预沟通来电试探："如果只谈今年的数字，是不是更容易些？"',
           '首相敲桌定调："写下来——哪三条是跳下谈判桌也不让的。现在就写。"',
         ],
-        lesson: '划线＝底线要在谈判开始前书面化并取得内部授权：临场划的线不是线，是情绪。' },
+        lesson: '划线＝底线要在谈判开始前书面化并取得内部授权：临场划的线不是线，是情绪。',
+        voices: { info: '"外交部的方案里，"明年再争"的依据是什么——明年我们的票数会变多吗？"', reframe: '"这不是对欧政策的分歧——这是一笔算术：我们交十镑，拿回两镑。"', pressure: '"低于六成，下议院不会过——这不是首相的固执，是数票的结果。"', build: '"枫丹白露之后，英国会是单一市场最响亮的支持者——但先把账算平。"', lock: '"三条底线现在写进训令：三分之二、永久机制、不与新预算捆绑——其余授权随机应变。"' }, },
       { opponent: '法德领导人',
         scene: '枫丹白露会场。法德联手施压：孤立英国、暗示绕开英国另起炉灶。十比一的房间里，你代表那个"一"。',
         beats: [
@@ -15849,7 +15914,8 @@ const STORY_SCRIPTS = {
           '午餐会上有人向媒体放风："英国正在勒索共同体。"',
           '东道主提议休会："要么接受现案，要么峰会无成果散场——责任在英方。"',
         ],
-        lesson: '反压＝被围攻时拒绝"少数即错误"的框架：用对方更怕的后果（预算否决权）对等反压。' },
+        lesson: '反压＝被围攻时拒绝"少数即错误"的框架：用对方更怕的后果（预算否决权）对等反压。',
+        voices: { info: '"十国共识——请委员会出示这个数字的计算口径，逐项。"', reframe: '"先生们，少数与多数不是对错——账面上多付的钱，不因孤立而变少。"', pressure: '""双速欧洲"？请便——记得新机制的预算，要十一国重新批。"', build: '"英国不想做麻烦——解决返还，我们在其余每个议题上都是盟友。"', lock: '"放风给媒体的那位——午餐后我们恢复谈判，从书面方案开始，不从报纸开始。"' }, },
       { opponent: '法德与委员会主席',
         scene: '最后一轮。你方亮出否决权：不解决返还，英国将否决下年度全部预算。现在——让他们在你的框架里选。',
         beats: [
@@ -15858,7 +15924,8 @@ const STORY_SCRIPTS = {
           '德方最后斡旋："66%、永久、但今年的追溯减半——这是真正的最后方案。"',
           '全场看向你：接受、否决，还是再加一轮？而首相只说过一句话："拿回我们的钱。"',
         ],
-        lesson: '终局＝把残局变成"在你设定的两个选项中选一个"：选项设计权，比讨价还价权更值钱。' },
+        lesson: '终局＝把残局变成"在你设定的两个选项中选一个"：选项设计权，比讨价还价权更值钱。',
+        voices: { info: '""在现行框架存续期间"——主席先生，请定义"存续"：谁可以终止它？"', reframe: '"66%还是70%可以谈——"永久"两个字不出现在文本里，什么数字都没有意义。"', pressure: '"诸位，否决权不是威胁，是日程：不解决，下年度预算从第一项开始逐项审。"', build: '"追溯减半，我们接受——作为交换，"永久"写正文，不写脚注。"', lock: '"最终文本：66%、永久、正文、无日落条款——逐字读一遍，然后散会。"' }, },
     ],
   },
 
@@ -15881,7 +15948,8 @@ const STORY_SCRIPTS = {
           '罗斯福打圆场："先确认我们都同意的事：轴心国必须无条件投降。"',
           '首日将散，三方同时看向协调官："明天的议程——按谁的清单来？"',
         ],
-        lesson: '多方开局＝先找全员可签的"最小公约数"立锚：议程顺序本身，就是权力分配。' },
+        lesson: '多方开局＝先找全员可签的"最小公约数"立锚：议程顺序本身，就是权力分配。',
+        voices: { info: '"在排议程之前，请三方各交一页纸：贵国的生存底线一条，谈判立场两条。"', reframe: '"首日不裁决谁对——首日只确认：哪三件事是三国都不反对的。"', pressure: '"诸位，前线的师团不会等秘书处——议程每空转一天，地图就自己改一笔。"', build: '"无争议项优先排序——三份清单里重合的那几条，明早第一项就谈。"', lock: '"议程按规则排：重合项在前、分歧项在后、程序由秘书处执笔——三方副官现在签认。"' }, },
       { opponent: '三方军政班子',
         scene: '租借物资、登陆日期、东线攻势——三条资源线互为条件，"谁先承诺谁吃亏"的氛围弥漫全场。',
         beats: [
@@ -15890,7 +15958,8 @@ const STORY_SCRIPTS = {
           '一方代表突然翻出上次会议未兑现的承诺，空气瞬间凝固。',
           '参谋军官递上联合时间表草案：每项承诺旁的"验证方式"一栏，全部空着。',
         ],
-        lesson: '资源交换＝互不信任时，用"同步对赌"替代"先后履约"：每项承诺都配验证方式。' },
+        lesson: '资源交换＝互不信任时，用"同步对赌"替代"先后履约"：每项承诺都配验证方式。',
+        voices: { info: '"1942年的承诺卡在哪个环节——船？护航？还是决心？答案决定这次怎么写条款。"', reframe: '"旧账不会消失——但它最好的用途，是变成这次每项承诺旁边的验证栏。"', pressure: '"东线每周伤亡数字都在桌上——日期再不落纸，数字会替我们谈。"', build: '"贵方的损失，会议记录正式载入——作为交换，请把新的日期写进时间表。"', lock: '"本次承诺三件套：执行日期、联络军官、未兑现之补偿——逐项填表，空栏不散会。"' }, },
       { opponent: '三国首脑',
         scene: '议题从眼前战事转向战后规则：国际组织的投票权、势力范围、战败国处置——立场差异最大的一天。',
         beats: [
@@ -15899,7 +15968,8 @@ const STORY_SCRIPTS = {
           '有人提出按"百分比"划分势力范围，一张纸条在桌上无声传递。',
           '三方红线渐次浮出：安全、制度、荣誉——彼此并不完全互斥。',
         ],
-        lesson: '蓝图谈判＝把"原则之争"翻译成"机制设计"：否决权、投票权、缓冲区，都是可调参数。' },
+        lesson: '蓝图谈判＝把"原则之争"翻译成"机制设计"：否决权、投票权、缓冲区，都是可调参数。',
+        voices: { info: '"请问坚持否决权的一方：贵国设想中，否决权第一次被使用，会是什么场合？"', reframe: '"我们不必就"势力范围"达成一致——只需就"什么机制防止冲突"达成一致。"', pressure: '"组织谈不成，战后就只剩各自为政——三国都打不起下一场战争。"', build: '"大国安全感与小国发言权可以并存：实质问题否决、程序问题多数——各得其所。"', lock: '"表决机制按此落文：实质/程序分轨、定义清单附后——歧义词全部标注，留待大会。"' }, },
       { opponent: '三国首脑（边界问题）',
         scene: '边界问题摆上桌面：一方要安全缓冲，一方守原则立场，一方在地图上找折中线。互信降到冰点。',
         beats: [
@@ -15908,7 +15978,8 @@ const STORY_SCRIPTS = {
           '折中案浮现："边界可调——但须由当地民意确认。"可验证性成为破局点。',
           '草案完成，但"何时确认、谁来监督"两栏仍是空白——三方都不愿先填。',
         ],
-        lesson: '安全议题＝不可谈的"恐惧"背后是可谈的"保障机制"：把立场之争转为验证机制之争。' },
+        lesson: '安全议题＝不可谈的"恐惧"背后是可谈的"保障机制"：把立场之争转为验证机制之争。',
+        voices: { info: '"在划线之前——请说明这条线以东，贵国具体怕什么？怕的东西才是真议题。"', reframe: '"线不可谈，机制可谈：分阶段、可调整、由当地民意确认——立场死的，机制是活的。"', pressure: '"地图上每拖一周，前线就自己画一条新线——谈判桌不快过坦克，但要快过崩盘。"', build: '"原则方写进序言，边界方写进附件——双方都拿到可以带回国的版本。"', lock: '"边界条款三栏齐备才算数：何时确认、谁来监督、违约如何——空栏者不入公报。"' }, },
       { opponent: '三方起草委员会',
         scene: '最后一夜。完美协议已不可能，目标改为"有限但可执行"：写明各方承诺、验证方式与违约后果。',
         beats: [
@@ -15917,7 +15988,8 @@ const STORY_SCRIPTS = {
           '历史性合影前十分钟，文本里还有三处方括号没有删掉。',
           '主持人最后提问："这份协议——五年后还能被三方共同遵守的，是哪几条？"',
         ],
-        lesson: '有限协议＝宁要十条可验证的小承诺，不要一页无法执行的大宣言。' },
+        lesson: '有限协议＝宁要十条可验证的小承诺，不要一页无法执行的大宣言。',
+        voices: { info: '"公报初稿每一条都没有日期——请起草委员会说明：是疏忽，还是默契？"', reframe: '"今晚的目标不是宏大——是五年后还能被三方共同遵守的那几条。"', pressure: '"合影十分钟后开始——方括号留到镜头前，全世界都会看见同盟的裂缝。"', build: '"秘密议定书按程序记录在案、注明异议——历史自有公论，今天先保住公开的部分。"', lock: '"逐条三问：日期？验证？违约后果？——三问俱全者入公报，缺一者删。"' }, },
     ],
   },
 };
@@ -15980,7 +16052,7 @@ const StoryChain = (() => {
     if (choice.tag === act.focusTag) state.metrics[choice.metric] = Math.min(100, state.metrics[choice.metric] + 3);
     state.log.push({
       actIndex: state.actIndex, actTitle: act.title,
-      round: state.roundInAct, tag: choice.tag, label: choice.label,
+      round: state.roundInAct, tag: choice.tag, label: choice.label, choiceKey: choice.key,
       delta: dim.adjusted[choice.metric] || 0, multiplier: dim.multiplier
     });
     state.roundInAct += 1;
@@ -16075,12 +16147,14 @@ const StoryChain = (() => {
     const low = (k) => m[k] <= 35;
     const lowCount = DUEL_METRICS.filter(low).length;
     const highCount = DUEL_METRICS.filter(high).length;
-    if (lowCount >= 3) return 'collapse';
-    if (highCount >= 4) return 'perfectWin';
-    if (high('trust') && high('endgame')) return 'defensiveWin';
+    const avg = Math.round(DUEL_METRICS.reduce((s, k) => s + m[k], 0) / DUEL_METRICS.length);
+    // v5.8：平庸表现不再默认"防守胜利"
+    if (lowCount >= 3 || avg < 46) return 'collapse';
+    if (highCount >= 4 && lowCount === 0 && avg >= 66) return 'perfectWin';
+    if (high('trust') && high('endgame') && avg >= 60) return 'defensiveWin';
     if (high('endgame') && low('trust')) return 'surfaceWin';
-    if (lowCount <= 1 && m.endgame >= 45) return 'strategicRetreat';
-    return 'defensiveWin';
+    if (avg >= 56 && lowCount <= 1) return 'strategicRetreat';
+    return 'surfaceWin';
   }
 
   function bestEnding(a, b) {
@@ -16661,7 +16735,7 @@ function renderCinematicDuel(state, script) {
     <div class="cine-opp-portrait-col">
       <div class="cine-opp-name">${d.opponent}</div>
       <div class="cine-opp-info">
-        <div class="cine-opp-info-k">日本全权代表</div>
+        <div class="cine-opp-info-k">${state.duelist.title || state.duelist.mentorSeries || ''}</div>
         <div class="cine-opp-info-k" style="margin-top:6px">谈判目标</div>
         <div class="cine-opp-info-v">${script.pressures.opp}</div>
         <div class="cine-opp-info-k" style="margin-top:6px">当前态度</div>
@@ -16671,7 +16745,9 @@ function renderCinematicDuel(state, script) {
       </div>
     </div>
     <div class="cine-opp-portrait">
-      <div class="cine-opp-portrait-emoji">${state.duelist.chibi || '🎭'}</div>
+      ${(typeof MENTOR_PORTRAITS !== 'undefined' && MENTOR_PORTRAITS[state.duelistId])
+        ? `<img class="cine-opp-portrait-img" src="${MENTOR_PORTRAITS[state.duelistId]}" alt="${state.duelist.name}">`
+        : `<div class="cine-opp-portrait-emoji">${state.duelist.chibi || '🎭'}</div>`}
     </div>
     <div class="cine-opp-bubble-col">
       <div class="cine-opp-bubble">
@@ -16897,19 +16973,8 @@ renderDuelPlay.afterRender = function () {
       const script = getCinematicScript(newState.duelistId);
       const cineKey = CINE_CHOICE_MAP[choiceKey];
       const ph = script.phases[Math.min(prevRound, script.phases.length - 1)];
-      // 局势条变化
-      const effects = CINE_BAR_EFFECTS[cineKey] || {};
-      const deltas = {};
-      Object.entries(effects).forEach(([k, v]) => {
-        deltas[k] = v;
-        newState.bars[k] = Math.max(0, Math.min(100, (newState.bars[k] || 50) + v));
-      });
-      // 对手记忆
-      newState.cineCounts[cineKey] = (newState.cineCounts[cineKey] || 0) + 1;
-      const memory = detectCineMemory(newState, cineKey, prevRound);
-      memory.forEach((m) => newState.memoryNotes.push({ round: prevRound, behavior: m.behavior, counter: m.counter }));
-      newState.lastCineKey = cineKey;
-      // 后果卡
+      // v5.8：局势条/记忆已在引擎内结算，这里只读取展示数据
+      const engineOut = newState.lastCineConseq || { deltas: {}, memory: [] };
       newState.pendingConseq = {
         chosenKey: choiceKey,
         phaseTitle: ph.title,
@@ -16917,7 +16982,7 @@ renderDuelPlay.afterRender = function () {
         counterLine: script.counters[cineKey],
         risk: script.actions[cineKey].risk,
         best: ph.best, trap: ph.trap,
-        deltas, memory,
+        deltas: engineOut.deltas, memory: engineOut.memory,
         completed: newState.completed,
       };
       newState.cineLog.push({ phaseTitle: ph.title, actionName: CINE_ACTION_NAME[choiceKey], counterSnippet: script.counters[cineKey].slice(0, 40) + '…' });
@@ -17251,15 +17316,23 @@ function renderStoryPlay(params) {
         </details>`)
     : '';
   const beat = sAct && sAct.beats ? sAct.beats[Math.min(state.roundInAct, sAct.beats.length - 1)] : '';
+  // 上一手回显：玩家刚说的话 → 对手的节拍是对它的回应
+  const lastMove = state.log.length ? state.log[state.log.length - 1] : null;
+  const lastVoice = (lastMove && state.roundInAct > 0 && sAct)
+    ? ((sAct.voices && sAct.voices[lastMove.choiceKey]) || (script && script.voices[lastMove.choiceKey]) || '')
+    : '';
+  const echoHtml = lastVoice
+    ? `<div class="story-player-echo"><span class="story-echo-speaker">你（上一手 · ${CINE_ACTION_NAME[lastMove.choiceKey] || lastMove.label}）</span>${lastVoice}</div>`
+    : '';
   const beatHtml = beat
-    ? `<div class="story-beat"><div class="story-beat-speaker">🗣 ${sAct.opponent}</div><div class="story-beat-text">${beat}</div></div>`
+    ? `${echoHtml}<div class="story-beat"><div class="story-beat-speaker">🗣 ${sAct.opponent}</div><div class="story-beat-text">${beat}</div></div>`
     : '';
 
   const focusTag = NEGOTIATION_SKILL_TAGS[act.focusTag];
   const choicesHtml = DUEL_CHOICES.map((c) => {
     const tag = NEGOTIATION_SKILL_TAGS[c.tag];
     const isFocus = c.tag === act.focusTag;
-    const voice = script && script.voices[c.key] ? script.voices[c.key] : c.sample;
+    const voice = (sAct && sAct.voices && sAct.voices[c.key]) || (script && script.voices[c.key]) || c.sample;
     return `<button class="duel-choice-btn cine-action-btn ${isFocus ? 'focus' : ''}" data-story-choice="${c.key}">
       <div class="duel-choice-head"><b>${CINE_ACTION_NAME[c.key] || c.label}</b> <span class="duel-choice-tag" style="color:${tag.color}">${tag.label}${isFocus ? ' · 本幕焦点' : ''}</span></div>
       <div class="duel-choice-desc">${c.desc}</div>
@@ -17938,6 +18011,14 @@ function injectV2Styles() {
 .mastery-gain-panel{border-color:rgba(212,175,55,.5)}
 .mastery-gain-line{font-size:11px;color:#b8a890;line-height:1.7;padding-left:6px}
 .mastery-badge-new{font-size:11.5px;color:var(--cine-warm,#d4af37);background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.3);border-radius:8px;padding:6px 10px;margin-top:6px;line-height:1.6}
+
+/* ── v5.8 传奇中心视觉统一（图鉴/试炼场/剧情链共用琥珀历史风）── */
+.cine-opp-portrait-img{width:100%;height:100%;min-height:200px;object-fit:cover;object-position:center 18%;border-radius:10px;filter:sepia(.25) contrast(1.05) brightness(.92);z-index:1}
+.duel-pick-card,.story-card,.sk-hub-tile{background:linear-gradient(165deg,rgba(26,29,42,.9),rgba(32,26,18,.92)) !important;border-color:rgba(192,153,106,.4) !important}
+.duel-pick-card:hover,.story-card:hover{border-color:var(--cine-warm,#d4af37) !important;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+.duel-pick-icon img,.mentor-portrait{filter:sepia(.18) contrast(1.04)}
+.story-player-echo{background:rgba(32,215,255,.05);border-right:3px solid var(--cyan,#20d7ff);border-radius:8px 0 0 8px;padding:8px 14px;margin:10px 0 4px;font-size:12px;line-height:1.8;color:#a8d8e8;text-align:right}
+.story-echo-speaker{display:block;color:var(--cyan,#20d7ff);font-size:10.5px;font-weight:bold;margin-bottom:3px}
 
 /* 移动端：纵向单列 + 按钮高度保障 */
 @media (max-width:900px){

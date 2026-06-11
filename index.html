@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系谈判博弈模拟系统 v5.5</title>
+<title>全谱系谈判博弈模拟系统 v5.6</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -7154,7 +7154,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系谈判博弈模拟系统  v5.5        ║<br>
+║  全谱系谈判博弈模拟系统  v5.6        ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -8589,7 +8589,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.5',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.6',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },
@@ -16390,111 +16390,194 @@ renderDuelSelect.afterRender = function () {
    传奇试炼场 · 对局
    ────────────────────────────────────────────────────────────────── */
 /* ── 电影化试炼对局（有剧本的导师走此分支）──────────────────────── */
+// 5 个动作的图标 + 简短动作描述（用于卡片）
+const CINE_ACTION_ICON = { info: '📋', reframe: '👑', pressure: '🌐', build: '🤝', lock: '🛡' };
+const CINE_ACTION_DESC = {
+  info:    '把对方刚才的话拆开，逐项核对依据与口径。',
+  reframe: '强调本方身份与边界，不接任何含糊其辞的措辞。',
+  pressure:'借第三方或时间变量，制造对方让步的外部压力。',
+  build:   '给对方一个体面台阶，换取实质条款上的让步。',
+  lock:    '把已谈成的部分立刻落成文本，划定红线。',
+};
+// 局势条图标 + 描述 caption
+const CINE_BAR_ICON = { patience: '⏳', ownTrust: '👥', clarity: '📄', space: '⚖' };
+const CINE_BAR_CAPTION = {
+  patience: '对方愿意继续谈的耐心程度',
+  ownTrust: '己方阵营对你的信任与支持',
+  clarity:  '条款是否明确，风险是否可控',
+  space:    '是否还有转圜与谈判空间',
+};
+// 分段条（按值分段显示，模拟参考图的方块条样式）
+function renderSegBar(value, accent) {
+  const segs = 14;
+  const filled = Math.round((value / 100) * segs);
+  let html = '';
+  for (let i = 0; i < segs; i++) {
+    html += `<span class="seg-cell ${i < filled ? 'on ' + accent : ''}"></span>`;
+  }
+  return `<div class="seg-bar">${html}</div>`;
+}
+function barAccent(v) { return v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad'; }
+
 function renderCinematicDuel(state, script) {
   const phaseIdx = Math.min(state.round, script.phases.length - 1);
   const ph = script.phases[phaseIdx];
   const d = script.director;
   const conseq = state.pendingConseq;
 
-  // 区域 1：电影幕牌（首幕全文 + 五方压力；后续折叠）
-  const directorFull = `
-    <div class="cine-shot"><b>镜头一</b>　${d.time} · ${d.location}</div>
-    <div class="cine-shot"><b>镜头二</b>　${d.visual}</div>
-    <div class="cine-shot"><b>镜头三</b>　你是 <b>${d.playerRole}</b>。对面，是${d.opponent}。</div>
-    <div class="cine-stakes">⚖ <b>失败后果</b>：${d.stakes}</div>
-    <div class="cine-stakes">🕯 <b>暗处的压力</b>：${d.hiddenPressure}</div>
-    <div class="cine-question">❓ ${d.firstQuestion}</div>
-    <div class="cine-pressures">
-      <span>己方：${script.pressures.own}</span><span>对方：${script.pressures.opp}</span>
-      <span>第三方：${script.pressures.third}</span><span>时间：${script.pressures.time}</span>
-      <span>暗线：${script.pressures.hidden}</span>
-    </div>`;
-  const headerHtml = state.round === 0 && !conseq
-    ? `<div class="cine-header">${directorFull}</div>`
-    : `<details class="cine-header cine-header-collapsed"><summary>🎬 ${d.time} · ${d.location} · ${d.playerRole}（点击重看幕牌）</summary>${directorFull}</details>`;
-
-  // 区域 2：对手压迫区
-  const patience = state.bars.patience;
-  const attitude = patience >= 60 ? '沉稳观察' : patience >= 35 ? '已显不耐' : '临界爆发';
-  const opponentHtml = `<div class="cine-opponent">
-    <div class="cine-opp-head">
-      <span class="cine-opp-avatar">${state.duelist.chibi || '🎭'}</span>
-      <span class="cine-opp-id"><b>${d.opponent}</b><br><span style="font-size:10px;color:var(--dim)">当前态度：${attitude}</span></span>
-    </div>
-    <div class="cine-opp-scene">${ph.setting}</div>
-    <div class="cine-opp-line">${ph.openingLine}</div>
-  </div>`;
-
-  // 区域 3：局势条
-  const barsHtml = `<div class="cine-bars">${Object.keys(CINE_BAR_LABEL).map((k) => {
-    const v = state.bars[k];
-    const cls = v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad';
-    return `<div class="duel-metric"><div class="duel-metric-label">${CINE_BAR_LABEL[k]}</div>
-      <div class="duel-metric-track"><div class="duel-metric-fill ${cls}" style="width:${v}%"></div></div>
-      <div class="duel-metric-val">${v}</div></div>`;
-  }).join('')}</div>`;
-
-  // 对手记忆触发提示（来自上一幕的行为）
-  const lastMemory = state.memoryNotes.length ? state.memoryNotes[state.memoryNotes.length - 1] : null;
-  const memoryHtml = (lastMemory && !conseq && lastMemory.round === state.round - 1)
-    ? `<div class="cine-memory">⚠ <b>对手记忆触发</b><br>上一幕行为：${lastMemory.behavior}<br>当前反击方式：${lastMemory.counter}</div>`
-    : '';
-
-  // 区域 5：后果卡（选择之后显示，点击进入下一幕）
-  if (conseq) {
-    const deltaText = Object.entries(conseq.deltas).filter(([, v]) => v).map(([k, v]) => `${CINE_BAR_LABEL[k]} ${v > 0 ? '+' : ''}${v}`).join('　');
-    return `<div class="flex-between">
-      <div class="section-title">${state.chainTitle || state.duelist.name} · ${conseq.phaseTitle}</div>
-      <button class="back-btn" data-back>← 退出</button>
-    </div>
-    ${headerHtml}
-    <div class="cine-conseq">
-      <div class="cine-conseq-row cine-conseq-player"><b>你</b>：${conseq.playerLine}</div>
-      <div class="cine-conseq-row cine-conseq-opp"><b>${d.opponent}</b>：${conseq.counterLine}</div>
-      <div class="cine-conseq-bars">📊 局势变化：${deltaText || '局势暂稳'}</div>
-      <div class="cine-conseq-risk">⚠ 隐患：${conseq.risk}</div>
-      ${conseq.memory.length ? conseq.memory.map((m) => `<div class="cine-memory">⚠ <b>对手记下了</b>：${m.behavior}——${m.counter}</div>`).join('') : ''}
-      <div class="cine-debrief">
-        <div class="cine-debrief-best">📌 本幕最优思路：${conseq.best}</div>
-        <div class="cine-debrief-trap">🕳 本幕陷阱：${conseq.trap}</div>
+  // ── 区域 1：电影幕牌（顶部条带 · 始终可见）──────────────────────
+  const headerHtml = `<div class="cine-stage">
+    <div class="cine-stage-top">
+      <div class="cine-stage-title-wrap">
+        <div class="cine-stage-title">${d.location.split(' · ').slice(-1)[0] || d.location}</div>
+        <div class="cine-stage-sub">${d.time}</div>
+      </div>
+      <div class="cine-stage-tools">
+        <button class="cine-tool-btn" data-cine-pop="bg" title="历史背景">📖<span>历史背景</span></button>
+        <button class="cine-tool-btn" data-cine-pop="brief" title="本幕要点">📄<span>本幕要点</span></button>
       </div>
     </div>
-    ${barsHtml}
-    <div style="text-align:center;margin-top:12px">
-      <button class="btn btn-green" data-cine-next style="min-height:48px;min-width:200px">${conseq.completed ? '🎬 查看终幕战报' : '进入下一幕 →'}</button>
+    <div class="cine-stage-meta">
+      <div class="cine-meta-col"><div class="cine-meta-k">你的身份</div><div class="cine-meta-v">${d.playerRole}</div></div>
+      <div class="cine-meta-col"><div class="cine-meta-k">当前目标</div><div class="cine-meta-v">${d.firstQuestion.replace(/^[^：:]*[：:]/, '').slice(0, 38)}</div></div>
+      <div class="cine-meta-col"><div class="cine-meta-k">失败后果</div><div class="cine-meta-v" style="color:#e0a070">${d.stakes}</div></div>
+    </div>
+  </div>`;
+
+  // 暗藏面板：历史背景 + 本幕要点（默认折叠，工具按钮展开）
+  const popBg = `<div class="cine-pop" id="cine-pop-bg" style="display:none">
+    <div class="cine-pop-title">📖 历史背景</div>
+    <div class="cine-pop-body">${d.visual}<br>${script.pressures.third ? '第三方变量：' + script.pressures.third + '。' : ''}${script.pressures.hidden ? '暗线：' + script.pressures.hidden + '。' : ''}</div>
+  </div>`;
+  const popBrief = `<div class="cine-pop" id="cine-pop-brief" style="display:none">
+    <div class="cine-pop-title">📄 本幕要点</div>
+    <div class="cine-pop-body">${ph.setting}<br><span style="color:var(--cyan)">最优思路：${ph.best}</span><br><span style="color:#e0a070">需警惕：${ph.trap}</span></div>
+  </div>`;
+
+  // ── 区域 2：对手压迫区（立绘 · 资料栏 · 对话气泡 · 记忆触发列）──
+  const patience = state.bars.patience;
+  const attitudeLabel = patience >= 60 ? '沉稳观察' : patience >= 35 ? '已显不耐' : '强硬施压';
+  const attitudeCls = patience >= 60 ? 'attitude-calm' : patience >= 35 ? 'attitude-warn' : 'attitude-hard';
+  const lastMemory = state.memoryNotes.length ? state.memoryNotes[state.memoryNotes.length - 1] : null;
+  const memoryCol = (lastMemory && lastMemory.round === state.round - 1) ? `<div class="cine-mem-col">
+    <div class="cine-mem-title">⚠ 对手记忆触发</div>
+    <div class="cine-mem-row"><span class="cine-mem-k">上一幕行为</span><span class="cine-mem-v">${lastMemory.behavior}</span></div>
+    <div class="cine-mem-row"><span class="cine-mem-k">对手解读</span><span class="cine-mem-v">${lastMemory.counter}</span></div>
+    <div class="cine-mem-row"><span class="cine-mem-k">当前反击方式</span><span class="cine-mem-v">${lastMemory.counter.slice(0, 28)}…</span></div>
+  </div>` : `<div class="cine-mem-col cine-mem-empty">
+    <div class="cine-mem-title cine-mem-title-quiet">— 对手暂无记忆触发 —</div>
+    <div class="cine-mem-quiet">你的行为模式尚未被对方读出。<br>反复使用同一种手段会被记下并反制。</div>
+  </div>`;
+  const opponentHtml = `<div class="cine-opp-stage ${conseq ? 'is-locked' : ''}">
+    <div class="cine-opp-portrait-col">
+      <div class="cine-opp-name">${d.opponent}</div>
+      <div class="cine-opp-info">
+        <div class="cine-opp-info-k">日本全权代表</div>
+        <div class="cine-opp-info-k" style="margin-top:6px">谈判目标</div>
+        <div class="cine-opp-info-v">${script.pressures.opp}</div>
+        <div class="cine-opp-info-k" style="margin-top:6px">当前态度</div>
+        <span class="cine-attitude-badge ${attitudeCls}">${attitudeLabel}</span>
+        <div class="cine-opp-info-k" style="margin-top:8px">策略风格</div>
+        <div class="cine-opp-info-v">${script.voiceStyle}</div>
+      </div>
+    </div>
+    <div class="cine-opp-portrait">
+      <div class="cine-opp-portrait-emoji">${state.duelist.chibi || '🎭'}</div>
+    </div>
+    <div class="cine-opp-bubble-col">
+      <div class="cine-opp-bubble">
+        <span class="cine-quote-mark cine-quote-l">"</span>
+        <div class="cine-opp-bubble-text">${ph.openingLine}</div>
+        <span class="cine-quote-mark cine-quote-r">"</span>
+      </div>
+    </div>
+    ${memoryCol}
+  </div>`;
+
+  // ── 区域 3：局势条（4 列 · 图标 · 分段条 · 数值 · caption）─────
+  const barOrder = ['patience', 'ownTrust', 'clarity', 'space'];
+  const barsHtml = `<div class="cine-bars-row">${barOrder.map((k) => {
+    const v = state.bars[k];
+    const acc = barAccent(v);
+    return `<div class="cine-bar-cell">
+      <div class="cine-bar-head">
+        <span class="cine-bar-icon">${CINE_BAR_ICON[k]}</span>
+        <span class="cine-bar-label">${CINE_BAR_LABEL[k]}</span>
+        <span class="cine-bar-val">${v}</span>
+      </div>
+      ${renderSegBar(v, acc)}
+      <div class="cine-bar-cap">${CINE_BAR_CAPTION[k]}</div>
+    </div>`;
+  }).join('')}</div>`;
+
+  // ── 区域 4：玩家行动区（5 列 · 选中态高亮）────────────────────
+  const selectedKey = conseq ? conseq.chosenKey : null;
+  const actionsHtml = `<div class="cine-action-row ${conseq ? 'is-locked' : ''}">${DUEL_CHOICES.map((c) => {
+    const cineKey = CINE_CHOICE_MAP[c.key];
+    const a = script.actions[cineKey];
+    const isSelected = c.key === selectedKey;
+    return `<button class="cine-action-card ${isSelected ? 'selected' : ''}" data-cine-choice="${c.key}" ${conseq ? 'disabled' : ''}>
+      <div class="cine-action-icon">${CINE_ACTION_ICON[c.key]}</div>
+      <div class="cine-action-name">${CINE_ACTION_NAME[c.key]}</div>
+      <div class="cine-action-desc">${CINE_ACTION_DESC[c.key]}</div>
+      <div class="cine-action-risk-band">风险：<span>${a.risk}</span></div>
+    </button>`;
+  }).join('')}</div>`;
+
+  // ── 区域 5：后果卡（4 列 · 你的发言 / 对手反击 / 局势变化 / 下一幕风险 + 进入下一幕）
+  let conseqHtml = '';
+  if (conseq) {
+    const deltaItems = Object.entries(conseq.deltas).filter(([, v]) => v).map(([k, v]) => {
+      const cls = v > 0 ? 'delta-up' : 'delta-down';
+      const arrow = v > 0 ? '↑' : '↓';
+      const sign = v > 0 ? '+' : '';
+      return `<div class="cine-delta-row"><span class="cine-delta-k">${CINE_BAR_LABEL[k]}</span><span class="cine-delta-v ${cls}">${sign}${v} ${arrow}</span></div>`;
+    }).join('') || '<div style="font-size:11px;color:var(--dim)">局势暂稳</div>';
+    const nextLabel = conseq.completed ? '🎬 查看终幕战报' : '进入下一幕 →';
+    const roundIndicatorHtml = renderRoundIndicator(state.round, 6);
+    conseqHtml = `<div class="cine-conseq-row-grid">
+      <div class="cine-conseq-cell">
+        <div class="cine-conseq-k">你的发言</div>
+        <div class="cine-conseq-v cine-conseq-quote">"${conseq.playerLine}"</div>
+      </div>
+      <div class="cine-conseq-cell">
+        <div class="cine-conseq-k cine-conseq-k-red">对手反击</div>
+        <div class="cine-conseq-v cine-conseq-counter">${conseq.counterLine}</div>
+      </div>
+      <div class="cine-conseq-cell">
+        <div class="cine-conseq-k">局势变化</div>
+        <div class="cine-conseq-deltas">${deltaItems}</div>
+      </div>
+      <div class="cine-conseq-cell">
+        <div class="cine-conseq-k">下一幕风险</div>
+        <div class="cine-conseq-v">${conseq.risk}${conseq.trap ? '<br><span style="color:var(--dim);font-size:10px">陷阱：' + conseq.trap + '</span>' : ''}</div>
+      </div>
+      <div class="cine-conseq-action">
+        <button class="cine-next-btn" data-cine-next>${nextLabel}</button>
+        <div class="cine-round-indicator">回合 ${Math.min(state.round + 1, 6)} / 6 ${roundIndicatorHtml}</div>
+      </div>
     </div>`;
   }
 
-  // 区域 4：玩家行动区（动作名 + 时代台词 + 风险）
-  const actionsHtml = DUEL_CHOICES.map((c) => {
-    const cineKey = CINE_CHOICE_MAP[c.key];
-    const a = script.actions[cineKey];
-    const tag = NEGOTIATION_SKILL_TAGS[c.tag];
-    return `<button class="duel-choice-btn cine-action-btn" data-cine-choice="${c.key}">
-      <div class="duel-choice-head"><b>${CINE_ACTION_NAME[c.key]}</b> <span class="duel-choice-tag" style="color:${tag.color}">${tag.label}</span></div>
-      <div class="duel-choice-sample">${a.line}</div>
-      <div class="cine-action-risk">⚠ ${a.risk}</div>
-    </button>`;
-  }).join('');
-
-  // 幕间记录
-  const logHtml = state.cineLog.length ? `<div class="duel-log">
-    <div class="sk-section-head" style="--card-color:var(--dim)">▸ 已走过的幕</div>
-    ${state.cineLog.slice(-3).map((l) => `<div class="duel-log-item">${l.phaseTitle} · ${l.actionName}<br><span style="color:var(--dim);font-size:10px">${l.counterSnippet}</span></div>`).join('')}
-  </div>` : '';
-
-  return `<div class="flex-between">
-    <div class="section-title">${state.duelist.name} · ${ph.title}</div>
-    <button class="back-btn" data-back>← 退出</button>
-  </div>
-  ${headerHtml}
-  ${memoryHtml}
-  ${opponentHtml}
-  ${barsHtml}
-  <div class="sk-section-head" style="--card-color:var(--cyan)">▸ 第 ${state.round + 1} / 6 幕 · 你的行动</div>
-  <div class="duel-choice-list">${actionsHtml}</div>
-  ${logHtml}`;
+  return `<div class="cine-stage-wrap">
+    <button class="cine-back-floating" data-back>← 退出</button>
+    ${headerHtml}
+    ${popBg}${popBrief}
+    ${opponentHtml}
+    ${barsHtml}
+    ${actionsHtml}
+    ${conseqHtml}
+  </div>`;
 }
+
+function renderRoundIndicator(currentRound, total) {
+  let html = '<span class="cine-round-dots">';
+  for (let i = 0; i < total; i++) {
+    html += `<span class="cine-round-dot${i <= currentRound ? ' on' : ''}"></span>`;
+  }
+  return html + '</span>';
+}
+
 
 function renderDuelPlay(params) {
   params = params || {};
@@ -16639,6 +16722,7 @@ renderDuelPlay.afterRender = function () {
       newState.lastCineKey = cineKey;
       // 后果卡
       newState.pendingConseq = {
+        chosenKey: choiceKey,
         phaseTitle: ph.title,
         playerLine: script.actions[cineKey].line,
         counterLine: script.counters[cineKey],
@@ -16650,6 +16734,14 @@ renderDuelPlay.afterRender = function () {
       newState.cineLog.push({ phaseTitle: ph.title, actionName: CINE_ACTION_NAME[choiceKey], counterSnippet: script.counters[cineKey].slice(0, 40) + '…' });
       Store.set('duelState', newState);
       EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.DUEL_PLAY, params: {} });
+    }));
+  document.querySelectorAll('[data-cine-pop]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const k = b.getAttribute('data-cine-pop');
+      const el = document.getElementById('cine-pop-' + k);
+      if (!el) return;
+      document.querySelectorAll('.cine-pop').forEach((e) => { if (e !== el) e.style.display = 'none'; });
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }));
   document.querySelectorAll('[data-cine-next]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -17434,41 +17526,136 @@ function injectV2Styles() {
 .story-beat-text{color:var(--text)}
 .story-lesson{font-size:11.5px;color:var(--cyan);line-height:1.7;padding:4px 0 8px;border-bottom:1px dashed rgba(255,255,255,.06)}
 
-/* ── 电影化试炼 · 五区布局 ─────────────────────────────────── */
-:root{--cine-accent:#8a8f98}
-.cine-header{background:linear-gradient(160deg,rgba(0,0,0,.35),rgba(20,24,38,.5));border:1px solid var(--cine-accent);border-radius:12px;padding:14px 16px;margin:10px 0;font-size:12.5px;line-height:1.85}
-.cine-header-collapsed{padding:8px 14px}
-.cine-header-collapsed summary{cursor:pointer;color:var(--dim);font-size:11px}
-.cine-shot{margin-bottom:4px}
-.cine-shot b{color:var(--cine-accent)}
-.cine-stakes{color:var(--yellow);font-size:11.5px;margin-top:6px}
-.cine-question{color:var(--cyan);font-size:12px;margin-top:8px;font-weight:bold}
-.cine-pressures{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.cine-pressures span{font-size:10px;color:var(--dim);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:2px 8px}
-.cine-opponent{border:1px solid var(--cine-accent);border-left-width:4px;border-radius:10px;padding:12px 14px;margin:10px 0;background:rgba(0,0,0,.25)}
-.cine-opp-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.cine-opp-avatar{font-size:26px}
-.cine-opp-id{font-size:12.5px;line-height:1.4}
-.cine-opp-scene{font-size:11.5px;color:var(--dim);margin-bottom:6px;line-height:1.7}
-.cine-opp-line{font-size:13.5px;line-height:1.85;color:var(--text)}
-.cine-bars{margin:10px 0}
-.cine-action-btn{min-height:48px}
-.cine-action-risk{font-size:10px;color:var(--red);opacity:.8;margin-top:3px}
-.cine-memory{background:rgba(255,90,90,.08);border:1px solid rgba(255,90,90,.35);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:11.5px;line-height:1.7;color:var(--text)}
-.cine-conseq{border:1px solid var(--cine-accent);border-radius:12px;padding:14px 16px;margin:12px 0;background:rgba(0,0,0,.3)}
-.cine-conseq-row{font-size:13px;line-height:1.85;padding:6px 0}
-.cine-conseq-player{color:var(--cyan)}
-.cine-conseq-opp{color:var(--text);border-top:1px dashed rgba(255,255,255,.1)}
-.cine-conseq-bars{font-size:11px;color:var(--yellow);margin-top:8px}
-.cine-conseq-risk{font-size:11px;color:var(--red);margin-top:4px}
-.cine-debrief{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
-.cine-debrief-best{font-size:11.5px;color:var(--green);line-height:1.7}
-.cine-debrief-trap{font-size:11.5px;color:var(--red);line-height:1.7;opacity:.9}
-.cine-ending-panel{border-color:var(--cine-accent)}
-.cine-ending-text{font-size:13px;line-height:1.9;color:var(--text)}
-.cine-method-core{font-size:12px;line-height:1.8;color:var(--cyan);margin-bottom:6px}
-.cine-method-misuse{font-size:11.5px;line-height:1.8;color:var(--yellow);margin-bottom:6px}
+/* ── 电影化试炼 · 重构版（仿参考图：五区布局 · 历史谈判桌）────── */
+:root{--cine-accent:#c0996a;--cine-warm:#d4af37;--cine-red:#c44a4a;--cine-green:#5fb96a;--cine-bg:#1a1d2a;--cine-frame:rgba(192,153,106,.55)}
+.cine-stage-wrap{position:relative;padding:8px 4px 24px;color:var(--text)}
+.cine-back-floating{position:absolute;top:4px;left:4px;background:transparent;border:none;color:var(--dim);font-size:11.5px;cursor:pointer;padding:4px 8px;z-index:10}
+.cine-back-floating:hover{color:var(--text)}
+
+/* 区域 1：电影幕牌 */
+.cine-stage{position:relative;background:linear-gradient(155deg,#171a26 0%,#1f1b16 70%,#231d14 100%);border:2px solid var(--cine-frame);border-radius:14px;padding:18px 24px 16px;margin:6px 0 14px;box-shadow:0 0 24px rgba(0,0,0,.4) inset, 0 2px 14px rgba(0,0,0,.3)}
+.cine-stage::before, .cine-stage::after{content:'';position:absolute;width:14px;height:14px;border:2px solid var(--cine-warm);opacity:.6}
+.cine-stage::before{top:6px;left:6px;border-right:none;border-bottom:none}
+.cine-stage::after{bottom:6px;right:6px;border-left:none;border-top:none}
+.cine-stage-top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;border-bottom:1px solid rgba(192,153,106,.25);padding-bottom:12px}
+.cine-stage-title{font-size:32px;font-weight:bold;color:#f3e1c1;letter-spacing:6px;line-height:1.1;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.cine-stage-sub{font-size:12px;color:#9a8e76;margin-top:6px;letter-spacing:1px}
+.cine-stage-tools{display:flex;gap:14px}
+.cine-tool-btn{background:transparent;border:none;color:#9a8e76;font-size:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;padding:4px 10px;gap:4px;border-radius:6px;transition:.15s}
+.cine-tool-btn:hover{color:var(--cine-warm);background:rgba(212,175,55,.06)}
+.cine-tool-btn span{font-size:10px;letter-spacing:.5px}
+.cine-stage-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+.cine-meta-col{display:flex;flex-direction:column;gap:4px}
+.cine-meta-k{font-size:11px;color:#9a8e76;letter-spacing:1px}
+.cine-meta-v{font-size:13.5px;color:#f3e1c1;line-height:1.55;font-weight:500}
+
+/* 展开式背景 / 要点 */
+.cine-pop{background:rgba(20,18,14,.85);border:1px solid var(--cine-frame);border-radius:10px;padding:12px 16px;margin:0 0 14px;font-size:12px;line-height:1.85;color:#d8c9a8}
+.cine-pop-title{color:var(--cine-warm);font-weight:bold;margin-bottom:6px}
+
+/* 区域 2：对手压迫区 */
+.cine-opp-stage{display:grid;grid-template-columns:200px 220px 1fr 240px;gap:18px;background:linear-gradient(180deg,rgba(40,28,28,.8),rgba(28,20,20,.9));border:1.5px dashed var(--cine-red);border-radius:14px;padding:18px;margin:0 0 14px;min-height:230px;align-items:start}
+.cine-opp-stage.is-locked{opacity:.85}
+.cine-opp-portrait-col{display:flex;flex-direction:column;gap:8px}
+.cine-opp-name{font-size:24px;font-weight:bold;color:var(--cine-red);letter-spacing:3px;margin-bottom:6px;text-shadow:0 1px 6px rgba(196,74,74,.4)}
+.cine-opp-info{display:flex;flex-direction:column;gap:2px}
+.cine-opp-info-k{font-size:10.5px;color:#9a8e76;letter-spacing:.5px}
+.cine-opp-info-v{font-size:12px;color:#d8c9a8;line-height:1.6}
+.cine-attitude-badge{display:inline-block;padding:4px 12px;border-radius:4px;font-size:11.5px;font-weight:bold;letter-spacing:1px;width:fit-content;margin-top:2px}
+.attitude-hard{background:#a13030;color:#fff}
+.attitude-warn{background:#b8801e;color:#fff}
+.attitude-calm{background:#3d6b3d;color:#fff}
+.cine-opp-portrait{display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(60,40,30,.7),rgba(20,16,14,.95));border-radius:10px;min-height:200px;position:relative;overflow:hidden;border:1px solid rgba(192,153,106,.25)}
+.cine-opp-portrait::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,transparent 30%,rgba(0,0,0,.5) 100%);pointer-events:none}
+.cine-opp-portrait-emoji{font-size:96px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));z-index:1}
+.cine-opp-bubble-col{display:flex;align-items:center;padding:10px 0}
+.cine-opp-bubble{position:relative;background:rgba(40,32,24,.6);border:1px solid var(--cine-frame);border-radius:12px;padding:18px 26px;font-size:14px;line-height:2;color:#f3e1c1;width:100%}
+.cine-opp-bubble-text{white-space:pre-wrap}
+.cine-quote-mark{position:absolute;font-size:36px;color:var(--cine-warm);font-family:Georgia,serif;line-height:1;opacity:.6}
+.cine-quote-l{top:8px;left:10px}
+.cine-quote-r{bottom:0;right:14px}
+.cine-mem-col{background:rgba(60,20,20,.5);border:1px solid var(--cine-red);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.cine-mem-col.cine-mem-empty{background:rgba(40,40,40,.3);border:1px dashed rgba(150,150,150,.3)}
+.cine-mem-title{color:var(--cine-red);font-size:12px;font-weight:bold;margin-bottom:4px}
+.cine-mem-title-quiet{color:#7a7060}
+.cine-mem-quiet{font-size:10.5px;color:#7a7060;line-height:1.7}
+.cine-mem-row{display:flex;flex-direction:column;gap:2px;border-bottom:1px solid rgba(196,74,74,.15);padding-bottom:6px}
+.cine-mem-row:last-child{border-bottom:none}
+.cine-mem-k{font-size:10px;color:#9a8e76}
+.cine-mem-v{font-size:11.5px;color:#d8c9a8;line-height:1.55}
+
+/* 区域 3：局势条 */
+.cine-bars-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:linear-gradient(180deg,rgba(20,24,38,.6),rgba(28,22,28,.6));border:1.5px dashed var(--cine-warm);border-radius:14px;padding:18px;margin:0 0 14px}
+.cine-bar-cell{display:flex;flex-direction:column;gap:6px}
+.cine-bar-head{display:flex;align-items:center;gap:8px}
+.cine-bar-icon{font-size:18px;width:28px;height:28px;background:rgba(192,153,106,.15);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.cine-bar-label{font-size:12px;color:#d8c9a8;flex:1}
+.cine-bar-val{font-size:14px;font-weight:bold;color:#f3e1c1}
+.seg-bar{display:flex;gap:3px;height:12px}
+.seg-cell{flex:1;background:rgba(255,255,255,.08);border-radius:2px}
+.seg-cell.on{background:#8a8f98}
+.seg-cell.on.good{background:#5fb96a}
+.seg-cell.on.warn{background:#d4a13c}
+.seg-cell.on.bad{background:#c44a4a}
+.cine-bar-cap{font-size:10.5px;color:#7a7060;line-height:1.5}
+
+/* 区域 4：玩家行动区 */
+.cine-action-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;background:linear-gradient(180deg,rgba(20,24,38,.5),rgba(20,18,14,.6));border:1.5px dashed var(--cine-warm);border-radius:14px;padding:18px;margin:0 0 14px}
+.cine-action-row.is-locked .cine-action-card:not(.selected){opacity:.45;pointer-events:none}
+.cine-action-card{background:rgba(30,26,20,.7);border:1px solid rgba(192,153,106,.35);border-radius:10px;padding:14px 12px 0;cursor:pointer;display:flex;flex-direction:column;gap:8px;color:var(--text);transition:.18s;text-align:left;min-height:170px}
+.cine-action-card:hover{background:rgba(50,40,28,.85);border-color:var(--cine-warm);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.cine-action-card.selected{border:2px solid var(--cine-warm);background:rgba(60,46,22,.7);box-shadow:0 0 18px rgba(212,175,55,.35),inset 0 0 12px rgba(212,175,55,.15)}
+.cine-action-card[disabled]{cursor:default}
+.cine-action-icon{font-size:22px;color:var(--cine-warm)}
+.cine-action-name{font-size:16px;font-weight:bold;color:#f3e1c1;letter-spacing:1px}
+.cine-action-desc{font-size:11.5px;color:#b8a890;line-height:1.65;flex:1}
+.cine-action-risk-band{margin:0 -12px 0;padding:8px 12px;border-top:1px solid rgba(212,175,55,.25);background:rgba(212,175,55,.08);font-size:10.5px;color:#9a8e76;border-radius:0 0 10px 10px;line-height:1.5}
+.cine-action-risk-band span{color:#d4a13c}
+
+/* 区域 5：后果卡 */
+.cine-conseq-row-grid{display:grid;grid-template-columns:1.2fr 1.4fr .9fr 1.2fr 0.9fr;gap:14px;background:linear-gradient(180deg,rgba(20,24,38,.6),rgba(20,18,14,.7));border:1.5px dashed var(--cine-warm);border-radius:14px;padding:18px;margin:0 0 14px;align-items:start}
+.cine-conseq-cell{display:flex;flex-direction:column;gap:6px}
+.cine-conseq-k{font-size:11px;color:#9a8e76;letter-spacing:1px;margin-bottom:4px}
+.cine-conseq-k-red{color:var(--cine-red)}
+.cine-conseq-v{font-size:12.5px;line-height:1.75;color:#d8c9a8}
+.cine-conseq-quote{font-style:italic;color:#f3e1c1;position:relative;padding-left:16px}
+.cine-conseq-quote::before{content:'"';position:absolute;left:0;top:-2px;font-size:22px;color:var(--cine-warm);opacity:.5;font-family:Georgia,serif}
+.cine-conseq-counter{color:var(--cine-red);line-height:1.75}
+.cine-conseq-deltas{display:flex;flex-direction:column;gap:4px}
+.cine-delta-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.cine-delta-k{color:#9a8e76}
+.cine-delta-v{font-weight:bold;font-family:'Menlo','Courier New',monospace}
+.cine-delta-v.delta-up{color:var(--cine-green)}
+.cine-delta-v.delta-down{color:var(--cine-red)}
+.cine-conseq-action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;border-left:1px solid rgba(192,153,106,.2);padding-left:14px}
+.cine-next-btn{background:linear-gradient(180deg,#c69756,#8b6230);border:1px solid var(--cine-warm);color:#fff;font-size:15px;font-weight:bold;padding:12px 26px;border-radius:6px;cursor:pointer;letter-spacing:2px;width:100%;min-height:54px;transition:.18s;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.cine-next-btn:hover{background:linear-gradient(180deg,#d8a868,#a07640);transform:translateY(-1px)}
+.cine-round-indicator{font-size:11px;color:#9a8e76;display:flex;flex-direction:column;align-items:center;gap:4px;letter-spacing:1px}
+.cine-round-dots{display:flex;gap:5px}
+.cine-round-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15)}
+.cine-round-dot.on{background:var(--cine-warm)}
+
+/* 结果页 · 三层复盘 */
+.cine-ending-panel{border-color:var(--cine-warm)}
+.cine-ending-text{font-size:13px;line-height:1.95;color:#d8c9a8}
+.cine-method-core{font-size:12.5px;line-height:1.85;color:var(--cyan);margin-bottom:8px}
+.cine-method-misuse{font-size:11.5px;line-height:1.8;color:#d4a13c;margin-bottom:8px}
 .cine-method-trap{font-size:11.5px;line-height:1.8;color:var(--text)}
+
+/* 移动端：纵向单列 + 按钮高度保障 */
+@media (max-width:900px){
+  .cine-stage-meta{grid-template-columns:1fr}
+  .cine-opp-stage{grid-template-columns:1fr;gap:14px}
+  .cine-opp-portrait{min-height:160px}
+  .cine-bars-row,.cine-action-row{grid-template-columns:1fr 1fr;gap:10px}
+  .cine-conseq-row-grid{grid-template-columns:1fr;gap:12px}
+  .cine-conseq-action{border-left:none;border-top:1px solid rgba(192,153,106,.2);padding-left:0;padding-top:12px}
+  .cine-action-card{min-height:auto}
+  .cine-stage-title{font-size:24px;letter-spacing:3px}
+}
+@media (max-width:520px){
+  .cine-bars-row,.cine-action-row{grid-template-columns:1fr}
+}
 
 /* ── 人物主题（历史氛围皮肤）───────────────────────────────── */
 body.legend-theme-sunzi{--cine-accent:#7da87b}

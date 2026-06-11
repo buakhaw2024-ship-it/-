@@ -17336,7 +17336,7 @@ function renderStoryPlay(params) {
     return `<button class="duel-choice-btn cine-action-btn ${isFocus ? 'focus' : ''}" data-story-choice="${c.key}">
       <div class="duel-choice-head"><b>${CINE_ACTION_NAME[c.key] || c.label}</b> <span class="duel-choice-tag" style="color:${tag.color}">${tag.label}${isFocus ? ' · 本幕焦点' : ''}</span></div>
       <div class="duel-choice-desc">${c.desc}</div>
-      ${voice ? `<div class="duel-choice-sample">"${voice}"</div>` : ''}
+      ${voice ? `<div class="duel-choice-sample story-voice">${voice}</div>` : ''}
     </button>`;
   }).join('');
 
@@ -17829,7 +17829,8 @@ function injectV2Styles() {
 .duel-choice-head{font-size:12px;color:var(--white);margin-bottom:3px;display:flex;justify-content:space-between}
 .duel-choice-tag{font-size:10px}
 .duel-choice-desc{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:3px}
-.duel-choice-sample{font-size:10.5px;color:var(--dim);font-style:italic;line-height:1.5}
+.duel-choice-sample{font-size:12px;color:#e8d9b8;line-height:1.75}
+.duel-choice-sample.story-voice{color:#f3e6c8;border-left:2px solid rgba(212,175,55,.5);padding-left:8px;margin-top:4px}
 
 /* ── 导师能量条 ────────────────────────────────────────────── */
 .mentor-bar{background:linear-gradient(135deg,rgba(246,196,83,.06),rgba(192,132,252,.04));border:1px solid rgba(246,196,83,.3);border-radius:4px;padding:8px 12px;margin:10px 0}

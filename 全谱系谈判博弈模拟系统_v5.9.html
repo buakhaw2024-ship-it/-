@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系谈判博弈模拟系统 v5.8</title>
+<title>全谱系谈判博弈模拟系统 v5.9</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -7146,7 +7146,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系谈判博弈模拟系统  v5.8        ║<br>
+║  全谱系谈判博弈模拟系统  v5.9        ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -8533,7 +8533,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.8',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.9',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },
@@ -8591,6 +8591,18 @@ const _TOURS = {
       selector: '[data-idx="5"]',
       title: '⑥ 人物精通档案',
       body: '记录你在每位传奇人物线中的成长：<br><b>训练进度</b> · 剧情幕数与试炼胜率<br><b>能力徽章</b> · 由训练行为获得，而非抽取<br><b>高频错误与最近复盘</b> · 看清自己常掉进哪些陷阱。',
+      position: 'top',
+    },
+    {
+      selector: '[data-idx="6"]',
+      title: '⑦ 谈判弧线模式',
+      body: '7 条主题剧情弧线 × 5 阶段决策链：<br><b>BATNA 突围</b>、<b>跨文化磨合</b>、<b>多方联盟</b>、<b>反操纵</b>……<br>每条弧线 5–7 个分支结局，进度自动存档，可中断后续接。',
+      position: 'top',
+    },
+    {
+      selector: '.menu-item:last-of-type, [data-idx="6"]',
+      title: '⑨ 传奇训练中心（主体验入口）',
+      body: '滚动到主菜单底部，即可进入<b>传奇训练中心</b>——这是 v5 系列的核心训练舞台：<br><b>📜 8 条历史剧情链</b>（孙子伐楚 / 张仪连横 / 慈禧垂帘 / 芒格并购 / 默克尔欧债…）<br><b>⚔️ 试炼场</b>：12 位导师 × 6 幕电影化谈判<br><b>📇 人物精通档案</b> + <b>🗂 本地回放</b> + <b>🧩 检索式复盘</b>',
       position: 'top',
     },
   ],
@@ -15110,6 +15122,108 @@ const MENTOR_MASTERY_CONFIG = {
       { id: 'stalin_verify', name: '可验证之笔', desc: '把承诺落成可验证文本（条款清晰度 ≥ 70）。', check: (s) => s.bars && s.bars.clarity >= 70 },
     ],
   },
+
+  // v5.9：补全剩余 10 位导师精通档案（无电影化剧本，走通用试炼计算）
+  mentor_cleopatra: {
+    name: '克利奥帕特拉', era: '公元前 1 世纪 · 亚历山大港', coreSkill: '资源置换与关系筹码',
+    coreTrap: '过度依赖关系网络，缺一人则全盘崩塌',
+    levels: ['联盟入门', '资源置换者', '战略联盟大师'],
+    capabilities: ['关系定价', '资源置换', '战略观望', '多线维系', '关键人物绑定'],
+    badgeRules: [
+      { id: 'cleopatra_trust_keep', name: '关系筹码', desc: '在高难谈判中维持信任权 ≥ 65。', check: (s) => s.metrics && s.metrics.trust >= 65 },
+      { id: 'cleopatra_resource_trade', name: '置换有道', desc: '以信任换取实质让步（信任与终局双高）。', check: (s) => s.win && s.metrics && s.metrics.trust >= 60 && s.metrics.endgame >= 60 },
+    ],
+  },
+  mentor_wuzetian: {
+    name: '武则天', era: '7 世纪 · 唐宫', coreSkill: '权力重构与代理人识别',
+    coreTrap: '冷面手法对柔性对手反弹大',
+    levels: ['决策识别', '权力重构者', '终局裁决者'],
+    capabilities: ['识别代理人', '权力重新分配', '议程主导', '冷面震慑', '终局拍板'],
+    badgeRules: [
+      { id: 'wuzetian_endgame', name: '终局裁决', desc: '终局权 ≥ 70 且整体不崩盘。', check: (s) => s.metrics && s.metrics.endgame >= 70 },
+      { id: 'wuzetian_info_first', name: '识破代理', desc: '以信息权开局（信息权 ≥ 60）。', check: (s) => s.metrics && s.metrics.information >= 60 },
+    ],
+  },
+  mentor_elizabeth_i: {
+    name: '伊丽莎白一世', era: '16 世纪 · 都铎王朝', coreSkill: '战略模糊与延迟承诺',
+    coreTrap: '错失短期窗口',
+    levels: ['延迟入门', '风险控制者', '模糊大师'],
+    capabilities: ['延迟承诺', '风险控制', '回避陷阱', '议程拖延', '关键时刻收口'],
+    badgeRules: [
+      { id: 'elizabeth_defense', name: '战略模糊', desc: '保持议题权 ≥ 60 且压力权未崩。', check: (s) => s.metrics && s.metrics.agenda >= 60 && s.metrics.pressure >= 40 },
+      { id: 'elizabeth_endgame', name: '关键收口', desc: '终局权 ≥ 65 且胜利。', check: (s) => s.win && s.metrics && s.metrics.endgame >= 65 },
+    ],
+  },
+  mentor_catherine: {
+    name: '叶卡捷琳娜二世', era: '18 世纪 · 圣彼得堡', coreSkill: '精英联盟构建',
+    coreTrap: '高成本利益捆绑',
+    levels: ['争取入门', '联盟构建者', '精英协调者'],
+    capabilities: ['争取关键人物', '利益捆绑', '联盟稳定', '权力分配', '联盟收益'],
+    badgeRules: [
+      { id: 'catherine_alliance', name: '精英联盟', desc: '信任权 ≥ 65 且议题权 ≥ 60。', check: (s) => s.metrics && s.metrics.trust >= 65 && s.metrics.agenda >= 60 },
+      { id: 'catherine_endgame_win', name: '联盟收益', desc: '终局胜利且信任未崩。', check: (s) => s.win && s.metrics && s.metrics.trust >= 55 },
+    ],
+  },
+  master_dawson: {
+    name: '罗杰·道森', era: '当代 · 优势谈判方法论', coreSkill: '阶段流程掌控',
+    coreTrap: '过度依赖流程，错失即兴机会',
+    levels: ['流程入门', '阶段掌控者', '优势谈判师'],
+    capabilities: ['开局策略', '中场推进', '让步管理', '终局拍板', '流程纪律'],
+    badgeRules: [
+      { id: 'dawson_agenda', name: '阶段掌控', desc: '议题权 ≥ 65 且整体均衡。', check: (s) => s.metrics && s.metrics.agenda >= 65 },
+      { id: 'dawson_concession', name: '让步纪律', desc: '高分通关（avg ≥ 70）。', check: (s) => s.avgScore && s.avgScore >= 70 },
+    ],
+  },
+  master_fisher_ury: {
+    name: '费希尔/尤里', era: '当代 · 原则谈判方法论', coreSkill: '利益而非立场',
+    coreTrap: '理性框架失效于强情绪对手',
+    levels: ['原则入门', '利益挖掘者', '原则谈判师'],
+    capabilities: ['区分人与问题', '聚焦利益', '创造方案', '客观标准', '关系维护'],
+    badgeRules: [
+      { id: 'fisher_standard', name: '客观标准', desc: '信息权 ≥ 65 且议题权 ≥ 60。', check: (s) => s.metrics && s.metrics.information >= 65 && s.metrics.agenda >= 60 },
+      { id: 'fisher_winwin', name: '双赢成局', desc: '信任与终局双高且胜利。', check: (s) => s.win && s.metrics && s.metrics.trust >= 60 && s.metrics.endgame >= 60 },
+    ],
+  },
+  master_voss: {
+    name: '克里斯·沃斯', era: '当代 · FBI 危机谈判', coreSkill: '战术同理心',
+    coreTrap: '对纯利益型对手效用下降',
+    levels: ['同理入门', '标签使用者', '战术同理大师'],
+    capabilities: ['标注情绪', '镜像复述', '校准问题', '反常识开价', '中场重定向'],
+    badgeRules: [
+      { id: 'voss_trust', name: '战术同理', desc: '信任权 ≥ 65 且未被对手记下行为模式。', check: (s) => s.metrics && s.metrics.trust >= 65 && (!s.memoryNotes || !s.memoryNotes.length) },
+      { id: 'voss_calibrated', name: '校准之问', desc: '信息权 ≥ 60 且胜利。', check: (s) => s.win && s.metrics && s.metrics.information >= 60 },
+    ],
+  },
+  master_cohen: {
+    name: '赫布·科恩', era: '当代 · 谈判三角理论', coreSkill: '权力 / 时间 / 信息三角',
+    coreTrap: '三角评估失衡，单维度过载',
+    levels: ['三角入门', '维度均衡者', '三角大师'],
+    capabilities: ['评估权力', '掌控时间', '收集信息', '识别三角失衡', '对应施压'],
+    badgeRules: [
+      { id: 'cohen_balance', name: '三角均衡', desc: '信息权、议题权、压力权均 ≥ 55。', check: (s) => s.metrics && s.metrics.information >= 55 && s.metrics.agenda >= 55 && s.metrics.pressure >= 55 },
+      { id: 'cohen_pressure', name: '压力转化', desc: '压力权 ≥ 65 且胜利。', check: (s) => s.win && s.metrics && s.metrics.pressure >= 65 },
+    ],
+  },
+  master_diamond: {
+    name: '斯图尔特·戴蒙德', era: '当代 · Getting More 方法', coreSkill: '目标第一 / 感知管理',
+    coreTrap: '过度专注核心目标，忽略关系',
+    levels: ['目标入门', '感知管理者', 'Getting More 大师'],
+    capabilities: ['锁定核心目标', '感知对方', '小步推进', '非货币筹码', '终局聚焦'],
+    badgeRules: [
+      { id: 'diamond_endgame', name: '目标第一', desc: '议题与终局双高（≥ 60）。', check: (s) => s.metrics && s.metrics.agenda >= 60 && s.metrics.endgame >= 60 },
+      { id: 'diamond_no_trap', name: '感知到位', desc: '零行为陷阱触发且胜利。', check: (s) => s.win && (!s.memoryNotes || !s.memoryNotes.length) },
+    ],
+  },
+  master_shell: {
+    name: '理查德·谢尔', era: '当代 · 风格适配理论', coreSkill: '谈判风格适配',
+    coreTrap: '风格切换不自然，失去本色',
+    levels: ['风格入门', '风格切换者', '风格适配大师'],
+    capabilities: ['识别风格', '调整自身', '同情/合作风格', '竞争/回避风格', '风格综合'],
+    badgeRules: [
+      { id: 'shell_adapt', name: '适配有道', desc: '信任与议题双高（≥ 55）。', check: (s) => s.metrics && s.metrics.trust >= 55 && s.metrics.agenda >= 55 },
+      { id: 'shell_win', name: '本色胜局', desc: '高分通关（avg ≥ 70）。', check: (s) => s.avgScore && s.avgScore >= 70 },
+    ],
+  },
 };
 
 // 剧情链 → 精通归属（big_three 链同时计入三人）
@@ -16062,6 +16176,28 @@ const StoryChain = (() => {
       // 幕结算
       const actAvg = Math.round(Object.values(state.metrics).reduce((s, v) => s + v, 0) / DUEL_METRICS.length);
       state.actResults.push({ act: act.title, avg: actAvg, focusTag: act.focusTag });
+      // v5.9 训练闭环：本幕未使用焦点策略 / 平均分崩盘 → 写入高频风险
+      const actLog = state.log.filter((l) => l.actIndex === state.actIndex);
+      const usedFocus = actLog.some((l) => l.tag === act.focusTag);
+      const player = Store.get('player');
+      if (player && typeof ensureMentorMastery === 'function') {
+        const chainScript = (typeof getStoryScript === 'function') ? getStoryScript(state.chainId) : null;
+        const actScript = chainScript && chainScript.acts[state.actIndex];
+        const creditIds = (typeof CHAIN_MASTERY_CREDIT !== 'undefined' && CHAIN_MASTERY_CREDIT[state.chainId])
+          || (state.chain.mentorId ? [state.chain.mentorId] : []);
+        const trapLabel = actScript && actScript.trap ? actScript.trap : null;
+        const collapsed = actAvg < 50;
+        if ((!usedFocus || collapsed) && trapLabel) {
+          creditIds.forEach((mid) => {
+            if (!MENTOR_MASTERY_CONFIG[mid]) return;
+            const rec = ensureMentorMastery(player, mid);
+            // 截断 trap 文本到第一句作为风险标签
+            const tag = trapLabel.split(/[—:：。]/)[0].slice(0, 30);
+            rec.trapsTriggered[tag] = (rec.trapsTriggered[tag] || 0) + 1;
+          });
+          if (typeof savePlayer === 'function') savePlayer(player);
+        }
+      }
       // carry：trust 大于 60 → trustCarry +5
       if (state.metrics.trust >= 60) state.carry.trustCarry += 5;
       if (state.metrics.pressure >= 65) state.carry.alertCarry += 5;
@@ -16406,7 +16542,7 @@ function renderLegendHub() {
       ${tile('⚔️', '传奇试炼场', '5 态势 × 6 回合快速对战', SCREENS.DUEL_SELECT, LegendDuel.isUnlocked() ? '' : '🔒')}
       ${tile('📜', '传奇剧情链', '3-5 幕 · 多结局 · checkpoint', SCREENS.STORY_SELECT, '')}
       ${tile('📇', '人物精通档案', '剧情进度 · 能力徽章 · 失败陷阱', SCREENS.MENTOR_MASTERY_ARCHIVE, '')}
-      ${tile('🌳', '个人精通树', '10 项谈判能力 · 长期目标', SCREENS.MASTERY_TREE, '')}
+      ${tile('🌳', '能力维度树', '10 项谈判能力 · 长期成长', SCREENS.MASTERY_TREE, '')}
       ${tile('🗂️', '本地回放档案馆', '保存关键局 / 复盘建议', SCREENS.REPLAY_ARCHIVE, replays ? replays + '' : '')}
       ${tile('🧩', '检索式复盘队列', '回忆 + 验证', SCREENS.REVIEW_QUEUE, pendingReviews ? pendingReviews + '' : '')}
       ${tile('🎯', '训练路径与推荐', '下一步训练什么', SCREENS.TRAINING_PATH, '')}
@@ -16426,40 +16562,54 @@ renderLegendHub.afterRender = function () {
 /* ────────────────────────────────────────────────────────────────────
    传奇人物图鉴 + 装备
    ────────────────────────────────────────────────────────────────── */
+// v5.9：图鉴改为精通等级驱动
+// 解锁规则：试炼一次即"识得"（可挑战/装备）；精通经验跨过阈值升星
+function getMentorAlbumUnlock(player, d) {
+  const rec = (player.mentorMastery || {})[d.id] || { duelAttempts: 0, masteryXp: 0 };
+  const unlocked = (rec.duelAttempts || 0) > 0 ||
+                   ((player.legendaryMentors || {}).owned || []).includes(d.id);
+  // 星级：精通经验 0/100/220/350/500 → 0–5 星
+  const xp = rec.masteryXp || 0;
+  const star = xp >= 500 ? 5 : xp >= 350 ? 4 : xp >= 220 ? 3 : xp >= 100 ? 2 : unlocked ? 1 : 0;
+  return { unlocked, star, xp, rec };
+}
+
 function renderMentorAlbum() {
   const player = ensureSkillCardFieldsV2(Store.get('player'));
+  if (typeof migrateCardSystemToMastery === 'function') migrateCardSystemToMastery(player);
   const m = player.legendaryMentors;
-  const owned = new Set(m.owned);
   const equipped = m.equipped;
 
   const groups = ['UR_LEGEND', 'SSR_MASTER'];
+  const totalUnlocked = LEGEND_DUELISTS.filter((d) => getMentorAlbumUnlock(player, d).unlocked).length;
   let html = `<div class="flex-between">
     <div class="section-title">传奇人物图鉴</div>
     <button class="back-btn" data-back>← 返回</button>
   </div>
   <div class="sk-status-bar">
-    <div class="sk-status-item">🎴 已收集 <b>${m.owned.length}/${LEGEND_DUELISTS.length}</b></div>
-    <div class="sk-status-item">💎 碎片库（导师专属）<b>${Object.values(m.fragments).reduce((s,v)=>s+v,0)}</b></div>
-    <div class="sk-status-pity">SSR保底 ${m.pity.sinceSSRMaster}/10 · UR保底 ${m.pity.sinceURLegend}/40 · LR保底 ${m.pity.sinceLRSignature}/120</div>
+    <div class="sk-status-item">🎴 已识得 <b>${totalUnlocked}/${LEGEND_DUELISTS.length}</b></div>
+    <div class="sk-status-item" style="font-size:11px;color:var(--dim)">完成一次该导师的试炼即可识得；继续训练升星</div>
   </div>`;
 
   groups.forEach((rarity) => {
     const cfg = LEGEND_RARITIES[rarity];
     const list = LEGEND_DUELISTS.filter((d) => d.rarity === rarity);
-    const ownedCount = list.filter((d) => owned.has(d.id)).length;
+    const ownedCount = list.filter((d) => getMentorAlbumUnlock(player, d).unlocked).length;
     html += `<div class="sk-section-head" style="--card-color:${cfg.color}">◆ ${cfg.label}<span class="sk-section-prog">${ownedCount}/${list.length}</span></div>
-    <div class="mentor-grid">${list.map((d) => renderMentorCard(d, owned.has(d.id), equipped === d.id, m.fragments[d.id] || 0, m.stars[d.id] || 0)).join('')}</div>`;
+    <div class="mentor-grid">${list.map((d) => {
+      const u = getMentorAlbumUnlock(player, d);
+      return renderMentorCard(d, u.unlocked, equipped === d.id, u.xp, u.star, u.rec);
+    }).join('')}</div>`;
   });
 
   return html;
 }
 
-function renderMentorCard(d, isOwned, isEquipped, fragments, stars) {
+function renderMentorCard(d, isOwned, isEquipped, masteryXp, stars, rec) {
   const cfg = LEGEND_RARITIES[d.rarity];
-  const fragNeed = d.rarity === 'UR_LEGEND' ? LEGEND_BLINDBOX_CONFIG.exchange.urLegendFragments : LEGEND_BLINDBOX_CONFIG.exchange.ssrMasterFragments;
-  const exchangeable = !isOwned && fragments >= fragNeed;
-  const starHtml = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(5 - stars) : '';
+  const starHtml = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(5 - stars) : '☆☆☆☆☆';
   const genderTag = d.gender === '女' ? '<span class="mentor-gender-tag">♀</span>' : '';
+  const xpNext = masteryXp >= 500 ? null : masteryXp >= 350 ? 500 : masteryXp >= 220 ? 350 : masteryXp >= 100 ? 220 : 100;
   return `<div class="mentor-card ${isOwned ? '' : 'mentor-locked'} ${isEquipped ? 'mentor-equipped' : ''}" data-mentor="${d.id}" style="--card-color:${cfg.color};--card-glow:${cfg.glow}">
     <div class="mentor-card-rarity" style="background:${cfg.color}">${cfg.label}</div>
     ${genderTag}
@@ -16475,7 +16625,7 @@ function renderMentorCard(d, isOwned, isEquipped, fragments, stars) {
       <div class="mentor-stars">${starHtml}</div>
       <div class="mentor-card-passive"><b>${d.passive.name}</b>：${d.passive.effect}</div>
       ${d.weakness ? `<div class="mentor-card-weakness">弱点：${d.weakness}</div>` : ''}
-      ${d.note ? `<div class="mentor-card-note">⚠ ${d.note}</div>` : ''}
+      <div class="mentor-card-mastery">精通经验 ${masteryXp}${xpNext ? ' / ' + xpNext : ' · 满星'}${rec && rec.duelWins ? ' · 试炼胜 ' + rec.duelWins + '/' + (rec.duelAttempts || 0) : ''}</div>
       <div class="mentor-card-actions">
         ${isEquipped
           ? `<button class="btn btn-sm" data-equip="">取消装备</button>`
@@ -16483,8 +16633,8 @@ function renderMentorCard(d, isOwned, isEquipped, fragments, stars) {
         ${LegendDuel.isUnlocked() ? `<button class="btn btn-sm" data-duel="${d.id}">挑战</button>` : ''}
       </div>
     ` : `
-      <div class="mentor-card-locked-info">碎片 ${fragments}/${fragNeed}</div>
-      ${exchangeable ? `<button class="btn btn-yellow btn-sm" data-exchange="${d.id}">兑换</button>` : `<div style="font-size:10px;color:var(--dim);text-align:center;padding:4px">继续收集碎片解锁</div>`}
+      <div class="mentor-card-locked-info">尚未识得</div>
+      ${LegendDuel.isUnlocked() ? `<button class="btn btn-yellow btn-sm" data-duel="${d.id}">挑战试炼</button>` : `<div style="font-size:10px;color:var(--dim);text-align:center;padding:4px">完成新手训练后开放试炼</div>`}
     `}
   </div>`;
 }
@@ -16496,18 +16646,11 @@ renderMentorAlbum.afterRender = function () {
     b.addEventListener('click', () => {
       const player = Store.get('player');
       const id = b.getAttribute('data-equip');
-      LegendBlindBox.equipMentor(player, id || null);
+      // v5.9：装备改为本地状态（不再需要"拥有"该卡）
+      player.legendaryMentors = player.legendaryMentors || { owned: [], fragments: {}, equipped: null };
+      player.legendaryMentors.equipped = id || null;
       Store.set('player', player);
-      EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_ALBUM, params: {} });
-    }));
-  document.querySelectorAll('[data-exchange]').forEach((b) =>
-    b.addEventListener('click', () => {
-      const player = Store.get('player');
-      const id = b.getAttribute('data-exchange');
-      const r = LegendBlindBox.exchangeByFragments(player, id);
-      if (r.ok) alert(`✓ 已解锁导师：${r.mentor.name}`);
-      else alert(r.reason);
-      Store.set('player', player);
+      if (typeof savePlayer === 'function') savePlayer(player);
       EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_ALBUM, params: {} });
     }));
   document.querySelectorAll('[data-duel]').forEach((b) =>
@@ -17219,11 +17362,59 @@ function renderMentorMasteryArchive() {
     训练反馈不再是"抽到什么卡"，而是：<b>你在哪个人物线中学会了什么谈判能力、犯过什么错误、下一次该如何改进。</b><br>
     徽章由训练行为获得，不可抽取；高频风险来自对手记下你的行为模式。
   </div>
-  <div class="mastery-archive-list">${cards}</div>`;
+  <div class="mastery-archive-list">${cards}</div>
+  <div class="mastery-archive-tools">
+    <button class="btn btn-sm" data-archive-export>📥 导出存档（JSON）</button>
+    <button class="btn btn-sm" data-archive-import>📤 导入存档</button>
+    <input type="file" id="archive-import-file" accept=".json,application/json" style="display:none">
+  </div>
+  <div style="font-size:10.5px;color:var(--dim);margin-top:6px;text-align:center">存档仅保存在本地浏览器；清缓存会丢失。建议定期导出备份。</div>`;
 }
 renderMentorMasteryArchive.afterRender = function () {
   document.querySelectorAll('[data-back]').forEach((b) =>
     b.addEventListener('click', () => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MAIN, params: {} })));
+
+  // v5.9 存档导出
+  const expBtn = document.querySelector('[data-archive-export]');
+  if (expBtn) expBtn.addEventListener('click', () => {
+    const player = Store.get('player');
+    if (!player) { alert('没有可导出的存档'); return; }
+    const payload = { _meta: { app: '全谱系谈判博弈模拟系统', version: 'v5.9', exportedAt: new Date().toISOString() }, player };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `存档_${player.name || 'trainer'}_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // v5.9 存档导入
+  const impBtn = document.querySelector('[data-archive-import]');
+  const fileInput = document.getElementById('archive-import-file');
+  if (impBtn && fileInput) {
+    impBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          const newPlayer = data && data.player ? data.player : data;
+          if (!newPlayer || !newPlayer.name) { alert('无效存档：缺少玩家数据'); return; }
+          const current = Store.get('player');
+          if (current && !confirm(`将用导入的存档（${newPlayer.name}）覆盖当前账户「${current.name}」。继续？`)) return;
+          if (typeof migrateCardSystemToMastery === 'function') migrateCardSystemToMastery(newPlayer);
+          Store.set('player', newPlayer);
+          if (typeof savePlayer === 'function') savePlayer(newPlayer);
+          alert('✓ 存档导入成功');
+          EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_MASTERY_ARCHIVE, params: {} });
+        } catch (err) { alert('存档解析失败：' + err.message); }
+      };
+      reader.readAsText(f);
+    });
+  }
 };
 
 /* ────────────────────────────────────────────────────────────────────
@@ -17493,7 +17684,7 @@ function renderMasteryTree() {
   }).join('');
   const totalMastered = Object.values(player.skillProfile).filter((p) => p.mastered).length;
   return `<div class="flex-between">
-    <div class="section-title">个人精通树</div>
+    <div class="section-title">能力维度树（10 项谈判能力）</div>
     <button class="back-btn" data-back>← 返回</button>
   </div>
   <div class="hint hint-cyan" style="font-size:11px;margin-bottom:12px">
@@ -18012,6 +18203,10 @@ function injectV2Styles() {
 .mastery-gain-panel{border-color:rgba(212,175,55,.5)}
 .mastery-gain-line{font-size:11px;color:#b8a890;line-height:1.7;padding-left:6px}
 .mastery-badge-new{font-size:11.5px;color:var(--cine-warm,#d4af37);background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.3);border-radius:8px;padding:6px 10px;margin-top:6px;line-height:1.6}
+.mastery-archive-tools{display:flex;gap:10px;justify-content:center;margin-top:18px;padding-top:14px;border-top:1px dashed rgba(192,153,106,.25)}
+.mentor-card-mastery{font-size:10.5px;color:var(--cine-warm,#d4af37);text-align:center;padding:3px 6px;margin-top:4px;border-top:1px dashed rgba(212,175,55,.2)}
+.story-player-echo{background:rgba(32,212,255,.08);border-left:3px solid var(--cyan,#20d4ff);border-radius:6px;padding:8px 12px;margin:6px 0;font-size:12.5px;line-height:1.85;color:#e0f0fa}
+.story-echo-speaker{display:block;color:#7fc8e8;font-size:10.5px;margin-bottom:3px;font-weight:bold;letter-spacing:.4px}
 
 /* ── v5.8 传奇中心视觉统一（图鉴/试炼场/剧情链共用琥珀历史风）── */
 .cine-opp-portrait-img{width:100%;height:100%;min-height:200px;object-fit:cover;object-position:center 18%;border-radius:10px;filter:sepia(.25) contrast(1.05) brightness(.92);z-index:1}
@@ -19123,19 +19318,23 @@ function boot() {
   Router.register(SCREENS.STRATEGY, renderStrategyLib);
   Router.register(SCREENS.PSYCHOLOGY, renderPsychology);
   Router.register(SCREENS.DASHBOARD, renderDashboard);
-  Router.register(SCREENS.CARD_ALBUM, renderCardAlbum);
-  // 技能盲盒系统（植入 negotiation_blindbox_claude_package）
-  Router.register(SCREENS.SKILL_CARDS, renderSkillCards);
+  // v5.9 去卡牌化收尾：孤儿屏幕重定向到人物精通档案
+  const _redirectToArchive = () => {
+    setTimeout(() => EventBus.emit(EVENTS.NAV_GOTO, { screen: SCREENS.MENTOR_MASTERY_ARCHIVE, params: {} }), 0);
+    return `<div style="padding:30px;text-align:center;color:var(--dim);font-size:13px">该页面已并入「人物精通档案」，正在跳转…</div>`;
+  };
+  Router.register(SCREENS.CARD_ALBUM, _redirectToArchive);
+  Router.register(SCREENS.SKILL_CARDS, _redirectToArchive);
+  Router.register(SCREENS.MENTOR_BLINDBOX, _redirectToArchive);
   // 谈判弧线模式（植入 negotiation_arcs + negotiation_arcs_2 两个封装包）
   Router.register(SCREENS.ARC_SELECTION, renderArcSelection);
   Router.register(SCREENS.ARC_BRIEFING, renderArcBriefing);
   Router.register(SCREENS.ARC_NEGOTIATION, renderArcNegotiation);
   Router.register(SCREENS.ARC_ROUND_RESULT, renderArcRoundResult);
   Router.register(SCREENS.ARC_RESULT, renderArcResultScreen);
-  // 传奇训练中心 + 个人学习优化层（植入 negotiation_master_final_personal_learning_package）
+  // 传奇训练中心 + 个人学习优化层
   Router.register(SCREENS.LEGEND_HUB, renderLegendHub);
   Router.register(SCREENS.MENTOR_ALBUM, renderMentorAlbum);
-  Router.register(SCREENS.MENTOR_BLINDBOX, renderMentorBlindbox);
   Router.register(SCREENS.DUEL_SELECT, renderDuelSelect);
   Router.register(SCREENS.DUEL_PLAY, renderDuelPlay);
   Router.register(SCREENS.DUEL_RESULT, renderDuelResult);

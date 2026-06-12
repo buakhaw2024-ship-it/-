@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "patchTarget": "全谱系谈判博弈模拟系统 v5.12",
+  "patchTarget": "全谱系谈判博弈模拟系统 v5.12 / v5.13",
   "description": "22 位传奇人物场景图与肖像图资产清单",
   "basePath": "assets/legend/",
   "imageSpec": {

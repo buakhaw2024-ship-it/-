@@ -4,6 +4,8 @@
 
 本补丁包为「全谱系谈判博弈模拟系统 v5.12」提供 22 位传奇人物的电影化场景图与肖像图接入层。
 
+> **v5.13 已原生集成本补丁包的全部功能**（`LegendSceneImageManager` 模块 + CSS 加载动画/稀有度光晕/安全区遮罩）。如使用 v5.13，只需将图片放入 `assets/legend/` 目录并调用 `LegendSceneImagePatch.markAllReady()` 即可。
+
 ### 目录结构
 
 ```

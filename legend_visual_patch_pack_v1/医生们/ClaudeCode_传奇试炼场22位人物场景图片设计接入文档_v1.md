@@ -280,7 +280,8 @@ legend_scene_image_patch.js
 │   ├── legend_scene_image_patch.js
 │   ├── legend_scene_image_patch.css
 │   └── legend_scene_image_manifest.json
-└── 全谱系谈判博弈模拟系统_v5.12.html
+├── 全谱系谈判博弈模拟系统_v5.12.html   ← 原始版本（需外部补丁）
+└── 全谱系谈判博弈模拟系统_v5.13.html   ← 已原生集成场景图层
 ```
 
 ---
@@ -333,3 +334,4 @@ legend_scene_image_patch.js
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v1.0 | 2026-06-12 | 初始版本：22 位人物设计规范 + 技术接入文档 |
+| v1.1 | 2026-06-12 | v5.13 原生集成：LegendSceneImageManager + 稀有度光晕 + 安全区遮罩 + 加载状态管理 |

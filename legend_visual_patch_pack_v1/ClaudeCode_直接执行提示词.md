@@ -2,7 +2,9 @@
 
 ## 一键接入指令
 
-将以下内容作为 ClaudeCode 提示词，即可自动完成补丁包接入：
+> **如果使用 v5.13**：补丁已原生集成，只需将图片放入 `assets/legend/` 目录，然后在浏览器控制台执行 `LegendSceneImagePatch.markAllReady()` 即可。以下指令适用于 v5.12 手动接入。
+
+将以下内容作为 ClaudeCode 提示词，即可自动完成补丁包接入（v5.12）：
 
 ---
 

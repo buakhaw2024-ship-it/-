@@ -7,14 +7,20 @@
     "scene": {
       "width": 1200,
       "height": 520,
-      "format": ["webp", "png"],
+      "format": [
+        "webp",
+        "png"
+      ],
       "safeAreaLeft": "38%",
       "notes": "左侧 38% 为 UI 文字安全区，人物主体居右"
     },
     "portrait": {
       "width": 400,
       "height": 400,
-      "format": ["webp", "png"],
+      "format": [
+        "webp",
+        "png"
+      ],
       "crop": "circle",
       "notes": "半身肖像，居中裁切"
     }
@@ -30,7 +36,8 @@
       "sceneTitle": "吴国伐楚前夜 · 军帐庙算",
       "visualTone": "青黑、铜绿、军帐烛火、竹简地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_zhangyi",
@@ -42,7 +49,8 @@
       "sceneTitle": "秦楚连横 · 楚宫游说",
       "visualTone": "暗金、紫黑、战国宫廷、帛书与诸侯地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_lihongzhang",
@@ -54,7 +62,8 @@
       "sceneTitle": "马关春帆楼 · 败局止损",
       "visualTone": "墨蓝、灰白、寒光、条约文件",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_inamori",
@@ -66,7 +75,8 @@
       "sceneTitle": "日本航空重建 · 破产会议室",
       "visualTone": "深蓝、冷白、企业会议室、经营报表",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_munger",
@@ -78,7 +88,8 @@
       "sceneTitle": "See's Candies 尽调 · 反向判断",
       "visualTone": "黑白、暖黄、投资档案、现金流报表",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_trump",
@@ -90,7 +101,8 @@
       "sceneTitle": "曼哈顿地产交易 · 极限锚定",
       "visualTone": "黑金、暗红、地产模型、媒体闪光",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_cleopatra",
@@ -102,7 +114,8 @@
       "sceneTitle": "亚历山大港宫廷 · 罗马联盟",
       "visualTone": "金色、孔雀蓝、埃及宫廷、地中海地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_wuzetian",
@@ -114,7 +127,8 @@
       "sceneTitle": "大唐朝堂 · 权力重构",
       "visualTone": "暗红、鎏金、帘幕、朝堂奏章",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_elizabeth_i",
@@ -126,7 +140,8 @@
       "sceneTitle": "都铎宫廷 · 延迟承诺",
       "visualTone": "深绿、金色、海图、外交密信",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_catherine",
@@ -138,7 +153,8 @@
       "sceneTitle": "冬宫议事厅 · 精英联盟",
       "visualTone": "冰蓝、金白、沙俄宫廷、欧洲地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_thatcher",
@@ -150,7 +166,8 @@
       "sceneTitle": "英国内阁室 · 矿工罢工谈判",
       "visualTone": "深蓝、铁灰、红色文件、工业地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_merkel",
@@ -162,7 +179,8 @@
       "sceneTitle": "欧盟圆桌 · 多方共识",
       "visualTone": "蓝灰、冷白、圆桌会议、多国文件",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_cixi",
@@ -174,7 +192,8 @@
       "sceneTitle": "庚子之后 · 垂帘控局",
       "visualTone": "暗红、宫灯、帘幕、列强文书",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "master_dawson",
@@ -186,7 +205,8 @@
       "sceneTitle": "优势谈判课堂 · 阶段掌控",
       "visualTone": "商务暗蓝、谈判桌、报价板、合同",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "master_fisher_ury",
@@ -198,7 +218,8 @@
       "sceneTitle": "哈佛谈判室 · 利益而非立场",
       "visualTone": "学院木色、白板、圆桌、原则清单",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "master_voss",
@@ -210,7 +231,8 @@
       "sceneTitle": "危机谈判指挥室 · 战术同理心",
       "visualTone": "低光、监听设备、电话、行动地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "master_cohen",
@@ -222,7 +244,8 @@
       "sceneTitle": "权力时间信息 · 谈判无处不在",
       "visualTone": "机场商务、时钟、文件、公文包",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "master_diamond",
@@ -234,7 +257,8 @@
       "sceneTitle": "沃顿谈判室 · 感知管理",
       "visualTone": "暖木、跨文化圆桌、便利贴、目标板",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "master_shell",
@@ -246,7 +270,8 @@
       "sceneTitle": "风格适配工作坊 · 为优势而谈",
       "visualTone": "紫蓝、矩阵白板、谈判风格图谱",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_churchill",
@@ -258,7 +283,8 @@
       "sceneTitle": "战时内阁地下室 · 危机联盟",
       "visualTone": "烟雾、军用地图、台灯、盟军文件",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_roosevelt",
@@ -270,7 +296,8 @@
       "sceneTitle": "战后秩序设计 · 联盟构建",
       "visualTone": "暖棕、白宫会议室、世界地图、制度文件",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     },
     {
       "id": "mentor_stalin",
@@ -282,10 +309,12 @@
       "sceneTitle": "雅尔塔安全边界 · 不信任博弈",
       "visualTone": "冷灰、暗红、雪夜、边界地图",
       "safeArea": "left",
-      "status": "pending"
+      "sceneStatus": "placeholder",
+      "portraitStatus": "pending"
     }
   ],
   "totalAssets": 44,
   "pendingGeneration": 44,
-  "generationNotes": "使用 LEGEND_IMAGE_PROMPTS 中的 scenePrompt/portraitPrompt 配合 LEGEND_NEGATIVE_PROMPT 生成"
+  "generationNotes": "使用 LEGEND_IMAGE_PROMPTS 中的 scenePrompt/portraitPrompt 配合 LEGEND_NEGATIVE_PROMPT 生成。当前 scenes/ 为 tools/generate_legend_placeholders.py 生成的色调占位图（sceneStatus=placeholder），AI 成图后覆盖同名文件并将状态改为 ready；portraits/ 占位图未激活（运行时优先使用内嵌 MENTOR_PORTRAITS 真实肖像），AI 肖像就位后执行 LegendSceneImagePatch.markAllReady()。",
+  "placeholderAssets": 22
 }

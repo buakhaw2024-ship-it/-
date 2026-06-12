@@ -14149,7 +14149,8 @@ function getLegendSceneImage(mentorId) {
 function getLegendPortraitImage(mentorId) {
   const item = LEGEND_SCENE_IMAGES[mentorId];
   if (!item) return '';
-  return item.portrait || item.scene || (typeof MENTOR_PORTRAITS !== 'undefined' && MENTOR_PORTRAITS[mentorId]) || '';
+  // v5.13：内嵌官方做旧肖像优先于"场景图兜底"，避免占位场景图顶掉真实肖像
+  return item.portrait || (typeof MENTOR_PORTRAITS !== 'undefined' && MENTOR_PORTRAITS[mentorId]) || item.scene || '';
 }
 function getLegendSceneMeta(mentorId) {
   return LEGEND_SCENE_IMAGES[mentorId] || { scene: '', portrait: '', sceneTitle: '传奇谈判现场', visualTone: '暗色电影谈判桌', safeArea: 'left' };
@@ -14185,19 +14186,25 @@ function renderLegendPortraitVisual(mentorId, name) {
   if (!img) {
     return `<div class="legend-portrait-fallback">${label.slice(0, 2)}</div>`;
   }
-  return `<img class="legend-portrait-img" src="${escapeHtml(img)}" alt="${label}" loading="lazy">`;
+  // 图片缺失（如 file:// 直开无 assets 目录）时换回文字占位，避免破图图标
+  return `<img class="legend-portrait-img" src="${escapeHtml(img)}" alt="${label}" loading="lazy" onerror="this.outerHTML='<div class=\\'legend-portrait-fallback\\'>${label.slice(0, 2)}</div>'">`;
 }
 
 /* ── v5.13 场景图资产注册表 + 预加载器 ────────────────────────────── */
+// 场景占位图已就位（assets/legend/scenes/，tools/generate_legend_placeholders.py
+// 生成的色调匹配渐变图），sceneStatus 默认 ready；AI 成图后覆盖同名文件即可。
+// 肖像保持 pending：内嵌 MENTOR_PORTRAITS 已有真实做旧肖像，占位图反而是降级；
+// AI 肖像就位后调用 LegendSceneImagePatch.markAllReady() 激活。
 const LEGEND_SCENE_ASSET_BASE = 'assets/legend/';
 const LEGEND_SCENE_ASSET_REGISTRY = (() => {
   const reg = {};
   const ids = Object.keys(LEGEND_SCENE_IMAGES);
   ids.forEach(id => {
     reg[id] = {
-      scene:    LEGEND_SCENE_ASSET_BASE + 'scenes/' + id + '_scene.webp',
-      portrait: LEGEND_SCENE_ASSET_BASE + 'portraits/' + id + '_portrait.webp',
-      status:   'pending'
+      scene:          LEGEND_SCENE_ASSET_BASE + 'scenes/' + id + '_scene.webp',
+      portrait:       LEGEND_SCENE_ASSET_BASE + 'portraits/' + id + '_portrait.webp',
+      sceneStatus:    'ready',
+      portraitStatus: 'pending'
     };
   });
   return reg;
@@ -14217,11 +14224,10 @@ const LegendSceneImageManager = (() => {
     let injected = 0;
     Object.keys(LEGEND_SCENE_ASSET_REGISTRY).forEach(id => {
       const reg = LEGEND_SCENE_ASSET_REGISTRY[id];
-      if (reg.status !== 'ready') return;
       const target = LEGEND_SCENE_IMAGES[id];
       if (!target) return;
-      if (!target.scene && reg.scene) { target.scene = reg.scene; injected++; }
-      if (!target.portrait && reg.portrait) { target.portrait = reg.portrait; injected++; }
+      if (reg.sceneStatus === 'ready' && !target.scene && reg.scene) { target.scene = reg.scene; injected++; }
+      if (reg.portraitStatus === 'ready' && !target.portrait && reg.portrait) { target.portrait = reg.portrait; injected++; }
     });
     if (injected > 0) console.log('[SceneAssets] Injected ' + injected + ' image paths');
   }
@@ -14258,9 +14264,8 @@ const LegendSceneImageManager = (() => {
     const queue = [];
     Object.keys(LEGEND_SCENE_ASSET_REGISTRY).forEach(id => {
       const reg = LEGEND_SCENE_ASSET_REGISTRY[id];
-      if (reg.status !== 'ready') return;
-      if (reg.scene) queue.push(reg.scene);
-      if (reg.portrait) queue.push(reg.portrait);
+      if (reg.sceneStatus === 'ready' && reg.scene) queue.push(reg.scene);
+      if (reg.portraitStatus === 'ready' && reg.portrait) queue.push(reg.portrait);
     });
     if (queue.length === 0) return;
     let i = 0;
@@ -14276,20 +14281,32 @@ const LegendSceneImageManager = (() => {
   return {
     registry: LEGEND_SCENE_ASSET_REGISTRY,
     markReady(mentorId) {
-      if (LEGEND_SCENE_ASSET_REGISTRY[mentorId]) {
-        LEGEND_SCENE_ASSET_REGISTRY[mentorId].status = 'ready';
+      const reg = LEGEND_SCENE_ASSET_REGISTRY[mentorId];
+      if (reg) {
+        reg.sceneStatus = 'ready';
+        reg.portraitStatus = 'ready';
         injectReadyAssets();
       }
     },
     markAllReady() {
-      Object.keys(LEGEND_SCENE_ASSET_REGISTRY).forEach(id => { LEGEND_SCENE_ASSET_REGISTRY[id].status = 'ready'; });
+      Object.keys(LEGEND_SCENE_ASSET_REGISTRY).forEach(id => {
+        LEGEND_SCENE_ASSET_REGISTRY[id].sceneStatus = 'ready';
+        LEGEND_SCENE_ASSET_REGISTRY[id].portraitStatus = 'ready';
+      });
       injectReadyAssets();
       preloadReadyAssets();
     },
     getStats() {
       const ids = Object.keys(LEGEND_SCENE_ASSET_REGISTRY);
-      const ready = ids.filter(id => LEGEND_SCENE_ASSET_REGISTRY[id].status === 'ready');
-      return { total: ids.length, ready: ready.length, pending: ids.length - ready.length, readyIds: ready };
+      const scenesReady = ids.filter(id => LEGEND_SCENE_ASSET_REGISTRY[id].sceneStatus === 'ready');
+      const portraitsReady = ids.filter(id => LEGEND_SCENE_ASSET_REGISTRY[id].portraitStatus === 'ready');
+      return {
+        total: ids.length,
+        scenesReady: scenesReady.length,
+        portraitsReady: portraitsReady.length,
+        scenesPending: ids.length - scenesReady.length,
+        portraitsPending: ids.length - portraitsReady.length
+      };
     },
     init() {
       injectReadyAssets();

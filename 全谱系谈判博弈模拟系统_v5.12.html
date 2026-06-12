@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系谈判博弈模拟系统 v5.11</title>
+<title>全谱系谈判博弈模拟系统 v5.12</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -7146,7 +7146,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系谈判博弈模拟系统  v5.11        ║<br>
+║  全谱系谈判博弈模拟系统  v5.12        ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -8533,7 +8533,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.11',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.12',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },
@@ -14079,6 +14079,108 @@ const LEGEND_BLINDBOX_CONFIG = {
   exchange: { urLegendFragments: 100, ssrMasterFragments: 80 }
 };
 
+/* ════════════════════════════════════════════════════════════════════════════
+   v5.12 · 22 位传奇人物电影场景图层（按 ClaudeCode 文档 v1.0）
+   - LEGEND_SCENE_IMAGES：scene/portrait 路径 + 场景标题 + 视觉色调 + 安全区
+   - LEGEND_IMAGE_PROMPTS：scene/portrait 生成提示词总表
+   - 在 assets 接入前，回退为电影化场景标题卡（fallback）
+   ════════════════════════════════════════════════════════════════════════════ */
+const LEGEND_SCENE_IMAGES = {
+  mentor_sunzi:        { scene: '', portrait: '', sceneTitle: '吴国伐楚前夜 · 军帐庙算',     visualTone: '青黑、铜绿、军帐烛火、竹简地图',     safeArea: 'left' },
+  mentor_zhangyi:      { scene: '', portrait: '', sceneTitle: '秦楚连横 · 楚宫游说',         visualTone: '暗金、紫黑、战国宫廷、帛书与诸侯地图', safeArea: 'left' },
+  mentor_lihongzhang:  { scene: '', portrait: '', sceneTitle: '马关春帆楼 · 败局止损',       visualTone: '墨蓝、灰白、寒光、条约文件',          safeArea: 'left' },
+  mentor_inamori:      { scene: '', portrait: '', sceneTitle: '日本航空重建 · 破产会议室',   visualTone: '深蓝、冷白、企业会议室、经营报表',     safeArea: 'left' },
+  mentor_munger:       { scene: '', portrait: '', sceneTitle: "See's Candies 尽调 · 反向判断", visualTone: '黑白、暖黄、投资档案、现金流报表',     safeArea: 'left' },
+  mentor_trump:        { scene: '', portrait: '', sceneTitle: '曼哈顿地产交易 · 极限锚定',   visualTone: '黑金、暗红、地产模型、媒体闪光',       safeArea: 'left' },
+  mentor_cleopatra:    { scene: '', portrait: '', sceneTitle: '亚历山大港宫廷 · 罗马联盟',   visualTone: '金色、孔雀蓝、埃及宫廷、地中海地图',   safeArea: 'left' },
+  mentor_wuzetian:     { scene: '', portrait: '', sceneTitle: '大唐朝堂 · 权力重构',         visualTone: '暗红、鎏金、帘幕、朝堂奏章',           safeArea: 'left' },
+  mentor_elizabeth_i:  { scene: '', portrait: '', sceneTitle: '都铎宫廷 · 延迟承诺',         visualTone: '深绿、金色、海图、外交密信',           safeArea: 'left' },
+  mentor_catherine:    { scene: '', portrait: '', sceneTitle: '冬宫议事厅 · 精英联盟',       visualTone: '冰蓝、金白、沙俄宫廷、欧洲地图',       safeArea: 'left' },
+  mentor_thatcher:     { scene: '', portrait: '', sceneTitle: '英国内阁室 · 矿工罢工谈判',   visualTone: '深蓝、铁灰、红色文件、工业地图',       safeArea: 'left' },
+  mentor_merkel:       { scene: '', portrait: '', sceneTitle: '欧盟圆桌 · 多方共识',         visualTone: '蓝灰、冷白、圆桌会议、多国文件',       safeArea: 'left' },
+  mentor_cixi:         { scene: '', portrait: '', sceneTitle: '庚子之后 · 垂帘控局',         visualTone: '暗红、宫灯、帘幕、列强文书',           safeArea: 'left' },
+  master_dawson:       { scene: '', portrait: '', sceneTitle: '优势谈判课堂 · 阶段掌控',     visualTone: '商务暗蓝、谈判桌、报价板、合同',       safeArea: 'left' },
+  master_fisher_ury:   { scene: '', portrait: '', sceneTitle: '哈佛谈判室 · 利益而非立场',   visualTone: '学院木色、白板、圆桌、原则清单',       safeArea: 'left' },
+  master_voss:         { scene: '', portrait: '', sceneTitle: '危机谈判指挥室 · 战术同理心', visualTone: '低光、监听设备、电话、行动地图',       safeArea: 'left' },
+  master_cohen:        { scene: '', portrait: '', sceneTitle: '权力时间信息 · 谈判无处不在', visualTone: '机场商务、时钟、文件、公文包',         safeArea: 'left' },
+  master_diamond:      { scene: '', portrait: '', sceneTitle: '沃顿谈判室 · 感知管理',       visualTone: '暖木、跨文化圆桌、便利贴、目标板',     safeArea: 'left' },
+  master_shell:        { scene: '', portrait: '', sceneTitle: '风格适配工作坊 · 为优势而谈', visualTone: '紫蓝、矩阵白板、谈判风格图谱',         safeArea: 'left' },
+  mentor_churchill:    { scene: '', portrait: '', sceneTitle: '战时内阁地下室 · 危机联盟',   visualTone: '烟雾、军用地图、台灯、盟军文件',       safeArea: 'left' },
+  mentor_roosevelt:    { scene: '', portrait: '', sceneTitle: '战后秩序设计 · 联盟构建',     visualTone: '暖棕、白宫会议室、世界地图、制度文件', safeArea: 'left' },
+  mentor_stalin:       { scene: '', portrait: '', sceneTitle: '雅尔塔安全边界 · 不信任博弈', visualTone: '冷灰、暗红、雪夜、边界地图',           safeArea: 'left' },
+};
+
+// 图片生成提示词总表（文档第 4 节，供后续 AI 绘图工作流引用，运行时不消费）
+const LEGEND_IMAGE_PROMPTS = {
+  mentor_sunzi:       { scenePrompt: `Cinematic historical negotiation scene, late Spring and Autumn period of ancient China, Wu military command tent at night, bronze oil lamps, bamboo war maps on a low table, generals waiting in tense silence, Sun Tzu as a calm strategist seated on the right side, cold analytical expression, dark teal and bronze color palette, left side reserved for UI text, realistic historical drama lighting, no text, no watermark`, portraitPrompt: `Half body cinematic portrait of Sun Tzu as an ancient Chinese military strategist, simple dark robe, bamboo slips and war map behind him, calm and cold eyes, bronze oil lamp rim light, dark teal background, realistic historical drama style, no text, no watermark` },
+  mentor_zhangyi:     { scenePrompt: `Cinematic Warring States diplomatic negotiation in the Chu palace, silk scrolls, state maps, bronze wine vessels, a persuasive strategist Zhang Yi on the right side speaking with subtle confidence, Chu court ministers watching suspiciously, dark gold and purple palette, tense palace diplomacy, left side dark empty space for UI text, realistic historical drama, no text, no watermark`, portraitPrompt: `Half body portrait of Zhang Yi, Warring States diplomat and strategist, elegant robe, sly restrained smile, silk diplomatic scroll in hand, palace shadows and state map behind him, dark gold purple lighting, realistic historical drama, no text` },
+  mentor_lihongzhang: { scenePrompt: `Cinematic treaty negotiation at Shunpanro in 1895, cold spring light, long wooden table, treaty papers, ink, maps of East Asia, Li Hongzhang on the right side in late Qing official robe, exhausted but composed, Japanese delegates blurred across the table, heavy atmosphere of defeat and damage control, ink blue and grey white palette, left side reserved for UI text, no text, no watermark`, portraitPrompt: `Half body cinematic portrait of Li Hongzhang, late Qing diplomat, official robe, tired eyes, treaty papers and cold window light behind him, restrained and heavy expression, ink blue grey palette, realistic historical drama, no text` },
+  mentor_inamori:     { scenePrompt: `Cinematic corporate restructuring negotiation room, Japan Airlines crisis meeting, long boardroom table, financial reports, route maps, union representatives and creditors in shadow, elderly Japanese business leader on the right side calm and humble, deep blue and white palette, atmosphere of bankruptcy and rebuilding trust, left side empty for UI text, no logos, no text`, portraitPrompt: `Half body portrait of an elderly Japanese business leader inspired by Kazuo Inamori, calm humble expression, dark suit, financial reports and airline route map behind him, deep blue white lighting, realistic corporate drama, no logos, no text` },
+  mentor_munger:      { scenePrompt: `Cinematic investment due diligence room in the 1970s, wooden desk, financial statements, cash flow charts, box of premium candies as business clue, elderly investor on the right side thinking with crossed hands, dark library background, black white and warm yellow palette, rational and quiet atmosphere, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of an elderly rational investor inspired by Charlie Munger, thoughtful expression, glasses, dark suit, financial documents and books behind him, warm desk lamp, black white yellow palette, realistic, no text` },
+  mentor_trump:       { scenePrompt: `Cinematic Manhattan real estate negotiation, high floor boardroom, city skyline at night, architectural model of a skyscraper, bankers and media silhouettes, a strong dealmaker archetype on the right side, confident posture, black gold and dark red palette, extreme anchoring pressure, left side reserved for UI text, not an exact likeness, no text, no logos`, portraitPrompt: `Stylized half body portrait of a powerful Manhattan real estate dealmaker archetype inspired by high-pressure negotiation, dark suit, city skyline and real estate model behind him, black gold red lighting, not an exact likeness, no text, no logos` },
+  mentor_cleopatra:   { scenePrompt: `Cinematic diplomatic negotiation in the palace of Alexandria, marble columns, Egyptian and Roman maps, golden lamps, Mediterranean harbor glimpse, Cleopatra-like queen on the right side in elegant royal attire, negotiating alliance with Roman envoys in shadow, gold and peacock blue palette, left side reserved for UI text, realistic historical drama, no text`, portraitPrompt: `Half body portrait of Cleopatra as a strategic queen, elegant Egyptian royal attire, gold jewelry, Mediterranean map and palace columns behind her, poised diplomatic expression, gold peacock blue lighting, realistic historical drama, no text` },
+  mentor_wuzetian:    { scenePrompt: `Cinematic Tang dynasty court negotiation, red lacquer palace hall, golden screens, memorial documents on table, officials in shadow, Empress Wu Zetian on the right side behind a partially translucent curtain, commanding and unreadable, dark red and gold palette, power redistribution atmosphere, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of Wu Zetian, Tang dynasty empress, dark red imperial robe, gold crown, curtain and court documents behind her, calm imposing expression, red gold cinematic lighting, realistic historical drama, no text` },
+  mentor_elizabeth_i: { scenePrompt: `Cinematic Tudor court diplomatic council, Elizabethan palace chamber, naval maps, sealed letters, candlelight, queen on the right side delaying commitment with composed authority, ministers and foreign envoys in shadow, deep green and gold palette, left side reserved for UI text, realistic historical drama, no text`, portraitPrompt: `Half body portrait of Elizabeth I, Tudor queen, ornate collar and gown, sea maps and diplomatic letters behind her, composed strategic expression, deep green gold lighting, realistic historical drama, no text` },
+  mentor_catherine:   { scenePrompt: `Cinematic imperial Russian negotiation in the Winter Palace, polished table, European map, diplomatic letters, aristocrats and generals in shadow, Catherine the Great on the right side building an elite alliance, icy blue and gold white palette, left side reserved for UI text, realistic historical drama, no text`, portraitPrompt: `Half body portrait of Catherine the Great, imperial Russian empress, elegant pale gown, European map and palace interior behind her, confident alliance-building expression, icy blue gold lighting, realistic historical drama, no text` },
+  mentor_thatcher:    { scenePrompt: `Cinematic British cabinet negotiation during miners strike, dark cabinet room, industrial maps, red government files, union strike documents on table, female prime minister archetype on the right side with firm posture, deep navy iron grey and red palette, high-pressure bottom-line negotiation, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of a firm British prime minister archetype inspired by Margaret Thatcher, formal blue suit, cabinet room and strike papers behind her, direct uncompromising expression, deep navy red lighting, no text` },
+  mentor_merkel:      { scenePrompt: `Cinematic European Union summit negotiation, large round table, flags blurred into abstract colors, policy folders, multiple delegates in shadow, pragmatic female statesperson archetype on the right side listening patiently, blue grey and white palette, calm multi-party consensus atmosphere, left side reserved for UI text, not exact likeness, no text`, portraitPrompt: `Half body portrait of a pragmatic European stateswoman archetype inspired by Angela Merkel, simple blazer, EU-style meeting room and policy files behind her, calm analytical expression, blue grey white lighting, not exact likeness, no text` },
+  mentor_cixi:        { scenePrompt: `Cinematic late Qing palace negotiation after the Boxer crisis, dark red curtains, palace lanterns, foreign documents and indemnity papers on a table, Qing court officials and foreign envoys in shadow, Empress Dowager Cixi on the right side behind a curtain, ambiguous authority and delay, dark red gold palette, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of Empress Dowager Cixi, late Qing court attire, palace curtain and foreign treaty documents behind her, unreadable controlling expression, dark red gold cinematic lighting, realistic historical drama, no text` },
+  master_dawson:      { scenePrompt: `Cinematic modern business negotiation training room, long table, contract folders, price anchoring board without readable text, two executives negotiating, experienced negotiation coach on the right side observing, dark blue cyan palette, practical advantage negotiation atmosphere, left side reserved for UI text, no text, no logos`, portraitPrompt: `Half body portrait of an experienced Western negotiation coach, suit, contract documents and negotiation table behind him, confident practical expression, dark blue cyan lighting, realistic business drama, no text` },
+  master_fisher_ury:  { scenePrompt: `Cinematic Harvard-style negotiation seminar room, wooden round table, whiteboard with abstract diagrams but no readable text, two parties separated from problem documents, principled negotiation atmosphere, two senior scholars as blurred mentors on the right, warm wood and academic blue palette, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of principled negotiation scholars, academic suits, round table and abstract negotiation diagram behind them, calm intellectual expression, warm wood academic lighting, no readable text` },
+  master_voss:        { scenePrompt: `Cinematic crisis negotiation command center, low light, telephone headset, tactical map, police monitors blurred, negotiator on the right side listening intensely, tense but controlled atmosphere, dark blue amber palette, tactical empathy and hostage negotiation mood, left side reserved for UI text, no text, no logos`, portraitPrompt: `Half body portrait of a crisis negotiator, headset, low light command center, focused listening expression, tactical map behind him, dark blue amber cinematic lighting, no text` },
+  master_cohen:       { scenePrompt: `Cinematic negotiation everywhere concept, airport business lounge at night, clock on wall, briefcase, contracts, two parties about to bargain, seasoned negotiator on the right side relaxed and observant, power time information symbolism, warm amber and dark blue palette, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of a seasoned negotiator, suit, airport lounge clock and contracts behind him, relaxed clever expression, warm amber dark blue lighting, no text` },
+  master_diamond:     { scenePrompt: `Cinematic cross-cultural negotiation classroom, warm wooden table, diverse parties around a negotiation map, sticky notes without readable text, mentor on the right side focusing on perception and goals, warm wood and soft red palette, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of a negotiation professor, warm classroom, diverse negotiation table behind him, thoughtful expression, perception management atmosphere, warm wood red lighting, no text` },
+  master_shell:       { scenePrompt: `Cinematic negotiation style workshop, dark room with matrix board and style diagrams without readable text, participants role-playing different negotiation styles, professor on the right side guiding adaptation, purple blue palette, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of a negotiation strategy professor, purple blue workshop background, abstract style matrix behind him, adaptive analytical expression, no readable text` },
+  mentor_churchill:   { scenePrompt: `Cinematic wartime cabinet bunker negotiation, underground war room, maps of Europe, cigar smoke atmosphere, military telephones, wartime leader archetype on the right side rallying allies, dark olive, amber and smoke grey palette, crisis alliance pressure, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of a wartime British leader archetype inspired by Winston Churchill, dark suit, bow tie, war room maps and lamp behind him, defiant expression, smoke grey amber lighting, no text` },
+  mentor_roosevelt:   { scenePrompt: `Cinematic wartime alliance negotiation, White House style map room, world map, lend-lease documents, institutional design papers, American president archetype on the right side coordinating allies, warm brown and navy palette, long-term order design atmosphere, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of an American wartime president archetype inspired by Franklin Roosevelt, formal suit, world map and alliance documents behind him, warm strategic expression, brown navy lighting, no text` },
+  mentor_stalin:      { scenePrompt: `Cinematic Yalta-style great power negotiation, cold winter outside, heavy wooden table, Eastern Europe boundary map, security documents, Soviet leader archetype on the right side with severe distrustful expression, cold grey and dark red palette, hard power exchange atmosphere, left side reserved for UI text, no text`, portraitPrompt: `Half body portrait of a Soviet wartime leader archetype inspired by Stalin, military tunic, boundary map and cold grey room behind him, severe distrustful expression, dark red grey cinematic lighting, no text` },
+};
+
+const LEGEND_NEGATIVE_PROMPT = 'no text, no captions, no watermark, no logo, no UI overlay, no random letters, no deformed hands, no extra fingers, no cartoon, no anime, no chibi, no cyberpunk helmet, no exaggerated fantasy armor, no modern neon unless specified, no low resolution, no blurry face';
+
+// v5.12 工具函数（按文档第 5 节）
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+}
+function getLegendSceneImage(mentorId) {
+  const item = LEGEND_SCENE_IMAGES[mentorId];
+  return (item && item.scene) || '';
+}
+function getLegendPortraitImage(mentorId) {
+  const item = LEGEND_SCENE_IMAGES[mentorId];
+  if (!item) return '';
+  // v5.12：scene 缺失时也尝试 v5.8 引入的 MENTOR_PORTRAITS（22 张做旧官方肖像）作为兜底
+  return item.portrait || item.scene || (typeof MENTOR_PORTRAITS !== 'undefined' && MENTOR_PORTRAITS[mentorId]) || '';
+}
+function getLegendSceneMeta(mentorId) {
+  return LEGEND_SCENE_IMAGES[mentorId] || { scene: '', portrait: '', sceneTitle: '传奇谈判现场', visualTone: '暗色电影谈判桌', safeArea: 'left' };
+}
+function renderLegendSceneVisual(mentorId, extraClass) {
+  extraClass = extraClass || '';
+  const meta = getLegendSceneMeta(mentorId);
+  const img = getLegendSceneImage(mentorId);
+  const fallback = escapeHtml(meta.sceneTitle || '传奇谈判现场');
+  const toneTag = meta.visualTone ? `<div class="legend-scene-tone">${escapeHtml(meta.visualTone)}</div>` : '';
+  if (!img) {
+    // 单文件 HTML 无 assets 目录时的电影化标题卡 fallback
+    return `<div class="legend-scene-visual legend-scene-fallback ${extraClass}" data-mentor="${escapeHtml(mentorId || '')}">
+      <div class="legend-scene-fallback-title">${fallback}</div>
+      ${toneTag}
+    </div>`;
+  }
+  return `<div class="legend-scene-visual ${extraClass}" style="background-image:linear-gradient(90deg,rgba(5,8,15,.92) 0%,rgba(5,8,15,.56) 38%,rgba(5,8,15,.12) 100%),url('${img}')">
+    <div class="legend-scene-caption">${fallback}</div>
+  </div>`;
+}
+function renderLegendPortraitVisual(mentorId, name) {
+  const img = getLegendPortraitImage(mentorId);
+  const label = escapeHtml(name || getLegendSceneMeta(mentorId).sceneTitle || 'LEGEND');
+  if (!img) {
+    return `<div class="legend-portrait-fallback">${label.slice(0, 2)}</div>`;
+  }
+  return `<img class="legend-portrait-img" src="${img}" alt="${label}" loading="lazy">`;
+}
+
 function getMentor(id) { return LEGEND_DUELISTS.find((d) => d.id === id); }
 function getMentorsByRarity(rarity) { return LEGEND_DUELISTS.filter((d) => d.rarity === rarity); }
 
@@ -17155,8 +17257,8 @@ function renderDuelSelect() {
     const isOwned = owned.has(d.id);
     const rec = (player.duelRecords && player.duelRecords[d.id]) || { plays: 0, wins: 0, bestOutcome: null };
     const cfg = LEGEND_RARITIES[d.rarity];
-    return `<div class="duel-pick-card ${isOwned ? '' : 'duel-locked'}" data-duel="${d.id}" style="--card-color:${cfg.color}">
-      <div class="duel-pick-icon">${MENTOR_PORTRAITS[d.id] ? '<img src="' + MENTOR_PORTRAITS[d.id] + '" alt="' + d.name + '">' : (d.chibi || '👤')}</div>
+    return `<div class="duel-pick-card has-scene-art ${isOwned ? '' : 'duel-locked'}" data-duel="${d.id}" style="--card-color:${cfg.color}">
+      ${renderLegendSceneVisual(d.id, 'legend-card-thumb')}
       <div class="duel-pick-body">
         <div class="duel-pick-name">${d.name} <span style="font-size:10px;color:${cfg.color}">${cfg.label}</span></div>
         <div class="duel-pick-style">${d.style}</div>
@@ -17361,6 +17463,7 @@ function renderCinematicDuel(state, script) {
 
   return `<div class="cine-stage-wrap">
     <button class="cine-back-floating" data-back>← 退出</button>
+    ${renderLegendSceneVisual(state.duelistId, 'legend-duel-hero-art')}
     ${headerHtml}
     ${popBg}${popBrief}
     ${opponentHtml}
@@ -17825,8 +17928,9 @@ function renderStorySelect() {
       ? '解锁条件：三巨头各获得 B 级以上试炼成绩'
       : (mentor ? `解锁条件：完成 1 次「${mentor.name}」试炼` : '解锁条件：见详情');
     const script = getStoryScript(c.id);
-    return `<div class="story-card ${unlocked ? '' : 'story-locked'}" data-chain="${c.id}" style="--card-color:${cfg.color}">
-      <div class="story-card-icon">${icon}</div>
+    const sceneMentorId = c.mentorId || (CHAIN_MASTERY_CREDIT && CHAIN_MASTERY_CREDIT[c.id] ? CHAIN_MASTERY_CREDIT[c.id][0] : null);
+    return `<div class="story-card has-scene-art ${unlocked ? '' : 'story-locked'}" data-chain="${c.id}" style="--card-color:${cfg.color}">
+      ${sceneMentorId ? renderLegendSceneVisual(sceneMentorId, 'legend-card-thumb') : `<div class="story-card-icon">${icon}</div>`}
       <div class="story-card-body">
         <div class="story-card-title">${c.title} <span style="font-size:10px;color:${cfg.color}">${cfg.label}</span></div>
         <div class="story-card-subtitle">${c.subtitle} · ${c.acts.length} 幕</div>
@@ -18609,6 +18713,53 @@ function injectV2Styles() {
 .duel-pick-icon img,.mentor-portrait{filter:sepia(.18) contrast(1.04)}
 .story-player-echo{background:rgba(32,215,255,.05);border-right:3px solid var(--cyan,#20d7ff);border-radius:8px 0 0 8px;padding:8px 14px;margin:10px 0 4px;font-size:12px;line-height:1.8;color:#a8d8e8;text-align:right}
 .story-echo-speaker{display:block;color:var(--cyan,#20d7ff);font-size:10.5px;font-weight:bold;margin-bottom:3px}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v5.12 · 传奇训练中心 · 22 位人物电影场景图（按 ClaudeCode 文档 v1.0 第 6 节）
+   ═══════════════════════════════════════════════════════════════════════ */
+.legend-scene-visual{position:relative;min-height:220px;border-radius:18px;border:1px solid rgba(255,255,255,.12);background-size:cover;background-position:center right;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.42), inset 0 0 60px rgba(0,0,0,.35)}
+.legend-scene-visual::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 78% 42%,rgba(255,255,255,.10),transparent 28%),linear-gradient(180deg,transparent 0%,rgba(0,0,0,.42) 100%);pointer-events:none}
+.legend-scene-caption{position:absolute;left:18px;bottom:16px;z-index:2;font-size:12px;letter-spacing:.12em;color:#f4d28a;text-shadow:0 0 18px rgba(0,0,0,.85);background:rgba(0,0,0,.28);border:1px solid rgba(244,210,138,.26);padding:6px 10px;border-radius:999px;backdrop-filter:blur(4px)}
+.legend-scene-fallback{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:18px;background:linear-gradient(135deg,#101827,#111827 45%,#221827 100%);gap:6px}
+/* fallback 卡按人物时代换色调，让 22 位场景标题卡仍可一眼区分 */
+.legend-scene-fallback[data-mentor="mentor_sunzi"]{background:linear-gradient(135deg,#0d1e21,#16322f 60%,#1a3a30 100%)}
+.legend-scene-fallback[data-mentor="mentor_zhangyi"]{background:linear-gradient(135deg,#1a1024,#2d1a36 60%,#3a2a18 100%)}
+.legend-scene-fallback[data-mentor="mentor_lihongzhang"]{background:linear-gradient(135deg,#0f1a26,#1a2538 60%,#212a36 100%)}
+.legend-scene-fallback[data-mentor="mentor_inamori"]{background:linear-gradient(135deg,#0c1a2a,#152641 60%,#1e3550 100%)}
+.legend-scene-fallback[data-mentor="mentor_munger"]{background:linear-gradient(135deg,#1c1a14,#2a2418 60%,#2e2616 100%)}
+.legend-scene-fallback[data-mentor="mentor_trump"]{background:linear-gradient(135deg,#1a0d0d,#2a1410 60%,#3a1d10 100%)}
+.legend-scene-fallback[data-mentor="mentor_cleopatra"]{background:linear-gradient(135deg,#0e1f2a,#163346 60%,#3a2810 100%)}
+.legend-scene-fallback[data-mentor="mentor_wuzetian"]{background:linear-gradient(135deg,#220e0e,#3a1518 60%,#3a2510 100%)}
+.legend-scene-fallback[data-mentor="mentor_elizabeth_i"]{background:linear-gradient(135deg,#0d1a13,#15301f 60%,#2a2812 100%)}
+.legend-scene-fallback[data-mentor="mentor_catherine"]{background:linear-gradient(135deg,#0d1a26,#16263a 60%,#2a2616 100%)}
+.legend-scene-fallback[data-mentor="mentor_thatcher"]{background:linear-gradient(135deg,#0c1422,#181f2d 60%,#2a1818 100%)}
+.legend-scene-fallback[data-mentor="mentor_merkel"]{background:linear-gradient(135deg,#11182a,#1c2438 60%,#252e40 100%)}
+.legend-scene-fallback[data-mentor="mentor_cixi"]{background:linear-gradient(135deg,#1f0e0e,#2e1514 60%,#3a2410 100%)}
+.legend-scene-fallback[data-mentor="master_dawson"]{background:linear-gradient(135deg,#0c1828,#16263a 60%,#1a3a4a 100%)}
+.legend-scene-fallback[data-mentor="master_fisher_ury"]{background:linear-gradient(135deg,#1c1810,#2a2018 60%,#1a283a 100%)}
+.legend-scene-fallback[data-mentor="master_voss"]{background:linear-gradient(135deg,#0a1018,#162538 60%,#2a2a18 100%)}
+.legend-scene-fallback[data-mentor="master_cohen"]{background:linear-gradient(135deg,#1c1810,#28201a 60%,#162538 100%)}
+.legend-scene-fallback[data-mentor="master_diamond"]{background:linear-gradient(135deg,#1c1410,#2a1d18 60%,#3a2a14 100%)}
+.legend-scene-fallback[data-mentor="master_shell"]{background:linear-gradient(135deg,#181028,#251a3a 60%,#1a2a4a 100%)}
+.legend-scene-fallback[data-mentor="mentor_churchill"]{background:linear-gradient(135deg,#161814,#252820 60%,#3a2818 100%)}
+.legend-scene-fallback[data-mentor="mentor_roosevelt"]{background:linear-gradient(135deg,#1a140c,#2a1f18 60%,#162538 100%)}
+.legend-scene-fallback[data-mentor="mentor_stalin"]{background:linear-gradient(135deg,#14181c,#1f2528 60%,#2a1414 100%)}
+.legend-scene-fallback-title{color:#f4d28a;font-size:14px;letter-spacing:.12em;text-shadow:0 0 12px rgba(0,0,0,.6)}
+.legend-scene-tone{font-size:10.5px;letter-spacing:.06em;color:rgba(244,210,138,.55)}
+.legend-portrait-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.legend-portrait-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#f4d28a;background:linear-gradient(135deg,#101827,#1a2235)}
+.legend-duel-hero-art{min-height:200px;margin:8px 0 14px}
+.legend-card-thumb{height:132px;border-radius:14px;overflow:hidden;flex:0 0 auto;width:100%;margin-bottom:8px}
+.legend-card-thumb .legend-scene-caption{font-size:10.5px;left:10px;bottom:8px;padding:4px 8px;letter-spacing:.08em}
+.legend-opponent-art{height:180px;border-radius:16px;overflow:hidden}
+/* 选人卡 / 剧情卡：从横向 flex 改为带 thumb 的纵向 */
+.duel-pick-card.has-scene-art,.story-card.has-scene-art{flex-direction:column;align-items:stretch}
+.duel-pick-card.has-scene-art .duel-pick-body,.story-card.has-scene-art .story-card-body{width:100%}
+@media(max-width:700px){
+  .legend-scene-visual{min-height:160px;background-position:center center}
+  .legend-duel-hero-art{min-height:180px}
+  .legend-card-thumb{height:110px}
+}
 
 /* 移动端：纵向单列 + 按钮高度保障 */
 @media (max-width:900px){

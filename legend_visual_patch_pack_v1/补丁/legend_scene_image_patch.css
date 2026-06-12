@@ -1,0 +1,171 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   Legend Scene Image Patch v1.0
+   传奇试炼场 22 位人物场景图视觉增强样式
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 场景图加载动画 ─────────────────────────────────────────────────── */
+@keyframes legend-scene-fade-in {
+  from { opacity: 0; transform: scale(1.03); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes legend-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── 场景图容器增强 ─────────────────────────────────────────────────── */
+.legend-scene-visual.legend-scene-loaded {
+  animation: legend-scene-fade-in .6s ease-out;
+}
+
+.legend-scene-visual.legend-scene-loading {
+  background: linear-gradient(
+    90deg,
+    var(--bg3) 25%,
+    rgba(244, 210, 138, .08) 50%,
+    var(--bg3) 75%
+  );
+  background-size: 200% 100%;
+  animation: legend-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── 场景图电影化安全区遮罩（左侧渐变） ───────────────────────────── */
+.legend-scene-visual[data-safe-area="left"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(5, 8, 15, .92) 0%,
+    rgba(5, 8, 15, .56) 38%,
+    rgba(5, 8, 15, .12) 70%,
+    transparent 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.legend-scene-visual[data-safe-area="right"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    270deg,
+    rgba(5, 8, 15, .92) 0%,
+    rgba(5, 8, 15, .56) 38%,
+    rgba(5, 8, 15, .12) 70%,
+    transparent 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── 场景标题药丸增强 ──────────────────────────────────────────────── */
+.legend-scene-caption {
+  z-index: 2;
+  position: relative;
+}
+.legend-scene-visual.legend-scene-loaded .legend-scene-caption {
+  animation: legend-scene-fade-in .8s ease-out .2s both;
+}
+
+/* ── 色调标签 ──────────────────────────────────────────────────────── */
+.legend-scene-tone {
+  z-index: 2;
+  position: relative;
+}
+
+/* ── 肖像图增强 ────────────────────────────────────────────────────── */
+.legend-portrait-img {
+  transition: transform .3s ease, filter .3s ease;
+}
+.legend-portrait-img:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* ── 加载失败回退 ──────────────────────────────────────────────────── */
+.legend-scene-visual.legend-scene-error {
+  border-color: rgba(255, 79, 106, .3);
+}
+.legend-scene-visual.legend-scene-error::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 79, 106, .05),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* ── 稀有度边框光晕 ───────────────────────────────────────────────── */
+@keyframes legend-ur-glow {
+  0%, 100% { box-shadow: 0 18px 48px rgba(0,0,0,.42), 0 0 20px rgba(246, 196, 83, .2); }
+  50%      { box-shadow: 0 18px 48px rgba(0,0,0,.42), 0 0 35px rgba(246, 196, 83, .35); }
+}
+@keyframes legend-ssr-glow {
+  0%, 100% { box-shadow: 0 18px 48px rgba(0,0,0,.42), 0 0 20px rgba(192, 132, 252, .2); }
+  50%      { box-shadow: 0 18px 48px rgba(0,0,0,.42), 0 0 35px rgba(192, 132, 252, .35); }
+}
+
+.legend-scene-visual.legend-rarity-ur {
+  border-color: rgba(246, 196, 83, .35);
+  animation: legend-ur-glow 3s ease-in-out infinite;
+}
+.legend-scene-visual.legend-rarity-ssr {
+  border-color: rgba(192, 132, 252, .35);
+  animation: legend-ssr-glow 3s ease-in-out infinite;
+}
+
+/* ── 场景图上的人物定位指示器 ──────────────────────────────────────── */
+.legend-scene-character-indicator {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  z-index: 2;
+  font-size: 10px;
+  color: rgba(244, 210, 138, .5);
+  letter-spacing: .08em;
+  padding: 3px 8px;
+  border: 1px solid rgba(244, 210, 138, .15);
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, .2);
+}
+
+/* ── 场景图缩略图模式（集卡册/列表） ─────────────────────────────── */
+.legend-card-thumb .legend-scene-visual {
+  min-height: 120px;
+  border-radius: 10px;
+}
+.legend-card-thumb .legend-scene-visual::after {
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.55) 100%);
+}
+
+/* ── 肖像圆形容器 ──────────────────────────────────────────────────── */
+.legend-portrait-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(244, 210, 138, .4);
+  box-shadow: 0 0 12px rgba(244, 210, 138, .2);
+  flex-shrink: 0;
+}
+.legend-portrait-circle.portrait-ur {
+  border-color: rgba(246, 196, 83, .6);
+  box-shadow: 0 0 16px rgba(246, 196, 83, .3);
+}
+.legend-portrait-circle.portrait-ssr {
+  border-color: rgba(192, 132, 252, .6);
+  box-shadow: 0 0 16px rgba(192, 132, 252, .3);
+}
+
+/* ── 响应式 ────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .legend-scene-visual { min-height: 160px; }
+  .legend-portrait-circle { width: 48px; height: 48px; }
+  .legend-scene-character-indicator { display: none; }
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全谱系谈判博弈模拟系统 v5.10</title>
+<title>全谱系谈判博弈模拟系统 v5.11</title>
 <style>
 :root {
   --bg: #0a0e1a;
@@ -7146,7 +7146,7 @@ function renderWelcome() {
     <div class="welcome-logo">
       <div class="logo-art">
 ╔══════════════════════════════════════╗<br>
-║  全谱系谈判博弈模拟系统  v5.10        ║<br>
+║  全谱系谈判博弈模拟系统  v5.11        ║<br>
 ║  Full-Spectrum Negotiation Trainer   ║<br>
 ╚══════════════════════════════════════╝
       </div>
@@ -8533,7 +8533,7 @@ function _initInlineTips() {
 const _TOURS = {
   welcome: [
     {
-      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.10',
+      title: '🎮 欢迎使用全谱系谈判博弈模拟系统 v5.11',
       body: '融合博弈理论 × 谈判心理学 × 泡泡马特集卡，覆盖 <b>7 大博弈场景</b>、<b>7 位对手</b>、<b>5 档难度</b>。<br>本引导约 1 分钟，帮你快速上手系统。',
       position: 'center',
     },
@@ -18480,10 +18480,12 @@ function injectV2Styles() {
 .cine-pop{background:rgba(20,18,14,.85);border:1px solid var(--cine-frame);border-radius:10px;padding:12px 16px;margin:0 0 14px;font-size:12px;line-height:1.85;color:#d8c9a8}
 .cine-pop-title{color:var(--cine-warm);font-weight:bold;margin-bottom:6px}
 
-/* 区域 2：对手压迫区 */
-.cine-opp-stage{display:grid;grid-template-columns:200px 220px 1fr 240px;gap:18px;background:linear-gradient(180deg,rgba(40,28,28,.8),rgba(28,20,20,.9));border:1.5px dashed var(--cine-red);border-radius:14px;padding:18px;margin:0 0 14px;min-height:230px;align-items:start}
+/* 区域 2：对手压迫区
+   v5.11：改为 2 行布局——顶行 资料/立绘/记忆 三列，底行 对话气泡独占整行
+   解决中等宽度下气泡被挤成单字宽的可读性问题 */
+.cine-opp-stage{display:grid;grid-template-columns:200px minmax(200px,1.2fr) 240px;grid-template-areas:"info portrait memory" "bubble bubble bubble";gap:14px 18px;background:linear-gradient(180deg,rgba(40,28,28,.8),rgba(28,20,20,.9));border:1.5px dashed var(--cine-red);border-radius:14px;padding:18px;margin:0 0 14px;align-items:start}
 .cine-opp-stage.is-locked{opacity:.85}
-.cine-opp-portrait-col{display:flex;flex-direction:column;gap:8px}
+.cine-opp-portrait-col{grid-area:info;display:flex;flex-direction:column;gap:8px}
 .cine-opp-name{font-size:24px;font-weight:bold;color:var(--cine-red);letter-spacing:3px;margin-bottom:6px;text-shadow:0 1px 6px rgba(196,74,74,.4)}
 .cine-opp-info{display:flex;flex-direction:column;gap:2px}
 .cine-opp-info-k{font-size:10.5px;color:#9a8e76;letter-spacing:.5px}
@@ -18492,16 +18494,16 @@ function injectV2Styles() {
 .attitude-hard{background:#a13030;color:#fff}
 .attitude-warn{background:#b8801e;color:#fff}
 .attitude-calm{background:#3d6b3d;color:#fff}
-.cine-opp-portrait{display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(60,40,30,.7),rgba(20,16,14,.95));border-radius:10px;min-height:200px;position:relative;overflow:hidden;border:1px solid rgba(192,153,106,.25)}
+.cine-opp-portrait{grid-area:portrait;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(60,40,30,.7),rgba(20,16,14,.95));border-radius:10px;min-height:200px;position:relative;overflow:hidden;border:1px solid rgba(192,153,106,.25)}
 .cine-opp-portrait::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,transparent 30%,rgba(0,0,0,.5) 100%);pointer-events:none}
 .cine-opp-portrait-emoji{font-size:96px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));z-index:1}
-.cine-opp-bubble-col{display:flex;align-items:center;padding:10px 0}
-.cine-opp-bubble{position:relative;background:rgba(40,32,24,.6);border:1px solid var(--cine-frame);border-radius:12px;padding:18px 26px;font-size:14px;line-height:2;color:#f3e1c1;width:100%}
-.cine-opp-bubble-text{white-space:pre-wrap}
-.cine-quote-mark{position:absolute;font-size:36px;color:var(--cine-warm);font-family:Georgia,serif;line-height:1;opacity:.6}
-.cine-quote-l{top:8px;left:10px}
-.cine-quote-r{bottom:0;right:14px}
-.cine-mem-col{background:rgba(60,20,20,.5);border:1px solid var(--cine-red);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.cine-opp-bubble-col{grid-area:bubble;display:flex;align-items:center;padding:0;width:100%}
+.cine-opp-bubble{position:relative;background:rgba(40,32,24,.6);border:1px solid var(--cine-frame);border-radius:12px;padding:16px 36px 16px 36px;font-size:14px;line-height:1.85;color:#f3e1c1;width:100%;word-break:break-word}
+.cine-opp-bubble-text{white-space:normal;text-align:justify}
+.cine-quote-mark{position:absolute;font-size:30px;color:var(--cine-warm);font-family:Georgia,'STSong',serif;line-height:1;opacity:.55}
+.cine-quote-l{top:6px;left:10px}
+.cine-quote-r{bottom:2px;right:14px}
+.cine-mem-col{grid-area:memory;background:rgba(60,20,20,.5);border:1px solid var(--cine-red);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .cine-mem-col.cine-mem-empty{background:rgba(40,40,40,.3);border:1px dashed rgba(150,150,150,.3)}
 .cine-mem-title{color:var(--cine-red);font-size:12px;font-weight:bold;margin-bottom:4px}
 .cine-mem-title-quiet{color:#7a7060}
@@ -18611,8 +18613,9 @@ function injectV2Styles() {
 /* 移动端：纵向单列 + 按钮高度保障 */
 @media (max-width:900px){
   .cine-stage-meta{grid-template-columns:1fr}
-  .cine-opp-stage{grid-template-columns:1fr;gap:14px}
+  .cine-opp-stage{grid-template-columns:1fr;grid-template-areas:"info" "portrait" "memory" "bubble";gap:12px}
   .cine-opp-portrait{min-height:160px}
+  .cine-opp-bubble{padding:14px 30px}
   .cine-bars-row,.cine-action-row{grid-template-columns:1fr 1fr;gap:10px}
   .cine-conseq-row-grid{grid-template-columns:1fr;gap:12px}
   .cine-conseq-action{border-left:none;border-top:1px solid rgba(192,153,106,.2);padding-left:0;padding-top:12px}
@@ -18621,6 +18624,7 @@ function injectV2Styles() {
 }
 @media (max-width:520px){
   .cine-bars-row,.cine-action-row{grid-template-columns:1fr}
+  .cine-opp-name{font-size:20px}
 }
 
 /* ── 人物主题（历史氛围皮肤）───────────────────────────────── */

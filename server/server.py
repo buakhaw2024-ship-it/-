@@ -1,0 +1,114 @@
+# -*- coding: utf-8 -*-
+"""
+谈判博弈 · LLM 代理后端 (Python Flask + 官方 anthropic SDK)
+客户端默认请求: POST http://localhost:8787/api/ai/negotiation-turn
+同一端点按 body.task 分流:
+  - task == 'rewrite_response_options' → 改写回应选项(本次新增)
+  - 其他(无 task)→ 你原来的"对手回应+教练反馈"(这里给了可跑实现, 可替换成你已有逻辑)
+
+安装:  pip install flask flask-cors anthropic
+运行:  ANTHROPIC_API_KEY=sk-ant-...  python server.py
+"""
+import os, json
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import anthropic
+
+app = Flask(__name__)
+CORS(app)  # 允许 file:// / 任意来源(本地工具); 生产可收紧
+client = anthropic.Anthropic()  # 读取 ANTHROPIC_API_KEY
+MODEL = os.environ.get("LLM_MODEL", "claude-opus-4-8")  # 想更快更省可设 claude-haiku-4-5
+
+REWRITE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "options": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"key": {"type": "string"}, "text": {"type": "string"}},
+                "required": ["key", "text"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["options"],
+    "additionalProperties": False,
+}
+
+TURN_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "opponentResponse": {"type": "string"},
+        "opponentHearing": {"type": "string"},
+        "coachNote": {"type": "string"},
+        "betterNextMove": {"type": "string"},
+        "riskSignal": {"type": "string"},
+        "pressureLevel": {"type": "integer"},
+    },
+    "required": ["opponentResponse", "coachNote", "pressureLevel"],
+    "additionalProperties": False,
+}
+
+
+def _text(msg):
+    return next(b.text for b in msg.content if b.type == "text")
+
+
+def rewrite_options(body):
+    opponent = str(body.get("opponentLine", ""))[:400]
+    options = body.get("options", []) or []
+    if not opponent or not options:
+        return {"options": []}
+    lines = "\n".join(
+        "- key=%s 策略=%s 原话术=%s"
+        % (o.get("key"), o.get("strategy") or o.get("skill") or o.get("key"), o.get("sample", ""))
+        for o in options
+    )
+    system = (
+        "你是资深谈判教练。给定对手刚说的话，以及若干回应策略选项，"
+        "把每个选项的示范话术改写成直接回应对手这句话的一句中文。"
+        "必须保持每个选项原本的策略意图与语气风格(锚定仍锚定、提问仍提问)，"
+        "只让语言和语境贴合对手当前台词，每条不超过40字，口语自然、可直接说出口。"
+    )
+    user = "对手刚说：%s\n\n需要改写的回应选项：\n%s\n\n为每个 key 各生成一句改写后的中文话术(保持原策略意图)。" % (opponent, lines)
+    msg = client.messages.create(
+        model=MODEL,
+        max_tokens=800,
+        system=system,
+        messages=[{"role": "user", "content": user}],
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": REWRITE_SCHEMA}},
+    )
+    return json.loads(_text(msg))  # {"options": [{"key","text"}, ...]}
+
+
+def negotiation_turn(body):
+    system = (
+        "你是谈判对手扮演者+教练。根据玩家这一手的选择与历史，生成对手的回应"
+        "(opponentResponse,<=80字)、对手真实意图(opponentHearing)、教练点评(coachNote)、"
+        "更优下一手(betterNextMove)、风险信号(riskSignal)、压力等级 pressureLevel(1-5 整数)。中文。"
+    )
+    user = "【本回合上下文】\n%s\n\n只生成本回合内容。" % json.dumps(body, ensure_ascii=False, indent=2)
+    msg = client.messages.create(
+        model=MODEL,
+        max_tokens=700,
+        system=system,
+        messages=[{"role": "user", "content": user}],
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": TURN_SCHEMA}},
+    )
+    return json.loads(_text(msg))
+
+
+@app.post("/api/ai/negotiation-turn")
+def handler():
+    body = request.get_json(silent=True) or {}
+    try:
+        out = rewrite_options(body) if body.get("task") == "rewrite_response_options" else negotiation_turn(body)
+        return jsonify(out)
+    except Exception as e:
+        app.logger.error("[LLM backend error] %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8787)))

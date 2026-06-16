@@ -99,11 +99,35 @@ def negotiation_turn(body):
     return json.loads(_text(msg))
 
 
+
+BEAT_SCHEMA = {"type":"object","properties":{"beat":{"type":"string"}},"required":["beat"],"additionalProperties":False}
+TWIST_SCHEMA = {"type":"object","properties":{"twist":{"type":"string"}},"required":["twist"],"additionalProperties":False}
+
+def gen_opponent_beat(body):
+    sys = "你扮演谈判对手，用其口吻。依据玩家近几手(recent)与其最弱项(weak)，说一句有压迫力、针对弱项、可引用之前交手的台词。1-2句、不超过55字、中文。"
+    user = "上下文：" + json.dumps(body, ensure_ascii=False) + "\n只生成对手这一回合的台词。"
+    msg = client.messages.create(model=MODEL, max_tokens=300, system=sys,
+        messages=[{"role":"user","content":user}],
+        output_config={"effort":"low","format":{"type":"json_schema","schema":BEAT_SCHEMA}})
+    return json.loads(_text(msg))
+
+def gen_act_twist(body):
+    sys = "你是剧情导演。为这一幕谈判注入一个简短情境转折(新约束/第三方介入/突发消息)，增加张力但不改变胜负规则。一句、不超过40字、中文。"
+    user = "上下文：" + json.dumps(body, ensure_ascii=False) + "\n只生成本幕开场的情境转折。"
+    msg = client.messages.create(model=MODEL, max_tokens=200, system=sys,
+        messages=[{"role":"user","content":user}],
+        output_config={"effort":"low","format":{"type":"json_schema","schema":TWIST_SCHEMA}})
+    return json.loads(_text(msg))
+
 @app.post("/api/ai/negotiation-turn")
 def handler():
     body = request.get_json(silent=True) or {}
     try:
-        out = rewrite_options(body) if body.get("task") == "rewrite_response_options" else negotiation_turn(body)
+        task = body.get("task")
+        if task == "rewrite_response_options": out = rewrite_options(body)
+        elif task == "generate_opponent_beat": out = gen_opponent_beat(body)
+        elif task == "generate_act_twist": out = gen_act_twist(body)
+        else: out = negotiation_turn(body)
         return jsonify(out)
     except Exception as e:
         app.logger.error("[LLM backend error] %s", e)

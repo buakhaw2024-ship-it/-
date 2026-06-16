@@ -102,12 +102,43 @@ async function negotiationTurn(body) {
   return JSON.parse(text.text);
 }
 
+
+// ---- task: generate_opponent_beat (动态对手台词, 记忆+抓软肋) ----
+const BEAT_SCHEMA = { type: 'object', properties: { beat: { type: 'string' } }, required: ['beat'], additionalProperties: false };
+async function genOpponentBeat(body) {
+  const sys = '你扮演谈判对手，用其口吻。依据玩家近几手(recent)与其最弱项(weak)，说一句有压迫力、针对弱项、可引用之前交手的台词。1-2句、不超过55字、中文。';
+  const user = '上下文：' + JSON.stringify(body) + '\n只生成对手这一回合的台词。';
+  const msg = await client.messages.create({
+    model: MODEL, max_tokens: 300, system: sys,
+    messages: [{ role: 'user', content: user }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: BEAT_SCHEMA } },
+  });
+  return JSON.parse(msg.content.find((b) => b.type === 'text').text); // { beat }
+}
+
+// ---- task: generate_act_twist (剧情微事件/转折) ----
+const TWIST_SCHEMA = { type: 'object', properties: { twist: { type: 'string' } }, required: ['twist'], additionalProperties: false };
+async function genActTwist(body) {
+  const sys = '你是剧情导演。为这一幕谈判注入一个简短情境转折(新约束/第三方介入/突发消息)，增加张力但不改变胜负规则。一句、不超过40字、中文。';
+  const user = '上下文：' + JSON.stringify(body) + '\n只生成本幕开场的情境转折。';
+  const msg = await client.messages.create({
+    model: MODEL, max_tokens: 200, system: sys,
+    messages: [{ role: 'user', content: user }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: TWIST_SCHEMA } },
+  });
+  return JSON.parse(msg.content.find((b) => b.type === 'text').text); // { twist }
+}
+
 app.post('/api/ai/negotiation-turn', async (req, res) => {
   const body = req.body || {};
   try {
-    const out = body.task === 'rewrite_response_options'
-      ? await rewriteOptions(body)
-      : await negotiationTurn(body);
+    let out;
+    switch (body.task) {
+      case 'rewrite_response_options': out = await rewriteOptions(body); break;
+      case 'generate_opponent_beat':   out = await genOpponentBeat(body); break;
+      case 'generate_act_twist':       out = await genActTwist(body); break;
+      default:                         out = await negotiationTurn(body);
+    }
     res.json(out);
   } catch (e) {
     console.error('[LLM backend error]', e && e.message ? e.message : e);

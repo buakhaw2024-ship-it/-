@@ -55,3 +55,14 @@ ANTHROPIC_API_KEY=sk-ant-... python server.py
 前端当前对改写结果用**客户端打字机**逐字显现（`ai_fl_type` 开关），已有「流式视觉」。
 若需真正的服务端 token 流式（SSE），需后端改 `stream:true` 并在前端按 SSE 增量渲染——
 因选项改写是结构化 JSON、增量应用价值有限，暂以打字机覆盖该体验。
+
+### task = `generate_opponent_beat`(LLM 动态对手台词:记忆+抓软肋)
+请求含 `opponentName / recent(近几手) / weak(最弱项) / priorBeat / focus / chainId / actIndex / round`。
+响应:`{ "beat": "对手这一回合的台词(针对你最弱项、可引用之前)" }`
+
+### task = `generate_act_twist`(LLM 剧情微事件/转折)
+请求含 `chainId / actIndex / actTitle / opponentName`。
+响应:`{ "twist": "本幕开场的情境转折(一句)" }`
+
+> 前端解析容错:也接受裸字符串或 `{text:...}`。仅在 AI增强开启且对应开关打开时调用;
+> 不可用/出错时:对手台词回退原脚本+本地生成,剧情转折则不显示。direct 模式无需本服务即可工作。

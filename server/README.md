@@ -67,6 +67,9 @@ ANTHROPIC_API_KEY=sk-ant-... python server.py
 > 前端解析容错:也接受裸字符串或 `{text:...}`。仅在 AI增强开启且对应开关打开时调用;
 > 不可用/出错时:对手台词回退原脚本+本地生成,剧情转折则不显示。direct 模式无需本服务即可工作。
 
-### task = `generate_coach_note`(针对玩家这句话的实时复盘)
-请求含 `playerLine(玩家刚说的话) / env(当前局势) / priorBeat(对手上一句) / weak / opponentName`。
-响应:`{ "review": "这句的得失点评", "better": "更优说法" }`
+### task = `generate_coach_note`(针对玩家这句话的可点开复盘详解)
+请求含 `playerLine(玩家刚说的话) / facts(系统记录的可核对事实串:本手造成的指标变化) / env(当前局势) / priorBeat(对手上一句) / weak / opponentName`。
+响应:`{ "review": "一句话总评(<=40字)", "detail": "逐条呼应 facts 的诊断(<=120字)", "better": "更优说法(<=30字)" }`
+
+> 反幻觉约束:`facts` 由前端用系统真实指标(玩家点击前/后快照)计算,模型只能据此诊断,严禁编造事实里没有的数字或效果;信息不足须直说「依现有数据」。
+> 前端始终先用 `facts` 渲染本地可核对的复盘(诊断真实、逻辑可验证),大模型仅在其上增强 review/detail/better 的表达;后端不可用时本地复盘照常显示。

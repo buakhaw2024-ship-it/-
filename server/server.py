@@ -120,12 +120,14 @@ def gen_act_twist(body):
     return json.loads(_text(msg))
 
 
-COACH_SCHEMA = {"type":"object","properties":{"review":{"type":"string"},"better":{"type":"string"}},"required":["review","better"],"additionalProperties":False}
+COACH_SCHEMA = {"type":"object","properties":{"review":{"type":"string"},"detail":{"type":"string"},"better":{"type":"string"}},"required":["review","detail","better"],"additionalProperties":False}
 
 def gen_coach_note(body):
-    sys = "你是谈判教练。针对玩家刚说的这句话(playerLine)，结合当前局势(env)与对手上一句(priorBeat)，简评其得失(为何加分/丢分)，并给一句更优说法。中文、犀利具体。"
-    user = "上下文：" + json.dumps(body, ensure_ascii=False) + "\n只点评玩家这句的得失并给更优说法。"
-    msg = client.messages.create(model=MODEL, max_tokens=300, system=sys,
+    # body["facts"] 是前端用系统真实指标算出的可核对事实串(玩家这句话造成的指标变化)。
+    # 教练只能据此诊断，严禁编造事实中没有的数字或效果，避免幻觉。
+    sys = "你是谈判教练。只能依据下方【事实】中系统记录的指标数据(facts)做诊断，严禁编造事实里没有的数字、指标或效果；信息不足就直说「依现有数据」。结合对手上一句(priorBeat)与当前局势(env)解读玩家这句话(playerLine)的得失。给三项：一句话总评review(不超过40字)、逐条对应事实的诊断detail(不超过120字)、一句更优说法better(不超过30字)。中文、犀利具体、可验证。"
+    user = "【事实】" + str(body.get("facts") or "(无系统记录)") + "\n上下文：" + json.dumps(body, ensure_ascii=False) + "\n只据上述事实点评玩家这句的得失，detail需逐条呼应事实里的指标变化，better给更优说法。"
+    msg = client.messages.create(model=MODEL, max_tokens=400, system=sys,
         messages=[{"role":"user","content":user}],
         output_config={"effort":"low","format":{"type":"json_schema","schema":COACH_SCHEMA}})
     return json.loads(_text(msg))

@@ -66,3 +66,7 @@ ANTHROPIC_API_KEY=sk-ant-... python server.py
 
 > 前端解析容错:也接受裸字符串或 `{text:...}`。仅在 AI增强开启且对应开关打开时调用;
 > 不可用/出错时:对手台词回退原脚本+本地生成,剧情转折则不显示。direct 模式无需本服务即可工作。
+
+### task = `generate_coach_note`(针对玩家这句话的实时复盘)
+请求含 `playerLine(玩家刚说的话) / env(当前局势) / priorBeat(对手上一句) / weak / opponentName`。
+响应:`{ "review": "这句的得失点评", "better": "更优说法" }`

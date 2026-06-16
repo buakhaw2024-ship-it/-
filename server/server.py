@@ -119,6 +119,17 @@ def gen_act_twist(body):
         output_config={"effort":"low","format":{"type":"json_schema","schema":TWIST_SCHEMA}})
     return json.loads(_text(msg))
 
+
+COACH_SCHEMA = {"type":"object","properties":{"review":{"type":"string"},"better":{"type":"string"}},"required":["review","better"],"additionalProperties":False}
+
+def gen_coach_note(body):
+    sys = "你是谈判教练。针对玩家刚说的这句话(playerLine)，结合当前局势(env)与对手上一句(priorBeat)，简评其得失(为何加分/丢分)，并给一句更优说法。中文、犀利具体。"
+    user = "上下文：" + json.dumps(body, ensure_ascii=False) + "\n只点评玩家这句的得失并给更优说法。"
+    msg = client.messages.create(model=MODEL, max_tokens=300, system=sys,
+        messages=[{"role":"user","content":user}],
+        output_config={"effort":"low","format":{"type":"json_schema","schema":COACH_SCHEMA}})
+    return json.loads(_text(msg))
+
 @app.post("/api/ai/negotiation-turn")
 def handler():
     body = request.get_json(silent=True) or {}
@@ -127,6 +138,7 @@ def handler():
         if task == "rewrite_response_options": out = rewrite_options(body)
         elif task == "generate_opponent_beat": out = gen_opponent_beat(body)
         elif task == "generate_act_twist": out = gen_act_twist(body)
+        elif task == "generate_coach_note": out = gen_coach_note(body)
         else: out = negotiation_turn(body)
         return jsonify(out)
     except Exception as e:

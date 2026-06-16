@@ -129,6 +129,20 @@ async function genActTwist(body) {
   return JSON.parse(msg.content.find((b) => b.type === 'text').text); // { twist }
 }
 
+
+// ---- task: generate_coach_note (针对玩家这句话的实时复盘) ----
+const COACH_SCHEMA = { type: 'object', properties: { review: { type: 'string' }, better: { type: 'string' } }, required: ['review', 'better'], additionalProperties: false };
+async function genCoachNote(body) {
+  const sys = '你是谈判教练。针对玩家刚说的这句话(playerLine)，结合当前局势(env)与对手上一句(priorBeat)，简评其得失(为何加分/丢分)，并给一句更优说法。中文、犀利具体。';
+  const user = '上下文：' + JSON.stringify(body) + '\n只点评玩家这句的得失并给更优说法。';
+  const msg = await client.messages.create({
+    model: MODEL, max_tokens: 300, system: sys,
+    messages: [{ role: 'user', content: user }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: COACH_SCHEMA } },
+  });
+  return JSON.parse(msg.content.find((b) => b.type === 'text').text); // { review, better }
+}
+
 app.post('/api/ai/negotiation-turn', async (req, res) => {
   const body = req.body || {};
   try {
@@ -137,6 +151,7 @@ app.post('/api/ai/negotiation-turn', async (req, res) => {
       case 'rewrite_response_options': out = await rewriteOptions(body); break;
       case 'generate_opponent_beat':   out = await genOpponentBeat(body); break;
       case 'generate_act_twist':       out = await genActTwist(body); break;
+      case 'generate_coach_note':      out = await genCoachNote(body); break;
       default:                         out = await negotiationTurn(body);
     }
     res.json(out);

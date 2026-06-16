@@ -1,0 +1,12 @@
+{
+  "name": "negotiation-sim",
+  "private": true,
+  "version": "5.14.1",
+  "type": "module",
+  "scripts": {
+    "test:smoke": "node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

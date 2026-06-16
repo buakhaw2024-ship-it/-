@@ -15,8 +15,18 @@ npm run test:smoke
 
 Web 会话里 `.claude/hooks/session-start.sh` 会自动装好依赖与 Chromium。
 
-## 网络要求(重要)
-Chromium 由 Playwright 从 `cdn.playwright.dev` 下载。若你的环境网络策略未放行该域名,
-会出现 `Host not in allowlist: cdn.playwright.dev` 而无法安装浏览器。
-解决:在环境的出站网络设置中放行 `cdn.playwright.dev`(必要时再加 `playwright.azureedge.net`),
-重开会话让 `session-start` hook 自动安装;或在本机执行 `npx playwright install chromium` 后运行 `npm run test:smoke`。
+## 网络要求与回退方案(重要)
+Chromium 由 Playwright 默认从 `cdn.playwright.dev` 下载。本环境出站策略默认未放行该域名,
+代理会返回 `403 x-deny-reason: host_not_allowed`,标准 `playwright install` 因而失败。
+
+**首选(治本)**:在环境的出站网络设置中放行 `cdn.playwright.dev`,重开会话即可正常下载。
+
+**回退(已内置,无需放行 cdn)**:Playwright 的 chromium / headless-shell 实际就是
+Chrome for Testing 构建,而其官方公共桶 `storage.googleapis.com/chrome-for-testing-public`
+在允许名单内。`.claude/hooks/session-start.sh` 在标准下载失败时会自动调用
+`.claude/hooks/install-pw-chromium.sh`:解析 `playwright install --dry-run` 得到目标版本与
+安装路径,把 CfT 下载地址改写到该公共桶下载、解压到 Playwright 期望布局并补可执行位。
+经验证容器内已具备 Chrome 运行所需的全部共享库,`npm run test:smoke` 可直接通过。
+
+> 注:视频录制用的 ffmpeg 不在公共桶,回退方案会跳过(冒烟自测不需要)。
+> 也可手动执行 `bash .claude/hooks/install-pw-chromium.sh` 触发回退安装。

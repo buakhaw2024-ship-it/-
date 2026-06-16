@@ -106,7 +106,7 @@ async function negotiationTurn(body) {
 // ---- task: generate_opponent_beat (动态对手台词, 记忆+抓软肋) ----
 const BEAT_SCHEMA = { type: 'object', properties: { beat: { type: 'string' } }, required: ['beat'], additionalProperties: false };
 async function genOpponentBeat(body) {
-  const sys = '你扮演谈判对手，用其口吻。依据玩家近几手(recent)与其最弱项(weak)，说一句有压迫力、针对弱项、可引用之前交手的台词。1-2句、不超过55字、中文。';
+  const sys = '你扮演谈判对手，用其口吻。这是实时博弈:直接回应玩家刚说的话(playerLine)，结合当前局势(env/指标)与历史(recent)，针对其弱项(weak)反击，可引用之前交手。1-2句、不超过55字、中文、像真人即兴交锋。';
   const user = '上下文：' + JSON.stringify(body) + '\n只生成对手这一回合的台词。';
   const msg = await client.messages.create({
     model: MODEL, max_tokens: 300, system: sys,

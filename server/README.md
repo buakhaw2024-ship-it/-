@@ -67,6 +67,20 @@ ANTHROPIC_API_KEY=sk-ant-... python server.py
 > 前端解析容错:也接受裸字符串或 `{text:...}`。仅在 AI增强开启且对应开关打开时调用;
 > 不可用/出错时:对手台词回退原脚本+本地生成,剧情转折则不显示。direct 模式无需本服务即可工作。
 
+### task = `generate_duel_scenario`(传奇试炼场:由人物属性生成剧情+对抗台词)
+请求含 `persona`(该传奇人物的属性设定:`name/style/passive/weakness/signature/styleTags/mentorSeries/voiceStyle/sceneLexicon/bannedWords/coreTrap`)与 `seed`(随机种子,使每局剧情不同)。
+响应:
+```
+{ "director": { "time","location","visual","playerRole","opponent","stakes","hiddenPressure","firstQuestion" },
+  "phases": [ { "title","openingLine(对手主动发起的对抗性逼问)","setting","best","trap" }, … 恰好6幕 ] }
+```
+
+> 约束:台词须贴合该人物时代/身份/风格,用其语气(voiceStyle)、多用场景词(sceneLexicon)、禁用违禁词(bannedWords)与现代黑话;
+> 每幕 openingLine 暗含其核心陷阱(coreTrap);且必须符合谈判原则(锚定、BATNA、聚焦利益而非立场、让步必换取、制造期限、护面子)。
+> 前端仅覆盖"叙事层":AI 的 director/phases 叠加到原剧本之上,引擎字段(actions→指标映射、endings、method)保持不变 → 不影响胜负计算。
+> 开局(round 0)按 `duelistId+随机key` 生成一次并缓存(每局不同),返回后重渲染;不可用/出错时回退原静态剧本。
+> 由"LLM剧情(按人物属性生成试炼场)"开关(`ai_fl_plot`)控制。
+
 ### task = `generate_coach_note`(针对玩家这句话的可点开复盘详解)
 请求含 `playerLine(玩家刚说的话) / facts(系统记录的可核对事实串:本手造成的指标变化) / env(当前局势) / priorBeat(对手上一句) / weak / opponentName`。
 响应:`{ "review": "一句话总评(<=40字)", "detail": "逐条呼应 facts 的诊断(<=120字)", "better": "更优说法(<=30字)" }`

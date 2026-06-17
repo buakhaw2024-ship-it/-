@@ -132,6 +132,37 @@ def gen_coach_note(body):
         output_config={"effort":"low","format":{"type":"json_schema","schema":COACH_SCHEMA}})
     return json.loads(_text(msg))
 
+# ---- task: generate_duel_scenario (传奇试炼场:由人物属性生成剧情+对抗台词) ----
+_PHASE_PROPS = {"title":{"type":"string"},"openingLine":{"type":"string"},"setting":{"type":"string"},"best":{"type":"string"},"trap":{"type":"string"}}
+SCENARIO_SCHEMA = {"type":"object","properties":{
+    "director":{"type":"object","properties":{
+        "time":{"type":"string"},"location":{"type":"string"},"visual":{"type":"string"},
+        "playerRole":{"type":"string"},"opponent":{"type":"string"},"stakes":{"type":"string"},
+        "hiddenPressure":{"type":"string"},"firstQuestion":{"type":"string"}},
+      "required":["time","location","visual","playerRole","opponent","stakes","hiddenPressure","firstQuestion"],"additionalProperties":False},
+    "phases":{"type":"array","items":{"type":"object","properties":_PHASE_PROPS,
+        "required":["title","openingLine","setting","best","trap"],"additionalProperties":False}}},
+  "required":["director","phases"],"additionalProperties":False}
+
+def gen_duel_scenario(body):
+    # persona = 该传奇人物的属性设定;只生成叙事层(剧情+六幕对抗台词),不触碰分数计算。
+    p = body.get("persona") or {}
+    sys = ("你是历史谈判剧本的导演。依据给定【传奇人物属性】，为一场与该人物的高强度谈判对抗,"
+           "生成一段全新的剧情(director)与六幕(phases)。要求:\n"
+           "1) 剧情与台词必须贴合该人物的时代、身份、谈判风格(style)、招式(passive)、签名语(signature)与软肋(weakness);\n"
+           "2) 对手台词用其语气(voiceStyle),多用场景词(sceneLexicon),严禁出现违禁词(bannedWords)与现代商业黑话;\n"
+           "3) 每一幕 openingLine 是对手主动发起的「对抗性挑战/逼问」,要制造真实压力,并暗含其核心陷阱(coreTrap);\n"
+           "4) 必须符合谈判原则:体现锚定、BATNA/最佳替代、聚焦利益而非立场、让步必换取对等、制造期限与稀缺、维护关系与面子等真实博弈逻辑;每一幕 best 给「符合谈判原则的最优思路」, trap 给「违背原则的常见陷阱」;\n"
+           "5) firstQuestion 是开场要玩家立刻回答的核心议题;hiddenPressure 是暗线压力;\n"
+           "6) 全中文。phases 恰好 6 幕,题名精炼。只产出叙事,不决定胜负、不输出指标数字。")
+    user = ("【传奇人物属性】\n" + json.dumps(p, ensure_ascii=False, indent=2) +
+            "\n随机种子(用于让本局剧情区别于其它局): " + str(body.get("seed") or "") +
+            "\n请据此生成贴合该人物属性、语境与谈判原则的剧情(director)与六幕(phases,各含对抗性 openingLine)。")
+    msg = client.messages.create(model=MODEL, max_tokens=1600, system=sys,
+        messages=[{"role":"user","content":user}],
+        output_config={"effort":"low","format":{"type":"json_schema","schema":SCENARIO_SCHEMA}})
+    return json.loads(_text(msg))
+
 @app.post("/api/ai/negotiation-turn")
 def handler():
     body = request.get_json(silent=True) or {}
@@ -141,6 +172,7 @@ def handler():
         elif task == "generate_opponent_beat": out = gen_opponent_beat(body)
         elif task == "generate_act_twist": out = gen_act_twist(body)
         elif task == "generate_coach_note": out = gen_coach_note(body)
+        elif task == "generate_duel_scenario": out = gen_duel_scenario(body)
         else: out = negotiation_turn(body)
         return jsonify(out)
     except Exception as e:

@@ -57,8 +57,11 @@ ANTHROPIC_API_KEY=sk-ant-... python server.py
 因选项改写是结构化 JSON、增量应用价值有限，暂以打字机覆盖该体验。
 
 ### task = `generate_opponent_beat`(LLM 动态对手台词:记忆+抓软肋)
-请求含 `opponentName / recent(近几手) / weak(最弱项) / priorBeat / focus / chainId / actIndex / round`。
+请求含 `opponentName / recent(近几手) / weak(最弱项) / priorBeat / focus / chainId / actIndex / round / playerLine / env / persona(人物属性:风格/招式/软肋/语气/场景词/禁用词) / seed(变化种子)`。
 响应:`{ "beat": "对手这一回合的台词(针对你最弱项、可引用之前)" }`
+
+> 随机性:`seed` 与缓存键含 `playerLine`,使台词不每局雷同;后端应据 `persona` 贴合语气/场景词、禁用违禁词、符合谈判原则,且每次换新鲜说法。
+> 无大模型时前端本地生成同样做了随机化:模板池扩为4变体并按"每回合随机种子(局内稳定·跨局变化)"选取,避免每局一模一样的语言套路。
 
 ### task = `generate_act_twist`(LLM 剧情微事件/转折)
 请求含 `chainId / actIndex / actTitle / opponentName`。

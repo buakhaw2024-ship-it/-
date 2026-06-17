@@ -104,8 +104,10 @@ BEAT_SCHEMA = {"type":"object","properties":{"beat":{"type":"string"}},"required
 TWIST_SCHEMA = {"type":"object","properties":{"twist":{"type":"string"}},"required":["twist"],"additionalProperties":False}
 
 def gen_opponent_beat(body):
-    sys = "你扮演谈判对手，用其口吻。这是实时博弈:直接回应玩家刚说的话(playerLine)，结合当前局势(env/指标)与历史(recent)，针对其弱项(weak)反击，可引用之前交手。1-2句、不超过55字、中文、像真人即兴交锋。"
-    user = "上下文：" + json.dumps(body, ensure_ascii=False) + "\n只生成对手这一回合的台词。"
+    sys = ("你扮演谈判对手，用其口吻。这是实时博弈:直接回应玩家刚说的话(playerLine)，结合当前局势(env/指标)与历史(recent)，针对其弱项(weak)反击，可引用之前交手。"
+           "若给了 persona(人物属性:风格/招式/软肋/语气voiceStyle/场景词sceneLexicon/禁用词bannedWords)，须贴合其语气、多用场景词、禁用违禁词与现代黑话，并符合谈判原则(锚定/BATNA/聚焦利益/让步必换取/制造期限/护面子)。"
+           "务必每次措辞都不同、避免套路与口头禅复读，像真人即兴交锋、生动具体。1-2句、不超过55字、中文。")
+    user = "上下文：" + json.dumps(body, ensure_ascii=False) + "\n(seed 仅用于让表达不雷同，不要读出)\n只生成对手这一回合的台词，换一种新鲜说法。"
     msg = client.messages.create(model=MODEL, max_tokens=300, system=sys,
         messages=[{"role":"user","content":user}],
         output_config={"effort":"low","format":{"type":"json_schema","schema":BEAT_SCHEMA}})

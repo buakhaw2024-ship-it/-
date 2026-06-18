@@ -165,6 +165,23 @@ def gen_duel_scenario(body):
         output_config={"effort":"low","format":{"type":"json_schema","schema":SCENARIO_SCHEMA}})
     return json.loads(_text(msg))
 
+# ---- task: generate_turn (一次调用同时产出对手台词+各选项贴合话术,降延迟) ----
+TURN2_SCHEMA = {"type":"object","properties":{
+    "beat":{"type":"string"},
+    "options":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"text":{"type":"string"}},"required":["key","text"],"additionalProperties":False}}},
+  "required":["beat","options"],"additionalProperties":False}
+
+def gen_turn(body):
+    sys = ("你扮演谈判对手并兼任玩家话术教练,一次性产出两部分:\n"
+           "beat = 对手对玩家上一手(playerLine)的实时台词:结合场景/局势/persona,既反击又针对其弱项,1-2句、<=55字、每次措辞不同、像真人即兴;\n"
+           "options = 针对这句 beat,为传入的每个选项(各含策略意图)各写一句贴合的玩家话术:保持该选项策略意图不变、直接回应 beat、口语自然、<=40字。\n"
+           "若给了 persona(语气/场景词/禁用词),beat 须贴合其语气、多用场景词、禁用违禁词;全程符合谈判原则(锚定/BATNA/聚焦利益/让步必换取/制造期限/护面子)。中文。")
+    user = "【本回合上下文】\n" + json.dumps(body, ensure_ascii=False, indent=2) + "\n为 options 数组里给出的每个 key 各生成一句 text。"
+    msg = client.messages.create(model=MODEL, max_tokens=700, system=sys,
+        messages=[{"role":"user","content":user}],
+        output_config={"effort":"low","format":{"type":"json_schema","schema":TURN2_SCHEMA}})
+    return json.loads(_text(msg))
+
 @app.post("/api/ai/negotiation-turn")
 def handler():
     body = request.get_json(silent=True) or {}
@@ -175,6 +192,7 @@ def handler():
         elif task == "generate_act_twist": out = gen_act_twist(body)
         elif task == "generate_coach_note": out = gen_coach_note(body)
         elif task == "generate_duel_scenario": out = gen_duel_scenario(body)
+        elif task == "generate_turn": out = gen_turn(body)
         else: out = negotiation_turn(body)
         return jsonify(out)
     except Exception as e:

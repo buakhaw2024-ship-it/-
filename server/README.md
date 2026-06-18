@@ -70,6 +70,15 @@ ANTHROPIC_API_KEY=sk-ant-... python server.py
 > 前端解析容错:也接受裸字符串或 `{text:...}`。仅在 AI增强开启且对应开关打开时调用;
 > 不可用/出错时:对手台词回退原脚本+本地生成,剧情转折则不显示。direct 模式无需本服务即可工作。
 
+### task = `generate_turn`(降延迟:单次产出对手台词 + 各选项贴合话术)★推荐
+请求含 `opponentName / playerLine / priorBeat / scene(由 era 等拼装) / focus / env / recent / weak / persona / options:[{key,strategy,skill}] / seed`。
+响应:`{ "beat": "对手实时台词(<=55字)", "options": [ { "key": "选项key", "text": "贴合 beat 的玩家话术(<=40字,保持该选项策略意图)" }, … ] }`
+
+> 为什么:原来每回合"先 `generate_opponent_beat` 出台词 → 再 `rewrite_response_options` 改写选项"是**两次串行往返**,等待久。
+> `generate_turn` 把二者合并为**单次**调用(台词与选项在同一上下文里一起生成,既快又更协调),前端默认走它;
+> 返回后先显示对手台词、再按当前台词把各选项话术一并写入。失败/超时(12秒)显示"生成失败",可点「🔄 重新生成话术」重试。
+> 进一步降延迟:把后端 `LLM_MODEL` 设为更快的模型(如 `claude-haiku-4-5`),实时回合体验最佳。
+
 ### task = `generate_duel_scenario`(传奇试炼场:由人物属性生成剧情+对抗台词)
 请求含 `persona`(该传奇人物的属性设定:`name/style/passive/weakness/signature/styleTags/mentorSeries/voiceStyle/sceneLexicon/bannedWords/coreTrap`)与 `seed`(随机种子,使每局剧情不同)。
 响应:

@@ -197,6 +197,33 @@ async function genDuelScenario(body) {
   return JSON.parse(msg.content.find((b) => b.type === 'text').text); // { director, phases }
 }
 
+// ---- task: generate_turn (一次调用同时产出对手台词+各选项贴合话术,降延迟) ----
+// 把"对手实时台词"和"按该台词改写的回应选项话术"合并为单次请求,
+// 替代原来"先生成台词→再改写选项"的两次串行往返,显著降低每回合等待。
+const TURN2_SCHEMA = {
+  type: 'object',
+  properties: {
+    beat: { type: 'string' },
+    options: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, text: { type: 'string' } }, required: ['key', 'text'], additionalProperties: false } },
+  },
+  required: ['beat', 'options'],
+  additionalProperties: false,
+};
+async function genTurn(body) {
+  const sys =
+    '你扮演谈判对手并兼任玩家话术教练,一次性产出两部分:\n' +
+    'beat = 对手对玩家上一手(playerLine)的实时台词:结合场景/局势/persona,既反击又针对其弱项,1-2句、<=55字、每次措辞不同、像真人即兴;\n' +
+    'options = 针对这句 beat,为传入的每个选项(各含策略意图)各写一句贴合的玩家话术:保持该选项策略意图不变、直接回应 beat、口语自然、<=40字。\n' +
+    '若给了 persona(语气/场景词/禁用词),beat 须贴合其语气、多用场景词、禁用违禁词;全程符合谈判原则(锚定/BATNA/聚焦利益/让步必换取/制造期限/护面子)。中文。';
+  const user = '【本回合上下文】\n' + JSON.stringify(body, null, 2) + '\n为 options 数组里给出的每个 key 各生成一句 text。';
+  const msg = await client.messages.create({
+    model: MODEL, max_tokens: 700, system: sys,
+    messages: [{ role: 'user', content: user }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: TURN2_SCHEMA } },
+  });
+  return JSON.parse(msg.content.find((b) => b.type === 'text').text); // { beat, options:[{key,text}] }
+}
+
 app.post('/api/ai/negotiation-turn', async (req, res) => {
   const body = req.body || {};
   try {
@@ -207,6 +234,7 @@ app.post('/api/ai/negotiation-turn', async (req, res) => {
       case 'generate_act_twist':       out = await genActTwist(body); break;
       case 'generate_coach_note':      out = await genCoachNote(body); break;
       case 'generate_duel_scenario':   out = await genDuelScenario(body); break;
+      case 'generate_turn':            out = await genTurn(body); break;
       default:                         out = await negotiationTurn(body);
     }
     res.json(out);

@@ -17,3 +17,8 @@ OPENROUTER_MODEL = "deepseek/deepseek-chat"
 #   wrangler secret put OPENROUTER_API_KEY
 # For local `wrangler dev`, put it in server/.dev.vars instead (git-ignored):
 #   OPENROUTER_API_KEY = "sk-or-..."
+#
+# Optional access gate for PUBLIC deploys — without it, anyone who learns the
+# workers.dev URL can spend your OpenRouter credits. Set a token, then point the
+# game's 后端接口 at  …/api/ai/negotiation-turn?k=<token>
+#   wrangler secret put PROXY_ACCESS_TOKEN

@@ -37,8 +37,22 @@ export default {
       return json({ error: 'Not Found', hint: 'POST /api/ai/negotiation-turn' }, 404);
     }
 
+    // Optional access gate for PUBLIC deployments: set the PROXY_ACCESS_TOKEN
+    // secret, then append ?k=<token> to the endpoint URL (or send X-Proxy-Token).
+    // Unset = open, which is fine for local `wrangler dev`.
+    const gate = env.PROXY_ACCESS_TOKEN;
+    if (gate) {
+      const provided = url.searchParams.get('k')
+        || request.headers.get('x-proxy-token')
+        || (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+      if (provided !== gate) return json({ error: 'Unauthorized' }, 401);
+    }
+    // Cap body size — the game's payloads are tiny (<16KB); this blocks
+    // credit-burning via oversized prompts.
+    const raw = await request.text();
+    if (raw.length > 16384) return json({ error: 'Payload too large' }, 413);
     let body;
-    try { body = await request.json(); }
+    try { body = JSON.parse(raw || '{}'); }
     catch (_) { return json({ error: 'Invalid JSON body' }, 400); }
 
     const cfg = {

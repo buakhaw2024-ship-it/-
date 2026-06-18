@@ -25,13 +25,26 @@ const server = http.createServer((req, res) => {
     return send(res, 200, { ok: true, service: 'negotiation-ai-proxy', endpoint: '/api/ai/negotiation-turn' });
   }
   if (req.method !== 'POST') return send(res, 405, { error: 'Method Not Allowed' });
-  if (!(req.url === '/' || req.url.endsWith('/api/ai/negotiation-turn'))) {
+  // Match on pathname only — the endpoint URL may carry a ?k=<token> query.
+  let pathname = '/';
+  try { pathname = new URL(req.url, 'http://x').pathname; } catch (_) {}
+  if (!(pathname === '/' || pathname.endsWith('/api/ai/negotiation-turn'))) {
     return send(res, 404, { error: 'Not Found', hint: 'POST /api/ai/negotiation-turn' });
   }
 
   let raw = '';
-  req.on('data', (c) => { raw += c; if (raw.length > 1e6) req.destroy(); });
+  req.on('data', (c) => { raw += c; if (raw.length > 65536) req.destroy(); });
   req.on('end', async () => {
+    if (raw.length > 16384) return send(res, 413, { error: 'Payload too large' });
+    // Optional access gate (set PROXY_ACCESS_TOKEN; append ?k=<token> to the URL
+    // or send X-Proxy-Token). Unset = open, fine for local use.
+    const gate = process.env.PROXY_ACCESS_TOKEN;
+    if (gate) {
+      let provided = '';
+      try { provided = new URL(req.url, 'http://x').searchParams.get('k') || ''; } catch (_) {}
+      provided = provided || req.headers['x-proxy-token'] || String(req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
+      if (provided !== gate) return send(res, 401, { error: 'Unauthorized' });
+    }
     let body;
     try { body = JSON.parse(raw || '{}'); }
     catch (_) { return send(res, 400, { error: 'Invalid JSON body' }); }

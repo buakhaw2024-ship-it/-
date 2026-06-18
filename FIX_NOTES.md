@@ -38,9 +38,11 @@
 
 ## 使用建议
 - **本地离线试玩**：保持 AI 增强关闭即可，话术全部由本地规则生成。
-- **前端直连**：设置「直连平台」新增 **DeepSeek V4 Flash / V4 Pro** 预设（Model 字段可改成
-  平台实际模型 id）。注意浏览器直连需该平台允许跨域：DeepSeek 官方接口若被 CORS 拦截，
-  改走 OpenRouter（跨域友好）或后端安全模式即可。API Key 存本地浏览器 `localStorage`，仅适合本机自用。
+- **前端直连**：设置「直连平台」新增 **DeepSeek V4 Flash / V4 Pro** 预设，已默认走
+  **OpenRouter**（跨域友好，浏览器可直连），所以 API Key 请填 **OpenRouter** 的；模型 id
+  为 `deepseek/deepseek-v4-flash` / `-pro`（若 OpenRouter 命名不同，在 Model 字段改即可）。
+  若你的 DeepSeek 官方 Key 允许浏览器跨域，把 Base URL 改回 `https://api.deepseek.com/v1`、
+  Model 去掉 `deepseek/` 前缀即可。API Key 存本地浏览器 `localStorage`，仅适合本机自用。
 - **后端安全**：部署 `server/` 代理后，在设置「后端接口」输入框填入地址并点「保存后端地址」
   （此前只显示、无法修改，现已可编辑）。公开部署请在地址末尾加 `?k=<访问令牌>`。
   未部署/不可达时不报错，自动回退本地话术。

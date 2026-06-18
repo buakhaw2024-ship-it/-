@@ -5,12 +5,18 @@
 #   CLOUDFLARE_ACCOUNT_ID  —— Workers 概览页右侧 Account ID
 #   OPENROUTER_API_KEY     —— https://openrouter.ai/keys
 #
-# 触发：Actions → "Deploy Worker" → Run workflow（手动一键）。
+# 触发：① push 到 main 且改动 server/**（自动部署）；② Actions → "Deploy Worker"
+#       → Run workflow（手动一键，可选覆盖模型 id）。
 # 工作流会先跑契约测试，再 wrangler deploy，并把 OPENROUTER_API_KEY 写入 Worker 密钥。
 
 name: Deploy Worker
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
     inputs:
       model:

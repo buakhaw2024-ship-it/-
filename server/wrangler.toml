@@ -1,0 +1,18 @@
+name = "negotiation-ai-proxy"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+# `wrangler dev` listens on http://localhost:8787 by default — this is exactly
+# the game's DEFAULT_ENDPOINT (http://localhost:8787/api/ai/negotiation-turn),
+# so 后端安全模式 connects with zero config during local development.
+
+[vars]
+# Default model on OpenRouter. Override here or with an OPENROUTER_MODEL secret/var.
+OPENROUTER_MODEL = "nousresearch/hermes-3-llama-3.1-70b"
+# Optional: override the OpenAI-compatible base URL (e.g. to use DeepSeek directly).
+# OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+# Secret (DO NOT put the key here — set it out of band):
+#   wrangler secret put OPENROUTER_API_KEY
+# For local `wrangler dev`, put it in server/.dev.vars instead (git-ignored):
+#   OPENROUTER_API_KEY = "sk-or-..."

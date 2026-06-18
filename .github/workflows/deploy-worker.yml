@@ -1,0 +1,48 @@
+# 一键部署 server/ 里的 Cloudflare Worker（后端安全代理）。
+#
+# 准备：在仓库 Settings → Secrets and variables → Actions 配置三个 secret：
+#   CLOUDFLARE_API_TOKEN   —— Cloudflare → My Profile → API Tokens（"Edit Cloudflare Workers" 模板）
+#   CLOUDFLARE_ACCOUNT_ID  —— Workers 概览页右侧 Account ID
+#   OPENROUTER_API_KEY     —— https://openrouter.ai/keys
+#
+# 触发：Actions → "Deploy Worker" → Run workflow（手动一键）。
+# 工作流会先跑契约测试，再 wrangler deploy，并把 OPENROUTER_API_KEY 写入 Worker 密钥。
+
+name: Deploy Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "可选：覆盖默认模型（OpenRouter id，留空用 deepseek/deepseek-chat）"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Contract test (no key / no network needed)
+        working-directory: server
+        run: node test/contract.test.mjs
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: server
+          command: "deploy ${{ github.event.inputs.model != '' && format('--var OPENROUTER_MODEL:{0}', github.event.inputs.model) || '' }}"
+          secrets: |
+            OPENROUTER_API_KEY
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

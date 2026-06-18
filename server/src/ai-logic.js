@@ -11,7 +11,9 @@
 //   generate_duel_scenario     -> 试炼场剧情  -> {director:{...}, phases:[{...}]}
 
 const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
-const DEFAULT_MODEL = 'nousresearch/hermes-3-llama-3.1-70b';
+// Mainstream, Chinese-strong, cheap default. Swap via OPENROUTER_MODEL, e.g.
+// 'qwen/qwen-2.5-72b-instruct', 'deepseek/deepseek-chat-v3-0324'.
+const DEFAULT_MODEL = 'deepseek/deepseek-chat';
 
 function str(v, fallback) {
   const s = (v == null ? '' : String(v)).trim();

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>帝斯曼项目 · 2026年5月财务经营分析</title>
+<style>
+:root{
+  --color-background-primary:#ffffff;
+  --color-background-secondary:#f4f4f2;
+  --color-text-primary:#1d1d1f;
+  --color-text-secondary:#6e6e73;
+  --color-border-tertiary:#e8e8e4;
+  --color-border-secondary:#d6d6d2;
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+  /* glass */
+  --glass-bg:rgba(255,255,255,0.32);
+  --glass-bg-soft:rgba(255,255,255,0.22);
+  --glass-border:rgba(255,255,255,0.9);
+  --glass-shadow:0 10px 36px rgba(31,38,135,0.14), inset 0 1px 0 rgba(255,255,255,0.7);
+  --glass-shadow-hover:0 20px 50px rgba(31,38,135,0.22), inset 0 1px 0 rgba(255,255,255,0.8);
+  --page-bg:#d4d6d9;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --color-background-primary:#1c1c1e;
+    --color-background-secondary:#2c2c2e;
+    --color-text-primary:#f2f2f7;
+    --color-text-secondary:#9a9aa0;
+    --color-border-tertiary:#38383a;
+    --color-border-secondary:#48484a;
+    --glass-bg:rgba(44,44,46,0.34);
+    --glass-bg-soft:rgba(44,44,46,0.24);
+    --glass-border:rgba(255,255,255,0.14);
+    --glass-shadow:0 10px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+    --glass-shadow-hover:0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12);
+    --page-bg:#0c0d0f;
+  }
+}
+*{box-sizing:border-box;}
+html{background:var(--page-bg);}
+body{margin:0;background:transparent;color:var(--color-text-primary);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;position:relative;min-height:100vh;overflow-x:hidden;}
+.bg-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--page-bg);}
+.bg-orbs::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(60,72,84,0.06) 1px, transparent 1px),linear-gradient(90deg, rgba(60,72,84,0.06) 1px, transparent 1px);
+  background-size:44px 44px;}
+.orb{position:absolute;border-radius:50%;will-change:transform;}
+.orb1{width:60vw;height:60vw;left:-12vw;top:-16vw;background:radial-gradient(circle, rgba(92,112,132,0.55), rgba(92,112,132,0) 66%);animation:float1 19s ease-in-out infinite;}
+.orb2{width:58vw;height:58vw;right:-14vw;top:-14vw;background:radial-gradient(circle, rgba(108,114,122,0.5), rgba(108,114,122,0) 66%);animation:float2 23s ease-in-out infinite;}
+.orb3{width:62vw;height:62vw;right:-10vw;bottom:-20vw;background:radial-gradient(circle, rgba(70,82,94,0.5), rgba(70,82,94,0) 66%);animation:float3 21s ease-in-out infinite;}
+.orb4{width:54vw;height:54vw;left:-12vw;bottom:-18vw;background:radial-gradient(circle, rgba(150,120,78,0.4), rgba(150,120,78,0) 66%);animation:float4 25s ease-in-out infinite;}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(6%,8%) scale(1.12);}}
+@keyframes float2{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-7%,6%) scale(1.1);}}
+@keyframes float3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-5%,-7%) scale(1.14);}}
+@keyframes float4{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(6%,-6%) scale(1.08);}}
+@keyframes riseIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:none;}}
+@media (prefers-reduced-motion: reduce){.orb{animation:none;}*{animation-duration:.001ms !important;}}
+.wrap{max-width:1040px;margin:0 auto;padding:8px 22px 48px;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+.db-header { padding: 1.5rem 0 1rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 1.25rem; animation: fadeDown .6s cubic-bezier(.2,.7,.2,1) both; }
+.db-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+.db-sub { font-size: 13px; color: var(--color-text-secondary); margin: 0; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.kpi { background: var(--glass-bg); -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%); border: 0.5px solid var(--glass-border); border-radius: var(--border-radius-md); padding: 0.85rem 1rem; box-shadow: var(--glass-shadow); animation: riseIn .6s cubic-bezier(.2,.7,.2,1) both; transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease; }
+.kpi:nth-child(2){animation-delay:.06s;} .kpi:nth-child(3){animation-delay:.12s;} .kpi:nth-child(4){animation-delay:.18s;}
+.kpi:hover{ transform: translateY(-3px); box-shadow: var(--glass-shadow-hover); }
+.kpi-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
+.kpi-value { font-size: 20px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+.kpi-delta { font-size: 12px; margin: 0; }
+.kpi-delta.neg { color: #E24B4A; }
+.kpi-delta.pos { color: #3B6D11; }
+.kpi-delta.warn { color: #BA7517; }
+.charts-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 16px; margin-bottom: 1.25rem; }
+.chart-card { background: var(--glass-bg); -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); border: 0.5px solid var(--glass-border); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; box-shadow: var(--glass-shadow); animation: riseIn .65s cubic-bezier(.2,.7,.2,1) both; transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease; }
+.chart-card:nth-child(2){animation-delay:.08s;} .chart-card:nth-child(3){animation-delay:.16s;}
+.chart-card:hover{ transform: translateY(-3px); box-shadow: var(--glass-shadow-hover); }
+.chart-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 0.75rem; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+.leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.charts-row2 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-bottom: 1.25rem; }
+.insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-bottom: 1rem; }
+.insight { border-left: 2.5px solid; padding: 0.6rem 0.75rem; border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0; background: var(--glass-bg-soft); -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%); box-shadow: var(--glass-shadow); animation: riseIn .6s cubic-bezier(.2,.7,.2,1) both; transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease; }
+.insight:nth-child(2){animation-delay:.07s;} .insight:nth-child(3){animation-delay:.14s;} .insight:nth-child(4){animation-delay:.21s;}
+.insight:hover{ transform: translateY(-2px); box-shadow: var(--glass-shadow-hover); }
+.insight.danger { border-color: #E24B4A; }
+.insight.warn { border-color: #EF9F27; }
+.insight.good { border-color: #639922; }
+.insight.info { border-color: #378ADD; }
+.insight-title { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+.insight-body { font-size: 11px; color: var(--color-text-secondary); margin: 0; line-height: 1.5; }
+.seg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.seg-bar-wrap { flex: 1; background: var(--color-background-secondary); border-radius: 3px; height: 6px; overflow: hidden; }
+.seg-bar { height: 100%; border-radius: 3px; transition: width 1.1s cubic-bezier(.2,.7,.2,1); }
+.seg-label { font-size: 11px; color: var(--color-text-secondary); min-width: 40px; }
+.seg-val { font-size: 11px; font-weight: 500; color: var(--color-text-primary); min-width: 55px; text-align: right; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; color: var(--color-text-secondary); font-weight: 400; padding: 4px 6px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.tbl td { padding: 5px 6px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); }
+.tbl .neg { color: #E24B4A; }
+.tbl .pos { color: #3B6D11; }
+.section-label { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.65rem; animation: fadeDown .6s cubic-bezier(.2,.7,.2,1) both; }
+.seg-bar-wrap { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+@media (max-width: 720px){
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .charts-row,.charts-row2,.insight-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-orbs" aria-hidden="true"><span class="orb orb1"></span><span class="orb orb2"></span><span class="orb orb3"></span><span class="orb orb4"></span></div>
+<div class="wrap">
+
+<h2 class="sr-only">帝斯曼项目2026年5月财务分析仪表盘，含1-5月累计收入、成本、利润及各业态对比数据</h2>
+
+<div class="db-header">
+  <p class="db-title">帝斯曼项目 · 2026年5月财务经营分析</p>
+  <p class="db-sub">统计口径：2026年1-5月累计（本年累计） · 数据来源：调整后经营数据</p>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <p class="kpi-label">本年累计收入</p>
+    <p class="kpi-value">286.4<span style="font-size:13px;font-weight:400;color:var(--color-text-secondary)"> 万</span></p>
+    <p class="kpi-delta neg">vs 计划 -36.6万 (-11.3%)</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">主营业务成本</p>
+    <p class="kpi-value">323.7<span style="font-size:13px;font-weight:400;color:var(--color-text-secondary)"> 万</span></p>
+    <p class="kpi-delta warn">成本超收入 37.3万 (13%)</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">营业利润</p>
+    <p class="kpi-value" style="color:#E24B4A">-35.6<span style="font-size:13px;font-weight:400"> 万</span></p>
+    <p class="kpi-delta warn">利润率 -12.4%（优于计划 +5.4万）</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">账面净利润</p>
+    <p class="kpi-value" style="color:#E24B4A">-43.4<span style="font-size:13px;font-weight:400"> 万</span></p>
+    <p class="kpi-delta neg">vs 计划 -31.1万，超亏 12.3万</p>
+  </div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-card">
+    <p class="chart-title">各业态收入 vs 预算（本年累计，元）</p>
+    <div class="legend-row">
+      <span class="leg-item"><span class="leg-dot" style="background:#378ADD"></span>实际收入</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#B4B2A9; border: 1px dashed #888"></span>计划收入</span>
+    </div>
+    <div style="position:relative;width:100%;height:200px">
+      <svg viewBox="0 0 520 200" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="各业态实际收入与计划收入对比：住宅95.6万实际vs127.1万计划，写字楼150.6万实际vs183.2万计划，商业40.3万实际vs12.7万计划" xmlns="http://www.w3.org/2000/svg"><style>.ax{fill:#6e6e73;font-size:10px;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.vl{fill:#1d1d1f;font-size:10px;font-weight:500;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gl{stroke:#0000000f;stroke-width:1}.zl{stroke:#00000033;stroke-width:1}@media(prefers-color-scheme:dark){.ax{fill:#9a9aa0}.vl{fill:#f2f2f7}.gl{stroke:#ffffff14}.zl{stroke:#ffffff33}}</style><line class="gl" x1="44" y1="174.0" x2="508" y2="174.0"/><text class="ax" x="39" y="177.0" text-anchor="end">0万</text><line class="gl" x1="44" y1="142.4" x2="508" y2="142.4"/><text class="ax" x="39" y="145.4" text-anchor="end">40万</text><line class="gl" x1="44" y1="110.8" x2="508" y2="110.8"/><text class="ax" x="39" y="113.8" text-anchor="end">80万</text><line class="gl" x1="44" y1="79.2" x2="508" y2="79.2"/><text class="ax" x="39" y="82.2" text-anchor="end">120万</text><line class="gl" x1="44" y1="47.6" x2="508" y2="47.6"/><text class="ax" x="39" y="50.6" text-anchor="end">160万</text><line class="gl" x1="44" y1="16.0" x2="508" y2="16.0"/><text class="ax" x="39" y="19.0" text-anchor="end">200万</text><rect x="79.1" y="98.5" width="40.2" height="75.5" rx="2" fill="#378ADD"/><text class="vl" x="99.2" y="95.5" text-anchor="middle">95.6</text><rect x="123.3" y="73.6" width="40.2" height="100.4" rx="2" fill="#cfcfca" stroke="#9a9a96" stroke-dasharray="3 2"/><text class="vl" x="143.4" y="70.6" text-anchor="middle">127.1</text><text class="ax" x="121.3" y="191" text-anchor="middle" style="font-size:11px">住宅</text><rect x="233.8" y="55.0" width="40.2" height="119.0" rx="2" fill="#378ADD"/><text class="vl" x="253.9" y="52.0" text-anchor="middle">150.6</text><rect x="278.0" y="29.3" width="40.2" height="144.7" rx="2" fill="#cfcfca" stroke="#9a9a96" stroke-dasharray="3 2"/><text class="vl" x="298.1" y="26.3" text-anchor="middle">183.2</text><text class="ax" x="276.0" y="191" text-anchor="middle" style="font-size:11px">写字楼</text><rect x="388.5" y="142.2" width="40.2" height="31.8" rx="2" fill="#378ADD"/><text class="vl" x="408.6" y="139.2" text-anchor="middle">40.3</text><rect x="432.7" y="164.0" width="40.2" height="10.0" rx="2" fill="#cfcfca" stroke="#9a9a96" stroke-dasharray="3 2"/><text class="vl" x="452.8" y="161.0" text-anchor="middle">12.7</text><text class="ax" x="430.7" y="191" text-anchor="middle" style="font-size:11px">商业</text></svg>
+    </div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-title">月度营业利润走势（元）</p>
+    <div class="legend-row">
+      <span class="leg-item"><span class="leg-dot" style="background:#378ADD"></span>住宅</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#D4537E"></span>写字楼</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#1D9E75"></span>商业</span>
+    </div>
+    <div style="position:relative;width:100%;height:200px">
+      <svg viewBox="0 0 380 200" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="月度营业利润走势：1月住宅2.8万、写字楼-16.3万、商业8.4万；2月住宅0.1万、写字楼-29.2万、商业-1.7万；3月住宅-1.0万、写字楼-8.4万、商业-3.1万；4月住宅4.2万、写字楼-15.4万、商业0.1万；5月住宅5.5万、写字楼2.4万、商业15.9万" xmlns="http://www.w3.org/2000/svg"><style>.ax{fill:#6e6e73;font-size:10px;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.vl{fill:#1d1d1f;font-size:10px;font-weight:500;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gl{stroke:#0000000f;stroke-width:1}.zl{stroke:#00000033;stroke-width:1}@media(prefers-color-scheme:dark){.ax{fill:#9a9aa0}.vl{fill:#f2f2f7}.gl{stroke:#ffffff14}.zl{stroke:#ffffff33}}</style><line class="gl" x1="42" y1="176.0" x2="368" y2="176.0"/><text class="ax" x="37" y="179.0" text-anchor="end">-30万</text><line class="gl" x1="42" y1="144.0" x2="368" y2="144.0"/><text class="ax" x="37" y="147.0" text-anchor="end">-20万</text><line class="gl" x1="42" y1="112.0" x2="368" y2="112.0"/><text class="ax" x="37" y="115.0" text-anchor="end">-10万</text><line class="zl" x1="42" y1="80.0" x2="368" y2="80.0"/><text class="ax" x="37" y="83.0" text-anchor="end">0万</text><line class="gl" x1="42" y1="48.0" x2="368" y2="48.0"/><text class="ax" x="37" y="51.0" text-anchor="end">10万</text><line class="gl" x1="42" y1="16.0" x2="368" y2="16.0"/><text class="ax" x="37" y="19.0" text-anchor="end">20万</text><text class="ax" x="42.0" y="192" text-anchor="middle">1月</text><text class="ax" x="123.5" y="192" text-anchor="middle">2月</text><text class="ax" x="205.0" y="192" text-anchor="middle">3月</text><text class="ax" x="286.5" y="192" text-anchor="middle">4月</text><text class="ax" x="368.0" y="192" text-anchor="middle">5月</text><path d="M42.0,71.0 L123.5,79.7 L205.0,83.1 L286.5,66.7 L368.0,62.3" fill="none" stroke="#378ADD" stroke-width="2"/><circle cx="42.0" cy="71.0" r="2.6" fill="#378ADD"/><circle cx="123.5" cy="79.7" r="2.6" fill="#378ADD"/><circle cx="205.0" cy="83.1" r="2.6" fill="#378ADD"/><circle cx="286.5" cy="66.7" r="2.6" fill="#378ADD"/><circle cx="368.0" cy="62.3" r="2.6" fill="#378ADD"/><path d="M42.0,132.2 L123.5,173.4 L205.0,106.7 L286.5,129.3 L368.0,72.3" fill="none" stroke="#D4537E" stroke-width="2" stroke-dasharray="4 3"/><circle cx="42.0" cy="132.2" r="2.6" fill="#D4537E"/><circle cx="123.5" cy="173.4" r="2.6" fill="#D4537E"/><circle cx="205.0" cy="106.7" r="2.6" fill="#D4537E"/><circle cx="286.5" cy="129.3" r="2.6" fill="#D4537E"/><circle cx="368.0" cy="72.3" r="2.6" fill="#D4537E"/><path d="M42.0,53.0 L123.5,85.4 L205.0,90.0 L286.5,79.8 L368.0,29.1" fill="none" stroke="#1D9E75" stroke-width="2" stroke-dasharray="2 2"/><circle cx="42.0" cy="53.0" r="2.6" fill="#1D9E75"/><circle cx="123.5" cy="85.4" r="2.6" fill="#1D9E75"/><circle cx="205.0" cy="90.0" r="2.6" fill="#1D9E75"/><circle cx="286.5" cy="79.8" r="2.6" fill="#1D9E75"/><circle cx="368.0" cy="29.1" r="2.6" fill="#1D9E75"/></svg>
+    </div>
+  </div>
+</div>
+
+<div class="charts-row2">
+  <div class="chart-card">
+    <p class="chart-title">住宅 — 月度收入（万元）</p>
+    <div style="position:relative;width:100%;height:150px">
+      <svg viewBox="0 0 300 150" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="住宅月度收入：1月20.6万，2月14.9万，3月16.1万，4月20.7万，5月23.3万" xmlns="http://www.w3.org/2000/svg"><style>.ax{fill:#6e6e73;font-size:10px;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.vl{fill:#1d1d1f;font-size:10px;font-weight:500;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gl{stroke:#0000000f;stroke-width:1}.zl{stroke:#00000033;stroke-width:1}@media(prefers-color-scheme:dark){.ax{fill:#9a9aa0}.vl{fill:#f2f2f7}.gl{stroke:#ffffff14}.zl{stroke:#ffffff33}}</style><line class="gl" x1="34" y1="128.0" x2="292" y2="128.0"/><text class="ax" x="30" y="131.0" text-anchor="end">0</text><line class="gl" x1="34" y1="100.0" x2="292" y2="100.0"/><text class="ax" x="30" y="103.0" text-anchor="end">6.2</text><line class="gl" x1="34" y1="72.0" x2="292" y2="72.0"/><text class="ax" x="30" y="75.0" text-anchor="end">12.5</text><line class="gl" x1="34" y1="44.0" x2="292" y2="44.0"/><text class="ax" x="30" y="47.0" text-anchor="end">18.8</text><line class="gl" x1="34" y1="16.0" x2="292" y2="16.0"/><text class="ax" x="30" y="19.0" text-anchor="end">25</text><rect x="45.6" y="35.7" width="28.4" height="92.3" rx="2" fill="#85B7EB"/><text class="vl" x="59.8" y="32.7" text-anchor="middle">20.6</text><text class="ax" x="59.8" y="142" text-anchor="middle">1月</text><rect x="97.2" y="61.4" width="28.4" height="66.6" rx="2" fill="#85B7EB"/><text class="vl" x="111.4" y="58.4" text-anchor="middle">14.9</text><text class="ax" x="111.4" y="142" text-anchor="middle">2月</text><rect x="148.8" y="55.9" width="28.4" height="72.1" rx="2" fill="#85B7EB"/><text class="vl" x="163.0" y="52.9" text-anchor="middle">16.1</text><text class="ax" x="163.0" y="142" text-anchor="middle">3月</text><rect x="200.4" y="35.4" width="28.4" height="92.6" rx="2" fill="#85B7EB"/><text class="vl" x="214.6" y="32.4" text-anchor="middle">20.7</text><text class="ax" x="214.6" y="142" text-anchor="middle">4月</text><rect x="252.0" y="23.4" width="28.4" height="104.6" rx="2" fill="#85B7EB"/><text class="vl" x="266.2" y="20.4" text-anchor="middle">23.3</text><text class="ax" x="266.2" y="142" text-anchor="middle">5月</text></svg>
+    </div>
+    <div style="margin-top:10px">
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">往期物业</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:30%;background:#378ADD"></div></div>
+        <span class="seg-val">29.0万</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">当期物业</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:55%;background:#85B7EB"></div></div>
+        <span class="seg-val">52.6万</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">停泊服务</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:15%;background:#B5D4F4"></div></div>
+        <span class="seg-val">13.9万</span>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-title">写字楼 — 月度收入（万元）</p>
+    <div style="position:relative;width:100%;height:150px">
+      <svg viewBox="0 0 300 150" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="写字楼月度收入：1月28.6万，2月17.0万，3月38.2万，4月26.2万，5月40.5万" xmlns="http://www.w3.org/2000/svg"><style>.ax{fill:#6e6e73;font-size:10px;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.vl{fill:#1d1d1f;font-size:10px;font-weight:500;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gl{stroke:#0000000f;stroke-width:1}.zl{stroke:#00000033;stroke-width:1}@media(prefers-color-scheme:dark){.ax{fill:#9a9aa0}.vl{fill:#f2f2f7}.gl{stroke:#ffffff14}.zl{stroke:#ffffff33}}</style><line class="gl" x1="34" y1="128.0" x2="292" y2="128.0"/><text class="ax" x="30" y="131.0" text-anchor="end">0</text><line class="gl" x1="34" y1="100.0" x2="292" y2="100.0"/><text class="ax" x="30" y="103.0" text-anchor="end">12.5</text><line class="gl" x1="34" y1="72.0" x2="292" y2="72.0"/><text class="ax" x="30" y="75.0" text-anchor="end">25</text><line class="gl" x1="34" y1="44.0" x2="292" y2="44.0"/><text class="ax" x="30" y="47.0" text-anchor="end">37.5</text><line class="gl" x1="34" y1="16.0" x2="292" y2="16.0"/><text class="ax" x="30" y="19.0" text-anchor="end">50</text><rect x="45.6" y="63.9" width="28.4" height="64.1" rx="2" fill="#ED93B1"/><text class="vl" x="59.8" y="60.9" text-anchor="middle">28.6</text><text class="ax" x="59.8" y="142" text-anchor="middle">1月</text><rect x="97.2" y="89.8" width="28.4" height="38.2" rx="2" fill="#ED93B1"/><text class="vl" x="111.4" y="86.8" text-anchor="middle">17</text><text class="ax" x="111.4" y="142" text-anchor="middle">2月</text><rect x="148.8" y="42.3" width="28.4" height="85.7" rx="2" fill="#ED93B1"/><text class="vl" x="163.0" y="39.3" text-anchor="middle">38.2</text><text class="ax" x="163.0" y="142" text-anchor="middle">3月</text><rect x="200.4" y="69.2" width="28.4" height="58.8" rx="2" fill="#ED93B1"/><text class="vl" x="214.6" y="66.2" text-anchor="middle">26.2</text><text class="ax" x="214.6" y="142" text-anchor="middle">4月</text><rect x="252.0" y="37.3" width="28.4" height="90.7" rx="2" fill="#ED93B1"/><text class="vl" x="266.2" y="34.3" text-anchor="middle">40.5</text><text class="ax" x="266.2" y="142" text-anchor="middle">5月</text></svg>
+    </div>
+    <div style="margin-top:10px">
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">往期非住宅</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:16%;background:#D4537E"></div></div>
+        <span class="seg-val">23.6万</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">当期非住宅</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:84%;background:#ED93B1"></div></div>
+        <span class="seg-val">126.1万</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">增值收入</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:1%;background:#F4C0D1"></div></div>
+        <span class="seg-val">0.9万</span>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-title">商业 — 月度收入（万元）</p>
+    <div style="position:relative;width:100%;height:150px">
+      <svg viewBox="0 0 300 150" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="商业月度收入：1月13.3万，2月1.8万，3月1.8万，4月2.4万，5月20.9万" xmlns="http://www.w3.org/2000/svg"><style>.ax{fill:#6e6e73;font-size:10px;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.vl{fill:#1d1d1f;font-size:10px;font-weight:500;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gl{stroke:#0000000f;stroke-width:1}.zl{stroke:#00000033;stroke-width:1}@media(prefers-color-scheme:dark){.ax{fill:#9a9aa0}.vl{fill:#f2f2f7}.gl{stroke:#ffffff14}.zl{stroke:#ffffff33}}</style><line class="gl" x1="34" y1="128.0" x2="292" y2="128.0"/><text class="ax" x="30" y="131.0" text-anchor="end">0</text><line class="gl" x1="34" y1="100.0" x2="292" y2="100.0"/><text class="ax" x="30" y="103.0" text-anchor="end">6.2</text><line class="gl" x1="34" y1="72.0" x2="292" y2="72.0"/><text class="ax" x="30" y="75.0" text-anchor="end">12.5</text><line class="gl" x1="34" y1="44.0" x2="292" y2="44.0"/><text class="ax" x="30" y="47.0" text-anchor="end">18.8</text><line class="gl" x1="34" y1="16.0" x2="292" y2="16.0"/><text class="ax" x="30" y="19.0" text-anchor="end">25</text><rect x="45.6" y="68.5" width="28.4" height="59.5" rx="2" fill="#5DCAA5"/><text class="vl" x="59.8" y="65.5" text-anchor="middle">13.3</text><text class="ax" x="59.8" y="142" text-anchor="middle">1月</text><rect x="97.2" y="119.9" width="28.4" height="8.1" rx="2" fill="#5DCAA5"/><text class="vl" x="111.4" y="116.9" text-anchor="middle">1.8</text><text class="ax" x="111.4" y="142" text-anchor="middle">2月</text><rect x="148.8" y="119.9" width="28.4" height="8.1" rx="2" fill="#5DCAA5"/><text class="vl" x="163.0" y="116.9" text-anchor="middle">1.8</text><text class="ax" x="163.0" y="142" text-anchor="middle">3月</text><rect x="200.4" y="117.2" width="28.4" height="10.8" rx="2" fill="#5DCAA5"/><text class="vl" x="214.6" y="114.2" text-anchor="middle">2.4</text><text class="ax" x="214.6" y="142" text-anchor="middle">4月</text><rect x="252.0" y="34.3" width="28.4" height="93.7" rx="2" fill="#5DCAA5"/><text class="vl" x="266.2" y="31.3" text-anchor="middle">20.9</text><text class="ax" x="266.2" y="142" text-anchor="middle">5月</text></svg>
+    </div>
+    <div style="margin-top:10px">
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">往期非住宅</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:63%;background:#1D9E75"></div></div>
+        <span class="seg-val">25.3万</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">当期非住宅</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:32%;background:#5DCAA5"></div></div>
+        <span class="seg-val">12.9万</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-label" style="font-size:11px;color:var(--color-text-secondary)">增值收入</span>
+        <div class="seg-bar-wrap"><div class="seg-bar" style="width:5%;background:#ACE3CF"></div></div>
+        <span class="seg-val">2.1万</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="section-label">成本结构分析（汇总，本年累计）</p>
+<div class="charts-row" style="margin-bottom:1.25rem">
+  <div class="chart-card">
+    <p class="chart-title">主营业务成本构成（总计323.7万元）</p>
+    <div style="position:relative;width:100%;height:220px">
+      <svg viewBox="0 0 300 220" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="成本构成：人工成本139.3万占43%，能源费38.3万12%，保洁绿化43.1万13%，秩序维护36.9万11%，运行维护36.2万11%，管理及其他29.9万9%" xmlns="http://www.w3.org/2000/svg"><style>.ax{fill:#6e6e73;font-size:10px;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.vl{fill:#1d1d1f;font-size:10px;font-weight:500;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gl{stroke:#0000000f;stroke-width:1}.zl{stroke:#00000033;stroke-width:1}@media(prefers-color-scheme:dark){.ax{fill:#9a9aa0}.vl{fill:#f2f2f7}.gl{stroke:#ffffff14}.zl{stroke:#ffffff33}}</style><path d="M150.00,26.00 A82,82 0 0 1 184.79,182.26 L170.36,151.47 A48,48 0 0 0 150.00,60.00 Z" fill="#378ADD"/><path d="M184.79,182.26 A82,82 0 0 1 125.31,186.19 L135.55,153.77 A48,48 0 0 0 170.36,151.47 Z" fill="#D4537E"/><path d="M125.31,186.19 A82,82 0 0 1 75.41,142.06 L106.34,127.94 A48,48 0 0 0 135.55,153.77 Z" fill="#1D9E75"/><path d="M75.41,142.06 A82,82 0 0 1 71.36,84.78 L103.96,94.41 A48,48 0 0 0 106.34,127.94 Z" fill="#EF9F27"/><path d="M71.36,84.78 A82,82 0 0 1 105.03,39.43 L123.68,67.86 A48,48 0 0 0 103.96,94.41 Z" fill="#888780"/><path d="M105.03,39.43 A82,82 0 0 1 150.00,26.00 L150.00,60.00 A48,48 0 0 0 123.68,67.86 Z" fill="#B5D4F4"/><text class="vl" x="150" y="106" text-anchor="middle" style="font-size:17px;font-weight:600">323.7万</text><text class="ax" x="150" y="122" text-anchor="middle">主营成本</text></svg>
+    </div>
+    <div class="legend-row" style="margin-top:8px;justify-content:center">
+      <span class="leg-item"><span class="leg-dot" style="background:#378ADD"></span>人工 43.0%</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#D4537E"></span>能源 11.8%</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#1D9E75"></span>保洁绿化 13.3%</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#EF9F27"></span>秩序 11.4%</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#888780"></span>其他 20.4%</span>
+    </div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-title">各业态成本 vs 收入对比（累计，万元）</p>
+    <table class="tbl" style="margin-top:4px">
+      <tbody><tr><th>业态</th><th style="text-align:right">收入</th><th style="text-align:right">成本</th><th style="text-align:right">营业利润</th><th style="text-align:right">利润率</th></tr>
+      <tr><td>住宅</td><td style="text-align:right">95.6</td><td style="text-align:right">84.3</td><td class="pos" style="text-align:right">+11.7</td><td class="pos" style="text-align:right">12.2%</td></tr>
+      <tr><td>写字楼</td><td style="text-align:right">150.6</td><td style="text-align:right">219.1</td><td class="neg" style="text-align:right">-66.9</td><td class="neg" style="text-align:right">-44.4%</td></tr>
+      <tr><td>商业</td><td style="text-align:right">40.3</td><td style="text-align:right">20.4</td><td class="pos" style="text-align:right">+19.6</td><td class="pos" style="text-align:right">48.6%</td></tr>
+      <tr style="border-top:1px solid var(--color-border-secondary)"><td style="font-weight:500">合计</td><td style="text-align:right;font-weight:500">286.4</td><td style="text-align:right;font-weight:500">323.7</td><td class="neg" style="text-align:right;font-weight:500">-35.6</td><td class="neg" style="text-align:right;font-weight:500">-12.4%</td></tr>
+    </tbody></table>
+    <div style="border-top:0.5px solid var(--color-border-tertiary);margin-top:10px;padding-top:10px">
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 6px">其他业务收入 vs 成本</p>
+      <table class="tbl">
+        <tbody><tr><th>业态</th><th style="text-align:right">其他收入</th><th style="text-align:right">其他成本</th><th style="text-align:right">其他利润</th></tr>
+        <tr><td>住宅</td><td style="text-align:right">6.8</td><td style="text-align:right">6.5</td><td class="pos" style="text-align:right">+0.2</td></tr>
+        <tr><td>写字楼</td><td style="text-align:right">24.5</td><td style="text-align:right">21.9</td><td class="pos" style="text-align:right">+2.5</td></tr>
+        <tr><td>商业</td><td style="text-align:right">2.9</td><td style="text-align:right">2.9</td><td style="text-align:right;color:var(--color-text-secondary)">≈0</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<p class="section-label">关键发现与风险提示</p>
+<div class="insight-grid">
+  <div class="insight danger">
+    <p class="insight-title">写字楼累计仍最大拖累，但5月首次单月转正</p>
+    <p class="insight-body">累计营业利润 -66.9万，利润率 -44.4%，成本219.1万远超收入150.6万，亏损缺口68.5万。人工成本107.2万占写字楼总成本的49%，是亏损主因。趋势改善明显：月度亏损自2月 -29.2万逐月收窄，5月收入回升至40.5万（年内最高）、营业利润 +2.4万，为年内首次单月盈利。</p>
+  </div>
+  <div class="insight warn">
+    <p class="insight-title">住宅4-5月强劲反弹，但当期物业费收缴仍不足</p>
+    <p class="insight-body">累计营业利润 +11.7万（利润率12.2%），4月 +4.2万、5月 +5.5万为年内最佳，3月短暂转亏后已稳定回升。隐忧在收缴：当期住宅物业费累计52.6万 vs 计划87.1万，完成率仅60.4%，增长主要靠清欠改善而非满租入住。停泊服务费超计划18%（13.9万）。</p>
+  </div>
+  <div class="insight good">
+    <p class="insight-title">商业超额完成，5月单月爆发贡献正利润</p>
+    <p class="insight-body">累计收入40.3万 vs 计划12.7万，完成率318%，累计营业利润 +19.6万、利润率48.6%。5月单月营业利润 +15.9万，主因往期非住宅物业费集中确认14.5万及增值收入2.1万。但收入高度依赖往期清欠，2-4月单月收入微薄，实质性收入能力仍待持续验证。</p>
+  </div>
+  <div class="insight info">
+    <p class="insight-title">5月成为经营拐点，但账面利润仍劣于计划</p>
+    <p class="insight-body">5月汇总营业利润 +23.9万，为年内首个明显盈利月（前4月累计 -59.5万）。累计营业利润 -35.6万，反优于计划 -41.0万（+5.4万）。但账面利润 -43.4万劣于计划 -31.1万，差额12.3万源于盈利业态（住宅+商业）实缴所得税7.8万，而计划原预期为税收返还。</p>
+  </div>
+</div>
+
+</div>
+
+
+
+
+</body></html>
